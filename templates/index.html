@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TALLY — Live Studio</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #0a0a0a;
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    /* ── 상태 박스 ───────────────────────────────────────────────── */
+    #status-box {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(22px, 4vh, 48px) 0 clamp(18px, 3vh, 36px);
+      border-bottom: 2px solid #1a3a1a;
+      overflow: hidden;
+      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+      background: #0b1f0b;
+      box-shadow: 0 6px 50px 8px rgba(10,140,10,0.18);
+    }
+    #status-box.on-air {
+      background: #b0101a;
+      border-color: #d02030;
+      box-shadow: 0 6px 60px 10px rgba(200,15,30,0.40);
+    }
+
+    #mic-bg {
+      position: absolute;
+      right: clamp(12px, 3vw, 40px);
+      top: 50%;
+      transform: translateY(-50%);
+      height: clamp(3rem, 7vw, 6rem);
+      width: auto;
+      opacity: 0.15;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #status-box.on-air #mic-bg { opacity: 0.6; }
+    #mic-bg { filter: hue-rotate(0deg); }
+    #status-box:not(.on-air) #mic-bg { filter: hue-rotate(120deg) saturate(1.5); opacity: 0.20; }
+
+    #status-text {
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 900;
+      letter-spacing: 0.22em;
+      color: #22cc44;
+      text-transform: uppercase;
+      transition: color 0.25s;
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 0 24px rgba(30,200,60,0.35);
+    }
+    #status-box.on-air #status-text {
+      color: #fff;
+      text-shadow: 0 0 24px rgba(255,180,180,0.4);
+    }
+
+    /* ── 시계 영역 ──────────────────────────────────────────────── */
+    #center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(6px, 1.5vh, 18px);
+    }
+
+    #clock {
+      font-family: 'Consolas', 'Menlo', 'Monaco', monospace;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.08em;
+      line-height: 1;
+      text-shadow: 0 0 40px rgba(255,255,255,0.08);
+      transition: font-size 0.2s ease;
+      width: 8ch;
+      text-align: center;
+      display: block;
+    }
+
+    #info-row {
+      display: flex;
+      align-items: center;
+      gap: clamp(16px, 3vw, 36px);
+      padding: clamp(8px, 1.5vh, 16px) clamp(20px, 4vw, 48px);
+      border: 1px solid #1e1e1e;
+      border-radius: 12px;
+      background: #111;
+    }
+    #date {
+      font-size: clamp(1.1rem, 2.8vw, 2rem);
+      font-weight: 700;
+      color: #c8c8c8;
+      letter-spacing: 0.12em;
+    }
+    .divider {
+      width: 1px;
+      height: clamp(18px, 3vh, 28px);
+      background: #2e2e2e;
+      flex-shrink: 0;
+    }
+    #weather {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: clamp(1.1rem, 2.8vw, 2rem);
+      font-weight: 700;
+      color: #c8c8c8;
+      letter-spacing: 0.08em;
+      min-height: 2rem;
+    }
+    #weather-icon { font-size: 1.2em; line-height: 1; }
+
+    /* ── 캘린더 하단 타임라인 ───────────────────────────────────── */
+    #schedule {
+      width: 100%;
+      border-top: 2px solid #1a1a1a;
+      background: #0a0a0a;
+      display: grid;
+      grid-template-columns: 1fr 1.5fr 1fr;
+      min-height: clamp(80px, 14vh, 130px);
+    }
+    .sch-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(10px, 1.8vh, 20px) clamp(12px, 2vw, 28px);
+      gap: 4px;
+      position: relative;
+    }
+    .sch-slot.prev  { border-right: 1px solid #1c1c1c; opacity: 0.45; }
+    .sch-slot.current {
+      border-right: 1px solid #1c1c1c;
+      background: #1f1400;
+      box-shadow: inset 0 0 40px rgba(200,120,0,0.08);
+    }
+    .sch-slot.next  { opacity: 0.45; }
+
+    .sch-label {
+      font-size: clamp(0.85rem, 1.5vw, 1.1rem);
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #3a3a3a;
+    }
+    .sch-slot.current .sch-label { color: #f0a030; }
+
+    .sch-timerange {
+      font-family: 'Consolas', 'Menlo', monospace;
+      font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+      font-weight: 700;
+      color: #3a5a8a;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .sch-slot.current .sch-timerange { color: #f0a030; }
+
+    .sch-name {
+      font-size: clamp(1rem, 2.2vw, 1.7rem);
+      font-weight: 700;
+      color: #666;
+      letter-spacing: 0.02em;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .sch-slot.current .sch-name {
+      font-size: clamp(1.3rem, 2.8vw, 2.2rem);
+      color: #ffd580;
+    }
+
+    .sch-none {
+      font-size: clamp(0.8rem, 1.4vw, 1rem);
+      color: #2a2a2a;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── 연결 표시 ──────────────────────────────────────────────── */
+    #conn {
+      position: fixed;
+      top: 14px;
+      left: 18px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.68rem;
+      color: #2c2c2c;
+      letter-spacing: 0.05em;
+    }
+    #dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #222;
+      transition: background 0.3s;
+    }
+    #dot.connected  { background: #1a5e1a; }
+    #dot.connecting { background: #5e4a00; }
+
+    /* ── 설정 버튼 (우상단) ─────────────────────────────────────── */
+    #settings-btn {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+      transition: color 0.2s, background 0.2s;
+      z-index: 100;
+    }
+    #settings-btn:hover { color: #666; background: #181818; }
+    #settings-btn svg { width: 20px; height: 20px; }
+
+    /* ── 설정 팝업 ──────────────────────────────────────────────── */
+    #settings-panel {
+      position: fixed;
+      top: 54px;
+      right: 16px;
+      width: 260px;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 20px;
+      z-index: 200;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      display: none;
+      flex-direction: column;
+      gap: 18px;
+    }
+    #settings-panel.open { display: flex; }
+
+    .setting-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #555;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .setting-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .setting-row-inline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    #clock-size-val {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #888;
+      min-width: 32px;
+      text-align: right;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: #2a2a2a;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { background: #aaa; }
+
+    /* ── SBS 로고 ───────────────────────────────────────────────── */
+    #sbs-logo {
+      position: fixed;
+      top: 12px;
+      left: 20px;
+      height: clamp(44px, 6vw, 72px);
+      width: auto;
+      opacity: 0.55;
+      filter: brightness(0.6) saturate(0.7);
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    .panel-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #666;
+      letter-spacing: 0.08em;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #222;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .toggle-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #888;
+      letter-spacing: 0.04em;
+    }
+    .toggle {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: #2a2a2a;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      left: 3px; top: 3px;
+      width: 14px; height: 14px;
+      background: #555;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle input:checked + .toggle-track { background: #1a4a8a; }
+    .toggle input:checked + .toggle-track::after { transform: translateX(16px); background: #fff; }
+  </style>
+</head>
+<body>
+
+  <div id="conn"><span id="dot"></span><span id="conn-label">연결 중…</span></div>
+
+  <!-- SBS 로고 -->
+  <img id="sbs-logo" src="/static/image.png" alt="SBS" />
+
+  <!-- 설정 버튼 -->
+  <button id="settings-btn" title="설정">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
+
+  <!-- 설정 팝업 -->
+  <div id="settings-panel">
+    <div class="panel-title">⚙ 화면 설정</div>
+    <div class="setting-row">
+      <div class="setting-row-inline">
+        <span class="setting-label">시계 크기</span>
+        <span id="clock-size-val">13rem</span>
+      </div>
+      <input type="range" id="clock-size" min="4" max="22" step="0.5" value="13" />
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">캘린더 선택</span>
+      <div class="toggle-row" style="margin-top:6px">
+        <span class="toggle-label">TS-5</span>
+        <label class="toggle">
+          <input type="checkbox" id="cal-ts5" checked />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row" style="margin-top:6px">
+        <span class="toggle-label">TS-5(방송)</span>
+        <label class="toggle">
+          <input type="checkbox" id="cal-ts5b" checked />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 상태 박스 -->
+  <div id="status-box">
+    <span id="status-text">방송 준비중</span>
+    <svg id="mic-bg" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" fill="white">
+      <rect x="38" y="8" width="44" height="72" rx="22"/>
+      <rect x="38" y="30" width="44" height="3" rx="1.5" fill="black" opacity="0.2"/>
+      <rect x="38" y="42" width="44" height="3" rx="1.5" fill="black" opacity="0.2"/>
+      <rect x="38" y="54" width="44" height="3" rx="1.5" fill="black" opacity="0.2"/>
+      <path d="M22 76 Q22 108 60 108 Q98 108 98 76" stroke="white" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <rect x="56.5" y="108" width="7" height="32" rx="3.5"/>
+      <rect x="32" y="138" width="56" height="8" rx="4"/>
+    </svg>
+  </div>
+
+  <!-- 시계 + 날짜 + 날씨 -->
+  <div id="center">
+    <div id="clock">--:--:--</div>
+    <div id="info-row">
+      <div id="date">----년 --월 --일 (--)</div>
+      <div class="divider"></div>
+      <div id="weather">
+        <span id="weather-icon">🌡</span>
+        <span id="weather-text">날씨 불러오는 중…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 캘린더 타임라인 -->
+  <div id="schedule">
+    <div class="sch-slot prev"  id="sch-prev">
+      <span class="sch-label">이전</span>
+      <span class="sch-timerange" id="sch-prev-time">—</span>
+      <span class="sch-name"     id="sch-prev-name"><span class="sch-none">일정 없음</span></span>
+    </div>
+    <div class="sch-slot current" id="sch-current">
+      <span class="sch-label">현재</span>
+      <span class="sch-timerange" id="sch-cur-time">—</span>
+      <span class="sch-name"      id="sch-cur-name"><span class="sch-none">대기 중</span></span>
+    </div>
+    <div class="sch-slot next"   id="sch-next">
+      <span class="sch-label">다음</span>
+      <span class="sch-timerange" id="sch-next-time">—</span>
+      <span class="sch-name"      id="sch-next-name"><span class="sch-none">일정 없음</span></span>
+    </div>
+  </div>
+
+<script>
+  const box         = document.getElementById('status-box');
+  const statusText  = document.getElementById('status-text');
+  const clockEl     = document.getElementById('clock');
+  const dateEl      = document.getElementById('date');
+  const weatherIcon = document.getElementById('weather-icon');
+  const weatherText = document.getElementById('weather-text');
+  const dot         = document.getElementById('dot');
+  const connLabel   = document.getElementById('conn-label');
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsPanel = document.getElementById('settings-panel');
+  const clockSizeSlider = document.getElementById('clock-size');
+  const clockSizeVal    = document.getElementById('clock-size-val');
+  const scheduleList    = document.getElementById('schedule-list');
+
+  const DAYS = ['일','월','화','수','목','금','토'];
+
+  /* ── 시계 크기 설정 ─────────────────────────────────────────── */
+  const SAVED_SIZE = parseFloat(localStorage.getItem('clockSize') || '13');
+  clockSizeSlider.value = SAVED_SIZE;
+  applyClockSize(SAVED_SIZE);
+
+  function applyClockSize(rem) {
+    clockEl.style.fontSize = rem + 'rem';
+    clockSizeVal.textContent = rem + 'rem';
+  }
+
+  clockSizeSlider.addEventListener('input', () => {
+    const v = parseFloat(clockSizeSlider.value);
+    applyClockSize(v);
+    localStorage.setItem('clockSize', v);
+  });
+
+  /* ── 설정 팝업 토글 ─────────────────────────────────────────── */
+  settingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settingsPanel.classList.toggle('open');
+  });
+  document.addEventListener('click', (e) => {
+    if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+      settingsPanel.classList.remove('open');
+    }
+  });
+
+  /* ── 시계 & 날짜 ─────────────────────────────────────────────── */
+  function updateClock() {
+    const n = new Date();
+    const pad = v => String(v).padStart(2, '0');
+    clockEl.textContent =
+      `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+    dateEl.textContent =
+      `${n.getFullYear()}년 ${pad(n.getMonth()+1)}월 ${pad(n.getDate())}일 (${DAYS[n.getDay()]})`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* ── 날씨 ────────────────────────────────────────────────────── */
+  const WMO = {
+    0:'☀️ 맑음', 1:'🌤 대체로 맑음', 2:'⛅ 부분 흐림', 3:'☁️ 흐림',
+    45:'🌫 안개', 48:'🌫 안개',
+    51:'🌦 이슬비', 53:'🌦 이슬비', 55:'🌦 이슬비',
+    61:'🌧 비', 63:'🌧 비', 65:'🌧 강한 비',
+    71:'🌨 눈', 73:'🌨 눈', 75:'❄️ 강한 눈', 77:'❄️ 눈보라',
+    80:'🌧 소나기', 81:'🌧 소나기', 82:'⛈ 강한 소나기',
+    95:'⛈ 뇌우', 96:'⛈ 뇌우(우박)', 99:'⛈ 강한 뇌우',
+  };
+  function fetchWeather(lat, lon) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+                `&current=temperature_2m,weathercode&timezone=auto`;
+    fetch(url)
+      .then(r => r.json())
+      .then(d => {
+        const temp = Math.round(d.current.temperature_2m);
+        const desc = WMO[d.current.weathercode] ?? '날씨 정보 없음';
+        const [icon, ...words] = desc.split(' ');
+        weatherIcon.textContent = icon;
+        weatherText.textContent = `${words.join(' ')}  ${temp}°C`;
+      })
+      .catch(() => { weatherIcon.textContent = '—'; weatherText.textContent = '날씨 정보 없음'; });
+  }
+  function loadWeather() {
+    if (navigator.geolocation)
+      navigator.geolocation.getCurrentPosition(
+        p => fetchWeather(p.coords.latitude, p.coords.longitude),
+        ()  => fetchWeather(37.5665, 126.9780)
+      );
+    else fetchWeather(37.5665, 126.9780);
+  }
+  loadWeather();
+  setInterval(loadWeather, 10 * 60 * 1000);
+
+  /* ── 캘린더 선택 토글 ───────────────────────────────────────── */
+  const calTs5  = document.getElementById('cal-ts5');
+  const calTs5b = document.getElementById('cal-ts5b');
+
+  calTs5.checked  = localStorage.getItem('cal-ts5')  !== 'false';
+  calTs5b.checked = localStorage.getItem('cal-ts5b') !== 'false';
+
+  calTs5.addEventListener('change',  () => { localStorage.setItem('cal-ts5',  calTs5.checked);  loadSchedule(); });
+  calTs5b.addEventListener('change', () => { localStorage.setItem('cal-ts5b', calTs5b.checked); loadSchedule(); });
+
+  function getCalendarUrl() {
+    const params = [];
+    if (calTs5.checked)  params.push('cal=TS-5');
+    if (calTs5b.checked) params.push('cal=TS-5(%EB%B0%A9%EC%86%A1)');
+    return '/calendar' + (params.length ? '?' + params.join('&') : '');
+  }
+
+  /* ── 캘린더 타임라인 ─────────────────────────────────────────── */
+  function setSlot(timeEl, nameEl, ev) {
+    if (ev) {
+      timeEl.textContent = ev.allday ? '종일' : `${ev.start} – ${ev.end}`;
+      nameEl.textContent = ev.summary;
+    } else {
+      timeEl.textContent = '—';
+      nameEl.innerHTML = '<span class="sch-none">일정 없음</span>';
+    }
+  }
+
+  function loadSchedule() {
+    fetch(getCalendarUrl())
+      .then(r => r.json())
+      .then(d => {
+        setSlot(
+          document.getElementById('sch-prev-time'),
+          document.getElementById('sch-prev-name'),
+          d.prev
+        );
+        setSlot(
+          document.getElementById('sch-cur-time'),
+          document.getElementById('sch-cur-name'),
+          d.current
+        );
+        setSlot(
+          document.getElementById('sch-next-time'),
+          document.getElementById('sch-next-name'),
+          d.next
+        );
+        if (!d.current) {
+          document.getElementById('sch-cur-name').innerHTML = '<span class="sch-none">대기 중</span>';
+          document.getElementById('sch-cur-time').textContent = '—';
+        }
+      })
+      .catch(() => {});
+  }
+  loadSchedule();
+  setInterval(loadSchedule, 60 * 1000);
+
+  /* ── SSE 탈리 ────────────────────────────────────────────────── */
+  function applyState(state) {
+    if (state === 'ON_AIR') {
+      box.classList.add('on-air');
+      statusText.textContent = '방  송  중';
+    } else {
+      box.classList.remove('on-air');
+      statusText.textContent = '방송 준비중';
+    }
+  }
+  function connect() {
+    dot.className = 'connecting';
+    connLabel.textContent = '연결 중…';
+    const es = new EventSource('/stream');
+    es.onopen = () => { dot.className = 'connected'; connLabel.textContent = 'DM7 연결됨'; };
+    es.onmessage = e => applyState(e.data.trim());
+    es.onerror = () => {
+      dot.className = '';
+      connLabel.textContent = '연결 끊김 — 재시도 중…';
+      es.close();
+      setTimeout(connect, 3000);
+    };
+  }
+  connect();
+</script>
+</body>
+</html>
