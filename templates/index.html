@@ -384,6 +384,20 @@
       <input type="range" id="clock-size" min="4" max="22" step="0.5" value="13" />
     </div>
     <div class="setting-row">
+      <div class="setting-row-inline">
+        <span class="setting-label">탈리 크기</span>
+        <span id="tally-size-val">3rem</span>
+      </div>
+      <input type="range" id="tally-size" min="1.5" max="8" step="0.5" value="3" />
+    </div>
+    <div class="setting-row">
+      <div class="setting-row-inline">
+        <span class="setting-label">일정 크기</span>
+        <span id="sch-size-val">1.3rem</span>
+      </div>
+      <input type="range" id="sch-size" min="0.7" max="3" step="0.1" value="1.3" />
+    </div>
+    <div class="setting-row">
       <span class="setting-label">캘린더 선택</span>
       <div class="toggle-row" style="margin-top:6px">
         <span class="toggle-label">TS-5</span>
@@ -461,7 +475,10 @@
   const settingsPanel = document.getElementById('settings-panel');
   const clockSizeSlider = document.getElementById('clock-size');
   const clockSizeVal    = document.getElementById('clock-size-val');
-  const scheduleList    = document.getElementById('schedule-list');
+  const tallySizeSlider = document.getElementById('tally-size');
+  const tallySizeVal    = document.getElementById('tally-size-val');
+  const schSizeSlider   = document.getElementById('sch-size');
+  const schSizeVal      = document.getElementById('sch-size-val');
 
   const DAYS = ['일','월','화','수','목','금','토'];
 
@@ -474,11 +491,42 @@
     clockEl.style.fontSize = rem + 'rem';
     clockSizeVal.textContent = rem + 'rem';
   }
-
   clockSizeSlider.addEventListener('input', () => {
     const v = parseFloat(clockSizeSlider.value);
     applyClockSize(v);
     localStorage.setItem('clockSize', v);
+  });
+
+  /* ── 탈리 크기 설정 ─────────────────────────────────────────── */
+  const SAVED_TALLY = parseFloat(localStorage.getItem('tallySize') || '3');
+  tallySizeSlider.value = SAVED_TALLY;
+  applyTallySize(SAVED_TALLY);
+
+  function applyTallySize(rem) {
+    document.getElementById('status-text').style.fontSize = rem + 'rem';
+    tallySizeVal.textContent = rem + 'rem';
+  }
+  tallySizeSlider.addEventListener('input', () => {
+    const v = parseFloat(tallySizeSlider.value);
+    applyTallySize(v);
+    localStorage.setItem('tallySize', v);
+  });
+
+  /* ── 일정 크기 설정 ─────────────────────────────────────────── */
+  const SAVED_SCH = parseFloat(localStorage.getItem('schSize') || '1.3');
+  schSizeSlider.value = SAVED_SCH;
+  applySchSize(SAVED_SCH);
+
+  function applySchSize(rem) {
+    document.querySelectorAll('.sch-name').forEach(el => el.style.fontSize = rem + 'rem');
+    document.querySelectorAll('.sch-timerange').forEach(el => el.style.fontSize = (rem * 0.75) + 'rem');
+    document.querySelectorAll('.sch-label').forEach(el => el.style.fontSize = (rem * 0.55) + 'rem');
+    schSizeVal.textContent = rem + 'rem';
+  }
+  schSizeSlider.addEventListener('input', () => {
+    const v = parseFloat(schSizeSlider.value);
+    applySchSize(v);
+    localStorage.setItem('schSize', v);
   });
 
   /* ── 설정 팝업 토글 ─────────────────────────────────────────── */
@@ -591,6 +639,7 @@
           document.getElementById('sch-cur-time').textContent = '—';
         }
       })
+      .then(() => applySchSize(parseFloat(localStorage.getItem('schSize') || '1.3')))
       .catch(() => {});
   }
   loadSchedule();
