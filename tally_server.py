@@ -125,6 +125,18 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/test/<state>')
+def test_state(state):
+    global on_air
+    if state == 'on':
+        on_air = True
+        broadcast('ON_AIR')
+    elif state == 'off':
+        on_air = False
+        broadcast('STANDBY')
+    return ('', 204)
+
+
 @app.route('/stream')
 def stream():
     def gen():

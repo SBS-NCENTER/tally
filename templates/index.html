@@ -465,7 +465,7 @@
     <div class="sch-slot current" id="sch-current">
       <span class="sch-label">현재</span>
       <span class="sch-timerange" id="sch-cur-time">—</span>
-      <span class="sch-name"      id="sch-cur-name"><span class="sch-none">대기 중</span></span>
+      <span class="sch-name"      id="sch-cur-name"><span class="sch-none">일정 없음</span></span>
     </div>
     <div class="sch-slot next"   id="sch-next">
       <span class="sch-label">다음</span>
@@ -666,7 +666,7 @@
           d.next
         );
         if (!d.current) {
-          document.getElementById('sch-cur-name').innerHTML = '<span class="sch-none">대기 중</span>';
+          document.getElementById('sch-cur-name').innerHTML = '<span class="sch-none">일정 없음</span>';
           document.getElementById('sch-cur-time').textContent = '—';
         }
       })
