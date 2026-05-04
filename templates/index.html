@@ -27,7 +27,7 @@
       justify-content: center;
       padding: clamp(22px, 4vh, 48px) 0 clamp(18px, 3vh, 36px);
       border-bottom: 2px solid #1a3a1a;
-      overflow: hidden;
+      overflow: visible;
       transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
       background: #0b1f0b;
       box-shadow: 0 6px 50px 8px rgba(10,140,10,0.18);
@@ -304,15 +304,21 @@
 
     /* ── SBS 로고 ───────────────────────────────────────────────── */
     #sbs-logo {
-      position: fixed;
-      top: 12px;
-      left: 20px;
-      height: clamp(44px, 6vw, 72px);
+      position: absolute;
+      left: clamp(16px, 3.5vw, 48px);
+      top: 50%;
+      transform: translateY(-50%);
+      height: clamp(40px, 6vw, 72px);
       width: auto;
       opacity: 0.55;
-      filter: brightness(0.6) saturate(0.7);
+      filter: brightness(0.85) saturate(0.6);
       pointer-events: none;
-      z-index: 50;
+      z-index: 2;
+      transition: opacity 0.3s ease, filter 0.3s ease;
+    }
+    #status-box.on-air #sbs-logo {
+      opacity: 1;
+      filter: brightness(1.3) saturate(1.2);
     }
 
     .panel-title {
@@ -366,9 +372,6 @@
 <body>
 
   <div id="conn"><span id="dot"></span><span id="conn-label">연결 중…</span></div>
-
-  <!-- SBS 로고 -->
-  <img id="sbs-logo" src="/static/image.png" alt="SBS" />
 
   <!-- 설정 버튼 -->
   <button id="settings-btn" title="설정">
@@ -430,6 +433,7 @@
 
   <!-- 상태 박스 -->
   <div id="status-box">
+    <img id="sbs-logo" src="/static/image.png" alt="SBS" />
     <span id="status-text">방송 준비중</span>
     <svg id="mic-bg" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" fill="white">
       <rect x="38" y="8" width="44" height="72" rx="22"/>
