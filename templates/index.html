@@ -129,43 +129,48 @@
     /* ── 캘린더 하단 타임라인 ───────────────────────────────────── */
     #schedule {
       width: 100%;
-      border-top: 2px solid #1a1a1a;
-      background: #0a0a0a;
+      border-top: 2px solid #2a2a2a;
+      background: #0d0d0d;
       display: grid;
       grid-template-columns: 1fr 1.5fr 1fr;
-      min-height: clamp(80px, 14vh, 130px);
+      min-height: clamp(100px, 17vh, 160px);
     }
     .sch-slot {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: clamp(10px, 1.8vh, 20px) clamp(12px, 2vw, 28px);
-      gap: 4px;
+      padding: clamp(12px, 2vh, 24px) clamp(12px, 2vw, 28px);
+      gap: 6px;
       position: relative;
     }
-    .sch-slot.prev  { border-right: 1px solid #1c1c1c; opacity: 0.45; }
+    .sch-slot.prev  { border-right: 1px solid #252525; opacity: 0.70; }
     .sch-slot.current {
-      border-right: 1px solid #1c1c1c;
-      background: #1f1400;
-      box-shadow: inset 0 0 40px rgba(200,120,0,0.08);
+      border-right: 1px solid #3a2800;
+      background: #1c1200;
+      box-shadow: inset 0 0 60px rgba(200,120,0,0.18);
     }
-    .sch-slot.next  { opacity: 0.45; }
+    .sch-slot.next  { opacity: 0.70; }
 
     .sch-label {
-      font-size: clamp(0.85rem, 1.5vw, 1.1rem);
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #3a3a3a;
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: #fff;
+      background: #252525;
+      padding: 2px 12px;
+      border-radius: 20px;
     }
-    .sch-slot.current .sch-label { color: #f0a030; }
+    .sch-slot.current .sch-label {
+      color: #1a0a00;
+      background: #f0a030;
+    }
 
     .sch-timerange {
       font-family: 'Consolas', 'Menlo', monospace;
       font-size: clamp(1.2rem, 2.2vw, 1.8rem);
       font-weight: 700;
-      color: #3a5a8a;
+      color: #5a82b8;
       letter-spacing: 0.06em;
       white-space: nowrap;
     }
@@ -174,7 +179,7 @@
     .sch-name {
       font-size: clamp(1rem, 2.2vw, 1.7rem);
       font-weight: 700;
-      color: #666;
+      color: #888;
       letter-spacing: 0.02em;
       text-align: center;
       line-height: 1.2;
@@ -186,7 +191,7 @@
 
     .sch-none {
       font-size: clamp(0.8rem, 1.4vw, 1rem);
-      color: #2a2a2a;
+      color: #333;
       letter-spacing: 0.08em;
     }
 
@@ -269,11 +274,11 @@
       justify-content: space-between;
       gap: 10px;
     }
-    #clock-size-val {
+    #clock-size-val, #time-offset-val {
       font-size: 0.8rem;
       font-weight: 700;
       color: #888;
-      min-width: 32px;
+      min-width: 40px;
       text-align: right;
     }
 
@@ -398,6 +403,13 @@
       <input type="range" id="sch-size" min="0.7" max="3" step="0.1" value="1.3" />
     </div>
     <div class="setting-row">
+      <div class="setting-row-inline">
+        <span class="setting-label">시간 보정</span>
+        <span id="time-offset-val">0.0초</span>
+      </div>
+      <input type="range" id="time-offset" min="-10" max="10" step="0.5" value="0" />
+    </div>
+    <div class="setting-row">
       <span class="setting-label">캘린더 선택</span>
       <div class="toggle-row" style="margin-top:6px">
         <span class="toggle-label">TS-5</span>
@@ -520,7 +532,7 @@
   function applySchSize(rem) {
     document.querySelectorAll('.sch-name').forEach(el => el.style.fontSize = rem + 'rem');
     document.querySelectorAll('.sch-timerange').forEach(el => el.style.fontSize = (rem * 0.75) + 'rem');
-    document.querySelectorAll('.sch-label').forEach(el => el.style.fontSize = (rem * 0.55) + 'rem');
+    document.querySelectorAll('.sch-label').forEach(el => el.style.fontSize = '');
     schSizeVal.textContent = rem + 'rem';
   }
   schSizeSlider.addEventListener('input', () => {
@@ -540,9 +552,27 @@
     }
   });
 
+  /* ── 시간 보정 ───────────────────────────────────────────────── */
+  const timeOffsetSlider = document.getElementById('time-offset');
+  const timeOffsetVal    = document.getElementById('time-offset-val');
+
+  let timeOffsetSec = parseFloat(localStorage.getItem('timeOffset') || '0');
+  timeOffsetSlider.value = timeOffsetSec;
+  timeOffsetVal.textContent = (timeOffsetSec >= 0 ? '+' : '') + timeOffsetSec.toFixed(1) + '초';
+
+  timeOffsetSlider.addEventListener('input', () => {
+    timeOffsetSec = parseFloat(timeOffsetSlider.value);
+    timeOffsetVal.textContent = (timeOffsetSec >= 0 ? '+' : '') + timeOffsetSec.toFixed(1) + '초';
+    localStorage.setItem('timeOffset', timeOffsetSec);
+  });
+
+  function getNow() {
+    return new Date(Date.now() + timeOffsetSec * 1000);
+  }
+
   /* ── 시계 & 날짜 ─────────────────────────────────────────────── */
   function updateClock() {
-    const n = new Date();
+    const n = getNow();
     const pad = v => String(v).padStart(2, '0');
     clockEl.textContent =
       `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
@@ -601,7 +631,8 @@
     const params = [];
     if (calTs5.checked)  params.push('cal=TS-5');
     if (calTs5b.checked) params.push('cal=TS-5(%EB%B0%A9%EC%86%A1)');
-    return '/calendar' + (params.length ? '?' + params.join('&') : '');
+    params.push('offset=' + timeOffsetSec);
+    return '/calendar?' + params.join('&');
   }
 
   /* ── 캘린더 타임라인 ─────────────────────────────────────────── */

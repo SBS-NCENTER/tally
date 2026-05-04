@@ -151,7 +151,9 @@ def stream():
 def get_calendar():
     try:
         service = get_calendar_service()
-        now = datetime.now(KST)
+        offset_sec = float(request.args.get('offset', 0))
+        from datetime import timedelta
+        now = datetime.now(KST) + timedelta(seconds=offset_sec)
         now_str = now.strftime('%H:%M')
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
         today_end   = now.replace(hour=23, minute=59, second=59, microsecond=0).isoformat()
