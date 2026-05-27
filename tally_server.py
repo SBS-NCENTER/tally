@@ -3,7 +3,8 @@ import threading
 import time
 import re
 import os
-from datetime import datetime
+import json
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, Response, render_template, jsonify, request
 from queue import Queue, Empty
@@ -15,7 +16,7 @@ from googleapiclient.discovery import build
 app = Flask(__name__)
 
 # ── 설정 ──────────────────────────────────────────────────────────────────────
-DM7_HOST  = '192.168.0.2'
+DM7_HOST_DEFAULT = '192.168.3.210'
 DM7_PORT  = 49280
 THRESHOLD = -8000
 
@@ -28,6 +29,14 @@ CALENDAR_IDS = {
 }
 CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), 'credentials.json')
 TOKEN_FILE       = os.path.join(os.path.dirname(__file__), 'token.json')
+SETTINGS_FILE    = os.path.join(os.path.dirname(__file__), 'settings.json')
+
+def get_dm7_host():
+    try:
+        with open(SETTINGS_FILE) as f:
+            return json.load(f).get('dm7Host', DM7_HOST_DEFAULT)
+    except Exception:
+        return DM7_HOST_DEFAULT
 
 # ── 상태 ──────────────────────────────────────────────────────────────────────
 fader = {i: -32768 for i in range(8)}
@@ -59,19 +68,26 @@ def calc_on_air() -> bool:
 
 
 # ── Google Calendar 인증 ───────────────────────────────────────────────────────
+_creds = None
+_creds_lock = threading.Lock()
+
 def get_calendar_service():
-    creds = None
-    if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open(TOKEN_FILE, 'w') as f:
-            f.write(creds.to_json())
-    return build('calendar', 'v3', credentials=creds)
+    global _creds
+    with _creds_lock:
+        if _creds is None or not _creds.valid:
+            creds = None
+            if os.path.exists(TOKEN_FILE):
+                creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+            if not creds or not creds.valid:
+                if creds and creds.expired and creds.refresh_token:
+                    creds.refresh(Request())
+                else:
+                    flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+                    creds = flow.run_local_server(port=0)
+                with open(TOKEN_FILE, 'w') as f:
+                    f.write(creds.to_json())
+            _creds = creds
+    return build('calendar', 'v3', credentials=_creds)
 
 
 # ── DM7 TCP 리스너 ─────────────────────────────────────────────────────────────
@@ -79,11 +95,12 @@ def dm7_listener():
     global on_air
     while True:
         try:
+            host = get_dm7_host()
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.settimeout(10)
-                sock.connect((DM7_HOST, DM7_PORT))
-                sock.settimeout(None)
-                print(f"[DM7] 연결 성공 → {DM7_HOST}:{DM7_PORT}", flush=True)
+                sock.connect((host, DM7_PORT))
+                sock.settimeout(30)
+                print(f"[DM7] 연결 성공 → {host}:{DM7_PORT}", flush=True)
 
                 buf = ""
                 while True:
@@ -125,6 +142,24 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/settings', methods=['GET'])
+def get_settings():
+    try:
+        with open(SETTINGS_FILE) as f:
+            return jsonify(json.load(f))
+    except Exception:
+        return jsonify({})
+
+@app.route('/settings', methods=['POST'])
+def save_settings():
+    try:
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(request.get_json(force=True), f)
+    except Exception:
+        pass
+    return ('', 204)
+
+
 @app.route('/test/<state>')
 def test_state(state):
     global on_air
@@ -164,7 +199,6 @@ def get_calendar():
     try:
         service = get_calendar_service()
         offset_sec = float(request.args.get('offset', 0))
-        from datetime import timedelta
         now = datetime.now(KST) + timedelta(seconds=offset_sec)
         now_str = now.strftime('%H:%M')
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()

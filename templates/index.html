@@ -25,7 +25,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: clamp(22px, 4vh, 48px) 0 clamp(18px, 3vh, 36px);
+      padding: clamp(22px, 4vh, 48px) clamp(20px, 4vw, 60px) clamp(18px, 3vh, 36px);
       border-bottom: 2px solid #1a3a1a;
       overflow: visible;
       transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -38,20 +38,6 @@
       box-shadow: 0 6px 60px 10px rgba(200,15,30,0.40);
     }
 
-    #mic-bg {
-      position: absolute;
-      right: clamp(12px, 3vw, 40px);
-      top: 50%;
-      transform: translateY(-50%);
-      height: clamp(3rem, 7vw, 6rem);
-      width: auto;
-      opacity: 0.15;
-      transition: opacity 0.3s;
-      pointer-events: none;
-    }
-    #status-box.on-air #mic-bg { opacity: 0.6; }
-    #mic-bg { filter: hue-rotate(0deg); }
-    #status-box:not(.on-air) #mic-bg { filter: hue-rotate(120deg) saturate(1.5); opacity: 0.20; }
 
     #status-text {
       font-size: clamp(3rem, 8vw, 7rem);
@@ -63,6 +49,7 @@
       position: relative;
       z-index: 1;
       text-shadow: 0 0 24px rgba(30,200,60,0.35);
+      white-space: nowrap;
     }
     #status-box.on-air #status-text {
       color: #fff;
@@ -198,14 +185,15 @@
     /* ── 연결 표시 ──────────────────────────────────────────────── */
     #conn {
       position: fixed;
-      top: 14px;
-      left: 18px;
+      bottom: 10px;
+      left: 14px;
       display: flex;
       align-items: center;
       gap: 6px;
       font-size: 0.68rem;
       color: #2c2c2c;
       letter-spacing: 0.05em;
+      z-index: 100;
     }
     #dot {
       width: 7px; height: 7px;
@@ -302,24 +290,6 @@
     }
     input[type=range]::-webkit-slider-thumb:hover { background: #aaa; }
 
-    /* ── SBS 로고 ───────────────────────────────────────────────── */
-    #sbs-logo {
-      position: absolute;
-      left: clamp(16px, 3.5vw, 48px);
-      top: 50%;
-      transform: translateY(-50%);
-      height: clamp(40px, 6vw, 72px);
-      width: auto;
-      opacity: 0.55;
-      filter: brightness(0.85) saturate(0.6);
-      pointer-events: none;
-      z-index: 2;
-      transition: opacity 0.3s ease, filter 0.3s ease;
-    }
-    #status-box.on-air #sbs-logo {
-      opacity: 1;
-      filter: brightness(1.3) saturate(1.2);
-    }
 
     .panel-title {
       font-size: 0.85rem;
@@ -367,6 +337,42 @@
     }
     .toggle input:checked + .toggle-track { background: #1a4a8a; }
     .toggle input:checked + .toggle-track::after { transform: translateX(16px); background: #fff; }
+
+    /* ── 세로 모드 (전체 화면 90도 회전) ───────────────────────── */
+    body.portrait-right, body.portrait-left {
+      position: fixed;
+      top: calc(50vh - 50vw);
+      left: calc(50vw - 50vh);
+      width: 100vh;
+      height: 100vw;
+      min-height: unset;
+      overflow: hidden;
+    }
+    body.portrait-right { transform: rotate(90deg); }
+    body.portrait-left  { transform: rotate(-90deg); }
+
+    /* 세로 모드: 양쪽 패널 동일 높이 → 시계 정 중앙 */
+    body.portrait-right #status-box,
+    body.portrait-left  #status-box {
+      flex: 0 0 clamp(140px, 20vh, 220px);
+      padding: clamp(12px, 3vh, 30px) clamp(16px, 3vh, 40px);
+    }
+    body.portrait-right #status-text,
+    body.portrait-left  #status-text {
+      font-size: clamp(2.5rem, 5vh, 4.5rem);
+    }
+    body.portrait-right #schedule,
+    body.portrait-left  #schedule {
+      flex: 0 0 clamp(140px, 20vh, 220px);
+      min-height: unset;
+    }
+
+    /* 세로 모드 시계: CSS 레벨에서 폭 초과 원천 차단 */
+    /* 8ch ≈ font-size × 4.8 → 4.8 × fs ≤ 100vh → fs ≤ 20.8vh */
+    body.portrait-right #clock,
+    body.portrait-left  #clock {
+      font-size: min(var(--clock-fs, 8rem), 20vh) !important;
+    }
   </style>
 </head>
 <body>
@@ -396,14 +402,14 @@
         <span class="setting-label">탈리 크기</span>
         <span id="tally-size-val">3rem</span>
       </div>
-      <input type="range" id="tally-size" min="1.5" max="8" step="0.5" value="3" />
+      <input type="range" id="tally-size" min="1.5" max="16" step="0.5" value="3" />
     </div>
     <div class="setting-row">
       <div class="setting-row-inline">
         <span class="setting-label">일정 크기</span>
         <span id="sch-size-val">1.3rem</span>
       </div>
-      <input type="range" id="sch-size" min="0.7" max="3" step="0.1" value="1.3" />
+      <input type="range" id="sch-size" min="0.7" max="6" step="0.1" value="1.3" />
     </div>
     <div class="setting-row">
       <div class="setting-row-inline">
@@ -411,6 +417,40 @@
         <span id="time-offset-val">0.0초</span>
       </div>
       <input type="range" id="time-offset" min="-10" max="10" step="0.5" value="0" />
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">화면 방향</span>
+      <div class="toggle-row" style="margin-top:6px">
+        <span class="toggle-label">세로 모드</span>
+        <label class="toggle">
+          <input type="checkbox" id="portrait-toggle" />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row" id="portrait-dir-row" style="margin-top:6px; display:none">
+        <span class="toggle-label">← 왼쪽 회전</span>
+        <label class="toggle">
+          <input type="checkbox" id="portrait-left-toggle" />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div id="portrait-sizes" style="display:none; flex-direction:column; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid #1e1e1e;">
+        <div class="setting-row-inline">
+          <span class="setting-label" style="margin-bottom:0">시계 (세로)</span>
+          <span id="p-clock-size-val" style="font-size:0.8rem;font-weight:700;color:#888;min-width:40px;text-align:right">12rem</span>
+        </div>
+        <input type="range" id="p-clock-size" min="2" max="20" step="0.5" value="12" />
+        <div class="setting-row-inline">
+          <span class="setting-label" style="margin-bottom:0">탈리 (세로)</span>
+          <span id="p-tally-size-val" style="font-size:0.8rem;font-weight:700;color:#888;min-width:40px;text-align:right">4rem</span>
+        </div>
+        <input type="range" id="p-tally-size" min="1" max="16" step="0.5" value="4" />
+        <div class="setting-row-inline">
+          <span class="setting-label" style="margin-bottom:0">일정 (세로)</span>
+          <span id="p-sch-size-val" style="font-size:0.8rem;font-weight:700;color:#888;min-width:40px;text-align:right">1.2rem</span>
+        </div>
+        <input type="range" id="p-sch-size" min="0.4" max="6" step="0.1" value="1.2" />
+      </div>
     </div>
     <div class="setting-row">
       <span class="setting-label">캘린더 선택</span>
@@ -433,17 +473,7 @@
 
   <!-- 상태 박스 -->
   <div id="status-box">
-    <img id="sbs-logo" src="/static/image.png" alt="SBS" />
     <span id="status-text">방송 준비중</span>
-    <svg id="mic-bg" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" fill="white">
-      <rect x="38" y="8" width="44" height="72" rx="22"/>
-      <rect x="38" y="30" width="44" height="3" rx="1.5" fill="black" opacity="0.2"/>
-      <rect x="38" y="42" width="44" height="3" rx="1.5" fill="black" opacity="0.2"/>
-      <rect x="38" y="54" width="44" height="3" rx="1.5" fill="black" opacity="0.2"/>
-      <path d="M22 76 Q22 108 60 108 Q98 108 98 76" stroke="white" stroke-width="7" fill="none" stroke-linecap="round"/>
-      <rect x="56.5" y="108" width="7" height="32" rx="3.5"/>
-      <rect x="32" y="138" width="56" height="8" rx="4"/>
-    </svg>
   </div>
 
   <!-- 시계 + 날짜 + 날씨 -->
@@ -498,51 +528,151 @@
 
   const DAYS = ['일','월','화','수','목','금','토'];
 
-  /* ── 시계 크기 설정 ─────────────────────────────────────────── */
-  const SAVED_SIZE = parseFloat(localStorage.getItem('clockSize') || '13');
-  clockSizeSlider.value = SAVED_SIZE;
-  applyClockSize(SAVED_SIZE);
-
-  function applyClockSize(rem) {
-    clockEl.style.fontSize = rem + 'rem';
-    clockSizeVal.textContent = rem + 'rem';
+  /* ── 설정 저장/불러오기 ──────────────────────────────────────── */
+  function isPortraitMode() {
+    return document.body.classList.contains('portrait-right') ||
+           document.body.classList.contains('portrait-left');
   }
-  clockSizeSlider.addEventListener('input', () => {
-    const v = parseFloat(clockSizeSlider.value);
-    applyClockSize(v);
-    localStorage.setItem('clockSize', v);
-  });
 
-  /* ── 탈리 크기 설정 ─────────────────────────────────────────── */
-  const SAVED_TALLY = parseFloat(localStorage.getItem('tallySize') || '3');
-  tallySizeSlider.value = SAVED_TALLY;
-  applyTallySize(SAVED_TALLY);
-
-  function applyTallySize(rem) {
-    document.getElementById('status-text').style.fontSize = rem + 'rem';
-    tallySizeVal.textContent = rem + 'rem';
+  function currentSettings() {
+    return {
+      clockSize:    parseFloat(clockSizeSlider.value),
+      tallySize:    parseFloat(tallySizeSlider.value),
+      schSize:      parseFloat(schSizeSlider.value),
+      timeOffset:   timeOffsetSec,
+      'cal-ts5':    calTs5.checked,
+      'cal-ts5b':   calTs5b.checked,
+      portrait:     document.getElementById('portrait-toggle').checked,
+      portraitLeft: document.getElementById('portrait-left-toggle').checked,
+      pClockSize:   parseFloat(document.getElementById('p-clock-size').value),
+      pTallySize:   parseFloat(document.getElementById('p-tally-size').value),
+      pSchSize:     parseFloat(document.getElementById('p-sch-size').value),
+    };
   }
-  tallySizeSlider.addEventListener('input', () => {
-    const v = parseFloat(tallySizeSlider.value);
-    applyTallySize(v);
-    localStorage.setItem('tallySize', v);
-  });
 
-  /* ── 일정 크기 설정 ─────────────────────────────────────────── */
-  const SAVED_SCH = parseFloat(localStorage.getItem('schSize') || '1.3');
-  schSizeSlider.value = SAVED_SCH;
-  applySchSize(SAVED_SCH);
+  function saveSetting(key, val) {
+    localStorage.setItem(key, val);
+    fetch('/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(currentSettings()),
+    });
+  }
 
-  function applySchSize(rem) {
+  /* ── 크기 실제 적용 (가로/세로 공용) ───────────────────────── */
+  function setClockFontSize(rem) {
+    if (isPortraitMode()) {
+      // CSS min(var(--clock-fs), 20vh) 가 폭 초과를 원천 차단
+      // JS는 캡(20vh) 초과분을 scaleY 세로 성장으로만 담당
+      clockEl.style.removeProperty('font-size');
+      clockEl.style.setProperty('--clock-fs', rem + 'rem');
+      const capPx  = window.innerHeight * 0.20; // 20vh = CSS min() 캡
+      const capRem = capPx / 16;
+      if (rem > capRem) {
+        const scale    = rem / capRem;
+        const maxScale = (window.innerWidth - 60) / Math.max(capPx, 1);
+        clockEl.style.transform = `scaleY(${Math.min(scale, maxScale).toFixed(3)})`;
+      } else {
+        clockEl.style.transform = '';
+      }
+    } else {
+      clockEl.style.removeProperty('--clock-fs');
+      clockEl.style.transform = '';
+      clockEl.style.fontSize = rem + 'rem';
+    }
+  }
+  function setTallyFontSize(rem) {
+    const el = document.getElementById('status-text');
+    el.style.fontSize = rem + 'rem';
+    if (isPortraitMode()) {
+      const maxPx = window.innerHeight - 80;
+      const w = el.offsetWidth; // CSS 텍스트 폭
+      if (w > maxPx) {
+        el.style.fontSize = (rem * maxPx / w) + 'rem';
+      }
+    }
+  }
+  function setSchFontSize(rem) {
     document.querySelectorAll('.sch-name').forEach(el => el.style.fontSize = rem + 'rem');
     document.querySelectorAll('.sch-timerange').forEach(el => el.style.fontSize = (rem * 0.75) + 'rem');
     document.querySelectorAll('.sch-label').forEach(el => el.style.fontSize = '');
-    schSizeVal.textContent = rem + 'rem';
   }
+
+  /* ── 시계 크기 설정 (가로) ──────────────────────────────────── */
+  function applyClockSize(rem) {
+    clockSizeVal.textContent = rem + 'rem';
+    clockSizeSlider.value = rem;
+    if (!isPortraitMode()) setClockFontSize(rem);
+  }
+  applyClockSize(parseFloat(localStorage.getItem('clockSize') || '13'));
+  clockSizeSlider.addEventListener('input', () => {
+    const v = parseFloat(clockSizeSlider.value);
+    applyClockSize(v);
+    saveSetting('clockSize', v);
+  });
+
+  /* ── 탈리 크기 설정 (가로) ──────────────────────────────────── */
+  function applyTallySize(rem) {
+    tallySizeVal.textContent = rem + 'rem';
+    tallySizeSlider.value = rem;
+    if (!isPortraitMode()) setTallyFontSize(rem);
+  }
+  applyTallySize(parseFloat(localStorage.getItem('tallySize') || '3'));
+  tallySizeSlider.addEventListener('input', () => {
+    const v = parseFloat(tallySizeSlider.value);
+    applyTallySize(v);
+    saveSetting('tallySize', v);
+  });
+
+  /* ── 일정 크기 설정 (가로) ──────────────────────────────────── */
+  function applySchSize(rem) {
+    schSizeVal.textContent = rem + 'rem';
+    schSizeSlider.value = rem;
+    if (!isPortraitMode()) setSchFontSize(rem);
+  }
+  applySchSize(parseFloat(localStorage.getItem('schSize') || '1.3'));
   schSizeSlider.addEventListener('input', () => {
     const v = parseFloat(schSizeSlider.value);
     applySchSize(v);
-    localStorage.setItem('schSize', v);
+    saveSetting('schSize', v);
+  });
+
+  /* ── 세로 전용 크기 설정 ────────────────────────────────────── */
+  const pClockSlider  = document.getElementById('p-clock-size');
+  const pClockVal     = document.getElementById('p-clock-size-val');
+  const pTallySlider  = document.getElementById('p-tally-size');
+  const pTallyVal     = document.getElementById('p-tally-size-val');
+  const pSchSlider    = document.getElementById('p-sch-size');
+  const pSchVal       = document.getElementById('p-sch-size-val');
+  const portraitSizes = document.getElementById('portrait-sizes');
+
+  function applyPortraitSizes() {
+    setClockFontSize(parseFloat(pClockSlider.value));
+    setTallyFontSize(parseFloat(pTallySlider.value));
+    setSchFontSize(parseFloat(pSchSlider.value));
+  }
+
+  pClockSlider.value = parseFloat(localStorage.getItem('pClockSize') || '12');
+  pClockVal.textContent = pClockSlider.value + 'rem';
+  pTallySlider.value = parseFloat(localStorage.getItem('pTallySize') || '4');
+  pTallyVal.textContent = pTallySlider.value + 'rem';
+  pSchSlider.value = parseFloat(localStorage.getItem('pSchSize') || '1.2');
+  pSchVal.textContent = pSchSlider.value + 'rem';
+
+  pClockSlider.addEventListener('input', () => {
+    pClockVal.textContent = pClockSlider.value + 'rem';
+    if (isPortraitMode()) setClockFontSize(parseFloat(pClockSlider.value));
+    saveSetting('pClockSize', pClockSlider.value);
+  });
+  pTallySlider.addEventListener('input', () => {
+    pTallyVal.textContent = pTallySlider.value + 'rem';
+    if (isPortraitMode()) setTallyFontSize(parseFloat(pTallySlider.value));
+    saveSetting('pTallySize', pTallySlider.value);
+  });
+  pSchSlider.addEventListener('input', () => {
+    pSchVal.textContent = pSchSlider.value + 'rem';
+    if (isPortraitMode()) setSchFontSize(parseFloat(pSchSlider.value));
+    saveSetting('pSchSize', pSchSlider.value);
   });
 
   /* ── 설정 팝업 토글 ─────────────────────────────────────────── */
@@ -567,7 +697,7 @@
   timeOffsetSlider.addEventListener('input', () => {
     timeOffsetSec = parseFloat(timeOffsetSlider.value);
     timeOffsetVal.textContent = (timeOffsetSec >= 0 ? '+' : '') + timeOffsetSec.toFixed(1) + '초';
-    localStorage.setItem('timeOffset', timeOffsetSec);
+    saveSetting('timeOffset', timeOffsetSec);
   });
 
   function getNow() {
@@ -628,8 +758,8 @@
   calTs5.checked  = localStorage.getItem('cal-ts5')  !== 'false';
   calTs5b.checked = localStorage.getItem('cal-ts5b') !== 'false';
 
-  calTs5.addEventListener('change',  () => { localStorage.setItem('cal-ts5',  calTs5.checked);  loadSchedule(); });
-  calTs5b.addEventListener('change', () => { localStorage.setItem('cal-ts5b', calTs5b.checked); loadSchedule(); });
+  calTs5.addEventListener('change',  () => { saveSetting('cal-ts5',  calTs5.checked);  loadSchedule(); });
+  calTs5b.addEventListener('change', () => { saveSetting('cal-ts5b', calTs5b.checked); loadSchedule(); });
 
   function getCalendarUrl() {
     const params = [];
@@ -669,16 +799,66 @@
           document.getElementById('sch-next-name'),
           d.next
         );
-        if (!d.current) {
-          document.getElementById('sch-cur-name').innerHTML = '<span class="sch-none">일정 없음</span>';
-          document.getElementById('sch-cur-time').textContent = '—';
-        }
       })
-      .then(() => applySchSize(parseFloat(localStorage.getItem('schSize') || '1.3')))
       .catch(() => {});
   }
   loadSchedule();
   setInterval(loadSchedule, 60 * 1000);
+
+  /* ── 세로 모드 + 방향 ───────────────────────────────────────── */
+  const portraitToggle     = document.getElementById('portrait-toggle');
+  const portraitLeftToggle = document.getElementById('portrait-left-toggle');
+  const portraitDirRow     = document.getElementById('portrait-dir-row');
+
+  function applyPortrait(on, left) {
+    document.body.classList.remove('portrait-right', 'portrait-left');
+    if (on) document.body.classList.add(left ? 'portrait-left' : 'portrait-right');
+    portraitToggle.checked       = on;
+    portraitLeftToggle.checked   = left;
+    portraitDirRow.style.display = on ? 'flex' : 'none';
+    portraitSizes.style.display  = on ? 'flex' : 'none';
+    if (on) {
+      applyPortraitSizes();
+    } else {
+      setClockFontSize(parseFloat(clockSizeSlider.value));
+      setTallyFontSize(parseFloat(tallySizeSlider.value));
+      setSchFontSize(parseFloat(schSizeSlider.value));
+    }
+  }
+
+  const savedPortrait     = localStorage.getItem('portrait')     === 'true';
+  const savedPortraitLeft = localStorage.getItem('portraitLeft') === 'true';
+  applyPortrait(savedPortrait, savedPortraitLeft);
+
+  portraitToggle.addEventListener('change', () => {
+    applyPortrait(portraitToggle.checked, portraitLeftToggle.checked);
+    saveSetting('portrait', portraitToggle.checked);
+  });
+  portraitLeftToggle.addEventListener('change', () => {
+    applyPortrait(portraitToggle.checked, portraitLeftToggle.checked);
+    saveSetting('portraitLeft', portraitLeftToggle.checked);
+  });
+
+  /* ── 서버 설정 동기화 (브라우저 캐시 초기화 후에도 유지) ─────── */
+  fetch('/settings')
+    .then(r => r.json())
+    .then(s => {
+      if (s.clockSize  !== undefined) applyClockSize(s.clockSize);
+      if (s.tallySize  !== undefined) applyTallySize(s.tallySize);
+      if (s.schSize    !== undefined) applySchSize(s.schSize);
+      if (s.timeOffset !== undefined) {
+        timeOffsetSec = s.timeOffset;
+        timeOffsetSlider.value = s.timeOffset;
+        timeOffsetVal.textContent = (s.timeOffset >= 0 ? '+' : '') + parseFloat(s.timeOffset).toFixed(1) + '초';
+      }
+      if (s['cal-ts5']  !== undefined) calTs5.checked  = s['cal-ts5'];
+      if (s['cal-ts5b'] !== undefined) calTs5b.checked = s['cal-ts5b'];
+      if (s.pClockSize !== undefined) { pClockSlider.value = s.pClockSize; pClockVal.textContent = s.pClockSize + 'rem'; }
+      if (s.pTallySize !== undefined) { pTallySlider.value = s.pTallySize; pTallyVal.textContent = s.pTallySize + 'rem'; }
+      if (s.pSchSize   !== undefined) { pSchSlider.value   = s.pSchSize;   pSchVal.textContent   = s.pSchSize   + 'rem'; }
+      if (s.portrait !== undefined) applyPortrait(s.portrait, s.portraitLeft || false);
+    })
+    .catch(() => {});
 
   /* ── SSE 탈리 ────────────────────────────────────────────────── */
   function applyState(state) {
