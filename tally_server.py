@@ -4,6 +4,7 @@ import time
 import re
 import os
 import json
+import tomllib
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, Response, render_template, jsonify, request
@@ -30,6 +31,25 @@ CALENDAR_IDS = {
 CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), 'credentials.json')
 TOKEN_FILE       = os.path.join(os.path.dirname(__file__), 'token.json')
 SETTINGS_FILE    = os.path.join(os.path.dirname(__file__), 'settings.json')
+
+DEFAULT_HOST = '0.0.0.0'
+DEFAULT_PORT = 5005
+DEFAULT_NAME = 'tally'
+SERVER_TOML = os.path.join(os.path.dirname(__file__), 'server.toml')
+
+def load_server_config(path=SERVER_TOML):
+    defaults = {'name': DEFAULT_NAME, 'host': DEFAULT_HOST, 'port': DEFAULT_PORT}
+    try:
+        with open(path, 'rb') as f:
+            services = tomllib.load(f).get('service', [])
+        svc = services[0] if services else {}
+        return {
+            'name': svc.get('name', defaults['name']),
+            'host': svc.get('host', defaults['host']),
+            'port': int(svc.get('port', defaults['port'])),
+        }
+    except (FileNotFoundError, tomllib.TOMLDecodeError, ValueError, IndexError):
+        return defaults
 
 def get_dm7_host():
     try:
@@ -264,8 +284,10 @@ def get_calendar():
 
 
 if __name__ == '__main__':
+    cfg = load_server_config()
     print("[Auth] Google 인증 확인 중...", flush=True)
     get_calendar_service()
     print("[Auth] 인증 완료!", flush=True)
     threading.Thread(target=dm7_listener, daemon=True, name='dm7').start()
-    app.run(host='0.0.0.0', port=5000, threaded=True)
+    print(f"[tally] '{cfg['name']}' → http://{cfg['host']}:{cfg['port']}", flush=True)
+    app.run(host=cfg['host'], port=cfg['port'], threaded=True)

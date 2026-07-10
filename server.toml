@@ -1,0 +1,11 @@
+[[service]]
+name = "tally"
+type = "web"
+description = "뉴스센터 온에어 tally 상황판 (DM7 on-air + Google Calendar 표출)"
+command = "bash setup/run.sh"
+host = "0.0.0.0"
+port = 5005
+health_path = "/health"
+pidfile = "data/tally.pid"
+# autostart_service 는 반드시 위 name 과 동일하게 유지 (systemd 유닛명)
+autostart_service = "tally"
