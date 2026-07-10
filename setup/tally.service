@@ -1,0 +1,17 @@
+# setup/tally.service — systemd unit TEMPLATE.
+# install.sh 가 server.toml 의 name 으로 /etc/systemd/system/<name>.service 로 설치하고
+# __DESCRIPTION__ 을 치환하며, User/Group=ncenter + WorkingDirectory=<배포경로> drop-in 을 만든다.
+# 값 줄에 인라인 '#' 주석 금지(systemd 가 줄 전체를 값으로 읽음 → 200/CHDIR).
+[Unit]
+Description=__DESCRIPTION__
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env bash setup/run.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

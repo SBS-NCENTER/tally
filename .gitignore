@@ -3,3 +3,8 @@ token.json
 tally.log
 __pycache__/
 *.pyc
+.venv/
+data/
+*.pid
+.DS_Store
+.superpowers/
