@@ -48,7 +48,7 @@ def load_server_config(path=SERVER_TOML):
             'host': svc.get('host', defaults['host']),
             'port': int(svc.get('port', defaults['port'])),
         }
-    except (FileNotFoundError, tomllib.TOMLDecodeError, ValueError, IndexError):
+    except (FileNotFoundError, tomllib.TOMLDecodeError, ValueError, IndexError, KeyError, AttributeError, TypeError):
         return defaults
 
 def write_pidfile(path=None):
@@ -98,6 +98,8 @@ _creds = None
 _creds_lock = threading.Lock()
 
 def get_calendar_service():
+    """Calendar service 반환. 비대화형: token 로드/refresh만; 유효·갱신가능 토큰이 없으면
+    RuntimeError. 서버는 절대 OAuth에서 블록되지 않음 (대화형 발급 = mint_token(), setup/authorize.py)."""
     global _creds
     with _creds_lock:
         if _creds is None or not _creds.valid:
@@ -107,13 +109,25 @@ def get_calendar_service():
             if not creds or not creds.valid:
                 if creds and creds.expired and creds.refresh_token:
                     creds.refresh(Request())
+                    with open(TOKEN_FILE, 'w') as f:
+                        f.write(creds.to_json())
                 else:
-                    flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-                    creds = flow.run_local_server(port=0)
-                with open(TOKEN_FILE, 'w') as f:
-                    f.write(creds.to_json())
+                    raise RuntimeError(
+                        f"유효한 {TOKEN_FILE} 없음 — 브라우저 있는 머신에서 "
+                        "`uv run python setup/authorize.py` 로 발급 후 서버에 배치하세요."
+                    )
             _creds = creds
     return build('calendar', 'v3', credentials=_creds)
+
+
+def mint_token():
+    """대화형 OAuth(브라우저)로 token.json 생성. setup/authorize.py(브라우저 있는 머신) 전용
+    — 서버(headless)에서는 호출하지 않음."""
+    flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+    creds = flow.run_local_server(port=0)
+    with open(TOKEN_FILE, 'w') as f:
+        f.write(creds.to_json())
+    return creds
 
 
 # ── DM7 TCP 리스너 ─────────────────────────────────────────────────────────────
@@ -297,9 +311,8 @@ def get_calendar():
 if __name__ == '__main__':
     cfg = load_server_config()
     write_pidfile()
-    print("[Auth] Google 인증 확인 중...", flush=True)
-    get_calendar_service()
-    print("[Auth] 인증 완료!", flush=True)
+    if not os.path.exists(TOKEN_FILE):
+        print(f"[Auth] 경고: {TOKEN_FILE} 없음 — /calendar 는 발급 전까지 에러 반환(핵심 tally 는 정상 동작).", flush=True)
     threading.Thread(target=dm7_listener, daemon=True, name='dm7').start()
     print(f"[tally] '{cfg['name']}' → http://{cfg['host']}:{cfg['port']}", flush=True)
     app.run(host=cfg['host'], port=cfg['port'], threaded=True)

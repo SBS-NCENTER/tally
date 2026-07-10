@@ -19,3 +19,13 @@ def test_load_server_config_defaults_when_missing(tmp_path):
         "host": "0.0.0.0",
         "port": 5005,
     }
+
+
+def test_load_server_config_malformed_falls_back(tmp_path):
+    toml = tmp_path / "server.toml"
+    toml.write_text('[service]\nname = "oops"\n')  # singular table (should be [[service]]) → dict, not list
+    assert tally_server.load_server_config(str(toml)) == {
+        "name": "tally",
+        "host": "0.0.0.0",
+        "port": 5005,
+    }

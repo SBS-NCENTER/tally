@@ -126,3 +126,11 @@ Python **Flask** 앱 (`tally_server.py`, ~272줄). 세 가지 기능:
 - `run.sh` 진입점 형태(직접 `python tally_server.py` vs 얇은 wrapper) — plan에서 확정.
 - `install.sh`의 `server.toml` `name` 파싱 방식(순수 bash grep/sed vs `python -c`로 tomllib) — plan에서 확정.
 - `token.json` 재활용 여부 = schedule-dashboard scope 실측 후 확정(일치 시 재활용, 아니면 재발급).
+
+## 9. 구현 중 변경 (2026-07-10, 최종 whole-branch 리뷰 반영)
+
+- **캘린더 인증을 서버 startup에서 디커플 (option C).** 최종 리뷰 발견: `__main__`이 `app.run()` 전 `get_calendar_service()`를 eager 호출 → token 없거나 만료 시 headless에서 `run_local_server`가 **hang** → tally 전체(on-air 감지 포함)가 silent down. 방송용 핵심 기능이 Google/토큰에 결합되는 위험.
+  - 수정: `get_calendar_service()` = **비대화형**(token 로드/refresh만, 없으면 `RuntimeError`) → `/calendar`의 기존 try/except가 잡아 에러 JSON 반환. 대화형 OAuth는 `mint_token()`으로 분리(`setup/authorize.py` 전용, 서버 경로엔 없음). `__main__`은 eager 인증 제거(token 없으면 **비치명 경고만**) → 서버+DM7+SSE+`/health`는 토큰 상태와 무관하게 항상 기동.
+  - → §B의 "OAuth ... 없으면 `run_local_server`"는 **서버 경로에선 폐기**(raise). `run_local_server`는 `mint_token`(발급 도구)에만.
+- **`setup/authorize.py`**: `uv run` 실행 시 repo root를 `sys.path`에 추가(`package=false`라 `ModuleNotFoundError` 방지) + `mint_token()` 호출.
+- **`load_server_config`**: 구조적 `server.toml` 오류(`[service]` 오타 등) 시에도 기본값 fallback(except에 `KeyError`/`AttributeError`/`TypeError` 추가) — 멀티 부조정실 hand-edit 대비(T4b).
