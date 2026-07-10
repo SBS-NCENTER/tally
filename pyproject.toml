@@ -1,0 +1,24 @@
+[project]
+name = "tally"
+version = "1.3.0"
+description = "뉴스센터 온에어 tally 상황판 (DM7 on-air 감지 + Google Calendar 표출 + SSE)"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Joo Ho Gun" }]
+dependencies = [
+    "flask>=3.1.0",
+    "google-auth>=2.0.0",
+    "google-auth-oauthlib>=1.0.0",
+    "google-auth-httplib2>=0.2.0",
+    "google-api-python-client>=2.0.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0.0"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
