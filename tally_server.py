@@ -51,6 +51,12 @@ def load_server_config(path=SERVER_TOML):
     except (FileNotFoundError, tomllib.TOMLDecodeError, ValueError, IndexError):
         return defaults
 
+def write_pidfile(path=None):
+    path = path or os.path.join(os.path.dirname(__file__), 'data', 'tally.pid')
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w') as f:
+        f.write(str(os.getpid()))
+
 def get_dm7_host():
     try:
         with open(SETTINGS_FILE) as f:
@@ -160,6 +166,11 @@ def dm7_listener():
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/health')
+def health():
+    return jsonify(status='ok')
 
 
 @app.route('/settings', methods=['GET'])
@@ -285,6 +296,7 @@ def get_calendar():
 
 if __name__ == '__main__':
     cfg = load_server_config()
+    write_pidfile()
     print("[Auth] Google 인증 확인 중...", flush=True)
     get_calendar_service()
     print("[Auth] 인증 완료!", flush=True)
