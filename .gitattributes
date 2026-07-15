@@ -1,0 +1,10 @@
+# Store all text files with LF in the repo (Windows dev <-> Linux prod safety)
+* text=auto
+
+# Linux-executed files must check out as LF even on Windows
+# (CRLF in these = "bad interpreter: /bin/bash^M" on the server)
+*.sh text eol=lf
+*.service text eol=lf
+
+# Windows batch launcher checks out as CRLF (cmd.exe goto/label quirks)
+*.bat text eol=crlf

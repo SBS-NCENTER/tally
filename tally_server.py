@@ -54,12 +54,12 @@ def load_server_config(path=SERVER_TOML):
 def write_pidfile(path=None):
     path = path or os.path.join(os.path.dirname(__file__), 'data', 'tally.pid')
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         f.write(str(os.getpid()))
 
 def get_dm7_host():
     try:
-        with open(SETTINGS_FILE) as f:
+        with open(SETTINGS_FILE, encoding='utf-8') as f:
             return json.load(f).get('dm7Host', DM7_HOST_DEFAULT)
     except Exception:
         return DM7_HOST_DEFAULT
@@ -109,7 +109,7 @@ def get_calendar_service():
             if not creds or not creds.valid:
                 if creds and creds.expired and creds.refresh_token:
                     creds.refresh(Request())
-                    with open(TOKEN_FILE, 'w') as f:
+                    with open(TOKEN_FILE, 'w', encoding='utf-8') as f:
                         f.write(creds.to_json())
                 else:
                     raise RuntimeError(
@@ -125,7 +125,7 @@ def mint_token():
     — 서버(headless)에서는 호출하지 않음."""
     flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
     creds = flow.run_local_server(port=0)
-    with open(TOKEN_FILE, 'w') as f:
+    with open(TOKEN_FILE, 'w', encoding='utf-8') as f:
         f.write(creds.to_json())
     return creds
 
@@ -190,7 +190,7 @@ def health():
 @app.route('/settings', methods=['GET'])
 def get_settings():
     try:
-        with open(SETTINGS_FILE) as f:
+        with open(SETTINGS_FILE, encoding='utf-8') as f:
             return jsonify(json.load(f))
     except Exception:
         return jsonify({})
@@ -198,7 +198,7 @@ def get_settings():
 @app.route('/settings', methods=['POST'])
 def save_settings():
     try:
-        with open(SETTINGS_FILE, 'w') as f:
+        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
             json.dump(request.get_json(force=True), f)
     except Exception:
         pass
