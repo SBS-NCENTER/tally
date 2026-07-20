@@ -3,6 +3,7 @@ import threading
 import time
 import re
 import os
+import io
 import json
 import tomllib
 from datetime import datetime, timedelta
@@ -13,6 +14,8 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+import qrcode
+import qrcode.image.svg
 
 app = Flask(__name__)
 
@@ -177,14 +180,43 @@ def dm7_listener():
 
 
 # ── Flask ─────────────────────────────────────────────────────────────────────
+def get_lan_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('8.8.8.8', 80))  # 실제 전송 없음 — 라우팅용 로컬 인터페이스 IP 확인용
+        return s.getsockname()[0]
+    except OSError:
+        return '127.0.0.1'
+    finally:
+        s.close()
+
+
+def get_control_url():
+    port = request.host.rsplit(':', 1)[-1] if ':' in request.host else '80'
+    return f'http://{get_lan_ip()}:{port}/'
+
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', control_url=get_control_url())
 
 
 @app.route('/health')
 def health():
     return jsonify(status='ok')
+
+
+@app.route('/control-url')
+def control_url():
+    return jsonify(url=get_control_url())
+
+
+@app.route('/qr.svg')
+def qr_code():
+    img = qrcode.make(get_control_url(), image_factory=qrcode.image.svg.SvgPathImage)
+    buf = io.BytesIO()
+    img.save(buf)
+    return Response(buf.getvalue(), mimetype='image/svg+xml')
 
 
 @app.route('/settings', methods=['GET'])
