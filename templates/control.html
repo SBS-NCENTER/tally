@@ -101,6 +101,25 @@
       margin-top: 2px;
     }
 
+    .sps-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #1a1a1a;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+    }
+    .sps-row:last-child { margin-bottom: 0; }
+    .sps-row.past { opacity: 0.4; }
+    .sps-row.current { background: #3a2a10; border: 1px solid #f0a030; }
+    .sps-row .sps-time { color: #ddd; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .sps-row .sps-name { color: #aaa; margin-top: 2px; font-size: 0.76rem; }
+    .sps-row .sps-ts { color: #f0a030; font-weight: 700; font-size: 0.76rem; white-space: nowrap; }
+    .sps-empty { color: #666; font-size: 0.78rem; text-align: center; padding: 10px 0; }
+
     input[type=range] {
       -webkit-appearance: none;
       width: 100%;
@@ -132,6 +151,17 @@
 
     .time-input-row { display: flex; gap: 8px; align-items: center; }
     .time-input-row input[type=text] { flex: 1; }
+
+    select.sps-select {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #fff;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-size: 0.9rem;
+      width: 100%;
+    }
     button.clear-btn {
       flex-shrink: 0;
       padding: 8px 12px;
@@ -362,28 +392,61 @@
         </div>
         <div class="setting-row">
           <div class="setting-row-inline"><span>글자 크기</span><span class="val" id="sch-size-val">1.00x</span></div>
-          <input type="range" id="sch-size" min="0.5" max="2" step="0.05" value="1" />
+          <input type="range" id="sch-size" min="0.6" max="2.2" step="0.05" value="1" />
         </div>
       </div>
     </div>
 
     <div class="sub-panel" id="countdown-sub">
       <div class="setting-row">
-        <span class="setting-label" style="margin-bottom:4px">방송 시작 시각</span>
-        <div class="time-input-row">
-          <button type="button" class="nday-toggle" id="broadcast-time-nday" title="익일(다음날)">N</button>
-          <input type="text" id="broadcast-time" placeholder="18:00:00" inputmode="numeric" maxlength="8" />
-          <button type="button" class="clear-btn" id="broadcast-time-clear">지우기</button>
+        <div class="toggle-row">
+          <span class="toggle-label">🔗 자동 운행표 연동</span>
+          <label class="toggle"><input type="checkbox" id="sps-auto-toggle" checked /><span class="toggle-track"></span></label>
         </div>
+        <div class="setting-hint">켜면 SPS 운행표에서 생방송(TS-n) 구간을 자동으로 찾아 시작/종료 시각을 채웁니다. 끄면 아래를 직접 입력하세요.</div>
       </div>
+
+      <div id="sps-studio-row" class="setting-row">
+        <span class="setting-label" style="margin-bottom:4px">부조정실 선택</span>
+        <select id="sps-studio-select" class="sps-select">
+          <option value="">전체 (TS-1~7)</option>
+          <option value="TS-1">TS-1 (1부조)</option>
+          <option value="TS-2">TS-2 (2부조)</option>
+          <option value="TS-3">TS-3 (3부조)</option>
+          <option value="TS-4">TS-4 (4부조)</option>
+          <option value="TS-5">TS-5 (5부조)</option>
+          <option value="TS-6">TS-6 (6부조)</option>
+          <option value="TS-7">TS-7 (7부조)</option>
+        </select>
+        <div class="setting-hint">화면(방송 화면)에도 여기서 고른 부조정실의 생방송만 반영됩니다.</div>
+      </div>
+
+      <div id="sps-live-list" class="setting-row"></div>
+
       <div class="setting-row">
-        <span class="setting-label" style="margin-bottom:4px">방송 종료 예정</span>
-        <div class="time-input-row">
-          <button type="button" class="nday-toggle" id="broadcast-end-time-nday" title="익일(다음날)">N</button>
-          <input type="text" id="broadcast-end-time" placeholder="18:00:00" inputmode="numeric" maxlength="8" />
-          <button type="button" class="clear-btn" id="broadcast-end-time-clear">지우기</button>
+        <div class="setting-row-inline"><span>⏭ 다음 방송 전환 대기</span><span class="val" id="sps-gap-val">즉시 전환</span></div>
+        <input type="range" id="sps-gap" min="0" max="30" step="1" value="0" />
+        <div class="setting-hint">방송이 끝난 직후 바로 다음 방송 정보로 넘어갈지, 몇 분 더 방금 끝난 방송을 보여줄지 정합니다.</div>
+      </div>
+
+      <div id="sps-manual-box">
+        <div class="setting-row">
+          <span class="setting-label" style="margin-bottom:4px">방송 시작 시각</span>
+          <div class="time-input-row">
+            <button type="button" class="nday-toggle" id="broadcast-time-nday" title="익일(다음날)">N</button>
+            <input type="text" id="broadcast-time" placeholder="18:00:00" inputmode="numeric" maxlength="8" />
+            <button type="button" class="clear-btn" id="broadcast-time-clear">지우기</button>
+          </div>
         </div>
-        <div class="setting-hint">자정을 넘기는 방송이면 N을 켜서 "다음날 이 시각"으로 표시하세요. 예: 시작 23:00 + 종료 N 01:00 = 다음날 새벽 1시 종료.</div>
+        <div class="setting-row">
+          <span class="setting-label" style="margin-bottom:4px">방송 종료 예정</span>
+          <div class="time-input-row">
+            <button type="button" class="nday-toggle" id="broadcast-end-time-nday" title="익일(다음날)">N</button>
+            <input type="text" id="broadcast-end-time" placeholder="18:00:00" inputmode="numeric" maxlength="8" />
+            <button type="button" class="clear-btn" id="broadcast-end-time-clear">지우기</button>
+          </div>
+          <div class="setting-hint">자정을 넘기는 방송이면 N을 켜서 "다음날 이 시각"으로 표시하세요. 예: 시작 23:00 + 종료 N 01:00 = 다음날 새벽 1시 종료.</div>
+        </div>
       </div>
       <button type="button" class="collapse-header" id="cd-size-toggle">
         <span>크기 설정</span>
@@ -396,11 +459,11 @@
         </div>
         <div class="setting-row">
           <div class="setting-row-inline"><span>타이머 글자 크기</span><span class="val" id="cd-text-size-val">1.0x</span></div>
-          <input type="range" id="cd-text-size" min="0.6" max="2.5" step="0.05" value="1" />
+          <input type="range" id="cd-text-size" min="0.6" max="2.2" step="0.05" value="1" />
         </div>
         <div class="setting-row">
           <div class="setting-row-inline"><span>시작/종료 글자 크기</span><span class="val" id="cd-label-size-val">1.0x</span></div>
-          <input type="range" id="cd-label-size" min="0.6" max="2.5" step="0.05" value="1" />
+          <input type="range" id="cd-label-size" min="0.6" max="2.2" step="0.05" value="1" />
         </div>
       </div>
     </div>
@@ -444,7 +507,7 @@
         </div>
         <div class="setting-row">
           <div class="setting-row-inline"><span>글자 크기</span><span class="val" id="sw-text-size-val">1.0x</span></div>
-          <input type="range" id="sw-text-size" min="0.6" max="2.5" step="0.05" value="1" />
+          <input type="range" id="sw-text-size" min="0.6" max="2.2" step="0.05" value="1" />
         </div>
       </div>
     </div>
@@ -462,15 +525,15 @@
       </div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>탈리 글자 크기</span><span class="val" id="tally-size-val">1.00x</span></div>
-        <input type="range" id="tally-size" min="0.5" max="3" step="0.05" value="1" />
+        <input type="range" id="tally-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>시계 박스 높이</span><span class="val" id="clock-box-size-val">1.00x</span></div>
-        <input type="range" id="clock-box-size" min="0.6" max="3" step="0.05" value="1" />
+        <input type="range" id="clock-box-size" min="0.6" max="2" step="0.05" value="1" />
       </div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>시계 글자 크기</span><span class="val" id="clock-size-val">1.00x</span></div>
-        <input type="range" id="clock-size" min="0.5" max="2" step="0.05" value="1" />
+        <input type="range" id="clock-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
     </div>
   </div>
@@ -494,15 +557,15 @@
       </div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>탈리 (세로)</span><span class="val" id="p-tally-size-val">1.00x</span></div>
-        <input type="range" id="p-tally-size" min="0.5" max="2" step="0.05" value="1" />
+        <input type="range" id="p-tally-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>시계 (세로)</span><span class="val" id="p-clock-size-val">1.00x</span></div>
-        <input type="range" id="p-clock-size" min="0.5" max="2" step="0.05" value="1" />
+        <input type="range" id="p-clock-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>일정 (세로)</span><span class="val" id="p-sch-size-val">1.00x</span></div>
-        <input type="range" id="p-sch-size" min="0.5" max="2" step="0.05" value="1" />
+        <input type="range" id="p-sch-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
     </div>
   </div>
@@ -588,6 +651,13 @@
   const broadcastEndTimeInput = document.getElementById('broadcast-end-time');
   const broadcastTimeNdayBtn    = document.getElementById('broadcast-time-nday');
   const broadcastEndTimeNdayBtn = document.getElementById('broadcast-end-time-nday');
+  const spsAutoToggle  = document.getElementById('sps-auto-toggle');
+  const spsManualBox   = document.getElementById('sps-manual-box');
+  const spsLiveList    = document.getElementById('sps-live-list');
+  const spsStudioRow   = document.getElementById('sps-studio-row');
+  const spsStudioSelect = document.getElementById('sps-studio-select');
+  const spsGapSlider  = document.getElementById('sps-gap');
+  const spsGapVal     = document.getElementById('sps-gap-val');
   const cdBoxSizeSlider  = document.getElementById('cd-box-size');
   const cdBoxSizeVal     = document.getElementById('cd-box-size-val');
   const cdTextSizeSlider = document.getElementById('cd-text-size');
@@ -630,6 +700,7 @@
   let swRunning = false, swStartedAt = null, swElapsedMs = 0;
   let timerDurationSec = 300, timerRunning = false, timerStartedAt = null, timerRemainingMs = 300000;
   let bottomMode = 'schedule'; // 'schedule' | 'countdown' | 'stopwatch'
+  let broadcastProgramName = ''; // 자동 운행표 연동이 채워주는 값 — 여기선 읽기 전용, 저장 시 그대로 되돌려보내 유실 방지
 
   function currentSettings() {
     return {
@@ -651,8 +722,12 @@
       gpioPin:      parseInt(gpioPinInput.value, 10) || 17,
       gpioActiveLow: gpioActiveLowToggle.checked,
       countdownMode: bottomMode === 'countdown',
+      spsAutoDetect: spsAutoToggle.checked,
+      spsStudio: spsStudioSelect.value,
+      spsGapMinutes: parseFloat(spsGapSlider.value),
       broadcastTime: broadcastTimeInput.value,
       broadcastEndTime: broadcastEndTimeInput.value,
+      broadcastProgramName: broadcastProgramName,
       broadcastTimeNextDay: broadcastTimeNdayBtn.classList.contains('active'),
       broadcastEndTimeNextDay: broadcastEndTimeNdayBtn.classList.contains('active'),
       cdBoxScale: parseFloat(cdBoxSizeSlider.value),
@@ -679,11 +754,12 @@
 
   let flashTimer = null;
   function saveSettings() {
-    fetch('/settings', {
+    return fetch('/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(currentSettings()),
-    }).then(() => {
+    }).then(r => {
+      if (r.status === 403) { window.location.href = '/control-login'; return; }
       saveFlash.classList.add('show');
       clearTimeout(flashTimer);
       flashTimer = setTimeout(() => saveFlash.classList.remove('show'), 900);
@@ -728,6 +804,13 @@
   refreshLiveRevert();
   liveRevertSlider.addEventListener('input', () => { refreshLiveRevert(); saveSettings(); });
 
+  function refreshSpsGap() {
+    const v = parseFloat(spsGapSlider.value);
+    spsGapVal.textContent = v === 0 ? '즉시 전환' : v + '분 후 전환';
+  }
+  refreshSpsGap();
+  spsGapSlider.addEventListener('input', () => { refreshSpsGap(); saveSettings(); });
+
   portraitToggle.addEventListener('change', () => {
     portraitSub.classList.toggle('open', portraitToggle.checked);
     saveSettings();
@@ -748,6 +831,50 @@
       saveSettings();
     });
   });
+
+  /* ── 자동 운행표 연동(SPS) ──────────────────────────────────────── */
+  function applySpsAutoUI() {
+    spsManualBox.style.display = spsAutoToggle.checked ? 'none' : 'flex';
+    spsManualBox.style.flexDirection = 'column';
+    spsManualBox.style.gap = '16px';
+    spsStudioRow.style.display = spsAutoToggle.checked ? 'flex' : 'none';
+    spsLiveList.style.display = spsAutoToggle.checked ? 'flex' : 'none';
+    spsLiveList.style.flexDirection = 'column';
+    if (spsAutoToggle.checked) pollSpsSchedule();
+  }
+  spsAutoToggle.addEventListener('change', () => {
+    applySpsAutoUI();
+    saveSettings();
+  });
+  spsStudioSelect.addEventListener('change', () => {
+    saveSettings().then(pollSpsSchedule).catch(pollSpsSchedule);
+  });
+
+  function pollSpsSchedule() {
+    if (!spsAutoToggle.checked) return;
+    fetch('/sps/live-schedule')
+      .then(r => r.json())
+      .then(items => {
+        if (!items.length) {
+          spsLiveList.innerHTML = '<div class="sps-empty">오늘 예정된 TS 생방송이 없습니다.</div>';
+          return;
+        }
+        const now = new Date();
+        const nowStr = now.toTimeString().slice(0, 8);
+        spsLiveList.innerHTML = items.map(it => {
+          const state = nowStr >= it.end ? 'past' : (nowStr >= it.start ? 'current' : '');
+          return `<div class="sps-row ${state}">
+            <div>
+              <div class="sps-time">${it.start} ~ ${it.end}</div>
+              <div class="sps-name">${it.programName}</div>
+            </div>
+            <div class="sps-ts">${it.videoSource}</div>
+          </div>`;
+        }).join('');
+      })
+      .catch(() => {});
+  }
+  setInterval(pollSpsSchedule, 15000);
 
   /* 시간 입력칸 — 오전/오후 없는 24시간제 텍스트 입력 (브라우저/OS 로케일과 무관하게 동작) */
   function attachTimeMask(el) {
@@ -976,8 +1103,14 @@
 
       if (s.broadcastTime !== undefined) broadcastTimeInput.value = s.broadcastTime;
       if (s.broadcastEndTime !== undefined) broadcastEndTimeInput.value = s.broadcastEndTime;
+      broadcastProgramName = s.broadcastProgramName || '';
       broadcastTimeNdayBtn.classList.toggle('active', !!s.broadcastTimeNextDay);
       broadcastEndTimeNdayBtn.classList.toggle('active', !!s.broadcastEndTimeNextDay);
+      spsAutoToggle.checked = s.spsAutoDetect === undefined ? true : !!s.spsAutoDetect;
+      spsStudioSelect.value = s.spsStudio || '';
+      if (s.spsGapMinutes !== undefined) spsGapSlider.value = s.spsGapMinutes;
+      refreshSpsGap();
+      applySpsAutoUI();
 
       bottomMode = s.countdownMode ? 'countdown' : (s.stopwatchMode ? 'stopwatch' : 'schedule');
       applyBottomModeUI();

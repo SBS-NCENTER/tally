@@ -1,6 +1,10 @@
 credentials.json
 token.json
 settings.json
+sps_token.json
+.sps_chrome_profile/
+control_auth.json
+flask_secret.key
 tally.log
 __pycache__/
 *.pyc

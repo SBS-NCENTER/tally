@@ -50,7 +50,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: calc(var(--tally-box-scale, 1) * clamp(22px, 4vh, 48px)) clamp(20px, 4vw, 60px) calc(var(--tally-box-scale, 1) * clamp(18px, 3vh, 36px));
+      padding: clamp(22px, calc(var(--tally-box-scale, 1) * 4vh), 68px) clamp(20px, 4vw, 60px) clamp(18px, calc(var(--tally-box-scale, 1) * 3vh), 52px);
       overflow: hidden;
       transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, padding 0.2s ease;
       background: linear-gradient(160deg, #170a0a 0%, #0c0505 55%, #060303 100%);
@@ -107,7 +107,7 @@
       line-height: 1;
       text-shadow: 0 0 40px rgba(255,255,255,0.08);
       transition: font-size 0.2s ease, padding 0.2s ease;
-      padding: calc(var(--clock-box-scale, 1) * clamp(6px, 1.4vh, 18px)) 0;
+      padding: clamp(6px, calc(var(--clock-box-scale, 1) * 1.4vh), 42px) 0;
       width: 8ch;
       text-align: center;
       display: block;
@@ -153,7 +153,7 @@
       background: #0d0d0d;
       display: grid;
       grid-template-columns: 1fr 1.5fr 1fr;
-      min-height: calc(var(--sch-box-scale, 1) * clamp(100px, 17vh, 160px));
+      min-height: clamp(100px, calc(var(--sch-box-scale, 1) * 17vh), 260px);
       transition: min-height 0.2s ease;
     }
     .sch-slot {
@@ -174,7 +174,7 @@
     .sch-slot.next  { opacity: 0.70; }
 
     .sch-label {
-      font-size: calc(var(--sch-scale, 1) * clamp(1rem, 2vw, 1.5rem));
+      font-size: clamp(1rem, calc(var(--sch-scale, 1) * 2vw), 2.4rem);
       font-weight: 800;
       letter-spacing: 0.14em;
       color: #fff;
@@ -226,9 +226,10 @@
       align-items: center;
       justify-content: center;
       min-height: calc(
-        var(--cd-box-scale, 1) * clamp(90px, 14vh, 150px) +
-        var(--cd-text-scale, 1) * clamp(40px, 6vh, 70px)
+        clamp(90px, calc(var(--cd-box-scale, 1) * 14vh), 190px) +
+        clamp(40px, calc(var(--cd-text-scale, 1) * 6vh), 80px)
       );
+      padding-bottom: clamp(12px, calc(var(--cd-text-scale, 1) * 1.8vh), 32px);
       gap: clamp(0px, 0.4vh, 4px);
       transition: background 0.3s ease, box-shadow 0.3s ease, min-height 0.2s ease;
     }
@@ -246,7 +247,7 @@
       flex-direction: row;
       align-items: stretch;
       justify-content: center;
-      min-height: calc(var(--sw-box-scale, 1) * clamp(130px, 20vh, 210px));
+      min-height: clamp(130px, calc(var(--sw-box-scale, 1) * 20vh), 270px);
       position: relative;
       overflow: hidden;
       transition: background 0.3s ease, min-height 0.2s ease;
@@ -306,7 +307,7 @@
       50% { opacity: 0.35; transform: scale(0.7); }
     }
     .tm-label {
-      font-size: calc(var(--sw-text-scale, 1) * clamp(0.85rem, 1.7vw, 1.35rem));
+      font-size: clamp(0.85rem, calc(var(--sw-text-scale, 1) * 1.7vw), 2.1rem);
       font-weight: 800;
       letter-spacing: 0.14em;
       color: #777;
@@ -317,7 +318,7 @@
     .tm-value {
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
-      font-size: calc(var(--sw-text-scale, 1) * clamp(1.8rem, 4.6vw, 3.6rem));
+      font-size: clamp(1.8rem, calc(var(--sw-text-scale, 1) * 4.6vw), 5.4rem);
       font-weight: 900;
       letter-spacing: 0.02em;
       color: #fff;
@@ -332,16 +333,16 @@
     #cd-track {
       --s: var(--cd-box-scale, 1);
       position: relative;
-      width: min(94%, 1500px);
-      height: calc(var(--s) * clamp(50px, 7vh, 84px));
-      margin-top: calc(var(--cd-text-scale, 1) * clamp(46px, 7.2vh, 84px));
+      width: min(74%, 1180px);
+      height: clamp(50px, calc(var(--s) * 7vh), 110px);
+      margin-top: clamp(46px, calc(var(--cd-text-scale, 1) * 7.2vh), 100px);
       display: none;
     }
     #cd-track.show { display: block; }
     #cd-track-line {
       position: absolute;
       left: 0; right: 0; top: 30%;
-      height: calc(var(--s) * clamp(5px, 0.9vh, 9px));
+      height: clamp(5px, calc(var(--s) * 0.9vh), 16px);
       transform: translateY(-50%);
       background: #232323;
       border-radius: 5px;
@@ -349,7 +350,7 @@
     #cd-fill {
       position: absolute;
       left: 0; top: 30%;
-      height: calc(var(--s) * clamp(5px, 0.9vh, 9px));
+      height: clamp(5px, calc(var(--s) * 0.9vh), 16px);
       transform: translateY(-50%);
       background: #2ecc55;
       border-radius: 5px;
@@ -370,8 +371,8 @@
     #cd-marker-end { left: 100%; }
     .cd-marker-dot {
       display: block;
-      width: calc(var(--s) * clamp(14px, 2vh, 22px));
-      height: calc(var(--s) * clamp(14px, 2vh, 22px));
+      width: clamp(14px, calc(var(--s) * 2vh), 36px);
+      height: clamp(14px, calc(var(--s) * 2vh), 36px);
       border-radius: 50%;
       background: #555;
       border: 2px solid #0d0d0d;
@@ -416,16 +417,28 @@
     }
     .cd-marker-label {
       position: absolute;
-      top: calc(var(--s) * clamp(16px, 2.2vh, 24px));
+      top: clamp(18px, calc(var(--s) * 2.6vh), 46px);
       left: 50%;
       transform: translateX(-50%);
-      font-size: calc(var(--cd-label-scale, 1) * clamp(0.85rem, 1.5vw, 1.2rem));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: clamp(0.85rem, calc(var(--cd-label-scale, 1) * 1.5vw), 2.1rem);
       font-weight: 800;
       color: #ffedd5;
       white-space: nowrap;
       letter-spacing: 0.03em;
     }
     #cd-marker-end .cd-marker-label { color: #dce8ff; }
+    .cd-marker-program {
+      color: #f0a030;
+      font-size: 0.8em;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.3em;
+    }
+    .cd-marker-program:empty { display: none; margin-bottom: 0; }
     #cd-runner {
       position: absolute;
       top: 30%;
@@ -441,7 +454,7 @@
       position: absolute;
       left: 0;
       bottom: 100%;
-      margin-bottom: calc(var(--cd-text-scale, 1) * clamp(6px, 1vh, 10px));
+      margin-bottom: clamp(6px, calc(var(--cd-text-scale, 1) * 1vh), 20px);
       transform: translateX(-50%);
       display: flex;
       flex-direction: column;
@@ -458,7 +471,7 @@
       color: #fff;
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
-      padding: calc(var(--cd-text-scale, 1) * clamp(3px, 0.5vh, 5px)) calc(var(--cd-text-scale, 1) * clamp(8px, 1.3vw, 13px));
+      padding: clamp(3px, calc(var(--cd-text-scale, 1) * 0.5vh), 13px) clamp(8px, calc(var(--cd-text-scale, 1) * 1.3vw), 32px);
       border-radius: 9px;
       white-space: nowrap;
       box-shadow: 0 4px 16px rgba(0,0,0,0.5);
@@ -469,7 +482,7 @@
       text-shadow: 0 0 10px rgba(255,237,213,0.4);
       font-weight: 800;
       letter-spacing: 0.02em;
-      font-size: calc(var(--cd-text-scale, 1) * clamp(1rem, 2vw, 1.6rem));
+      font-size: clamp(1rem, calc(var(--cd-text-scale, 1) * 2vw), 2.9rem);
       line-height: 1.15;
     }
     .cd-tag-sub {
@@ -478,7 +491,7 @@
       text-shadow: 0 0 10px rgba(220,232,255,0.4);
       font-weight: 700;
       letter-spacing: 0.01em;
-      font-size: calc(var(--cd-text-scale, 1) * clamp(0.78rem, 1.4vw, 1.15rem));
+      font-size: clamp(0.78rem, calc(var(--cd-text-scale, 1) * 1.4vw), 2.15rem);
       line-height: 1.15;
       margin-top: 2px;
       padding-top: 3px;
@@ -505,8 +518,8 @@
       position: absolute;
       top: 50%;
       right: 100%;
-      width: calc(var(--s) * clamp(60px, 9vw, 130px));
-      height: calc(var(--s) * clamp(4px, 0.7vh, 7px));
+      width: clamp(60px, calc(var(--s) * 9vw), 200px);
+      height: clamp(4px, calc(var(--s) * 0.7vh), 12px);
       transform: translateY(-50%);
       background: linear-gradient(90deg, transparent, rgba(46,204,85,0.6));
       border-radius: 6px;
@@ -516,8 +529,8 @@
       position: absolute;
       top: 50%;
       left: 0;
-      width: calc(var(--s) * clamp(9px, 1.3vh, 15px));
-      height: calc(var(--s) * clamp(9px, 1.3vh, 15px));
+      width: clamp(9px, calc(var(--s) * 1.3vh), 24px);
+      height: clamp(9px, calc(var(--s) * 1.3vh), 24px);
       border-radius: 50%;
       transform: translate(-50%, -50%);
       border: 2px solid rgba(46,204,85,0.55);
@@ -533,8 +546,8 @@
       position: absolute;
       top: 50%;
       left: 0;
-      width: calc(var(--s) * clamp(9px, 1.3vh, 15px));
-      height: calc(var(--s) * clamp(9px, 1.3vh, 15px));
+      width: clamp(9px, calc(var(--s) * 1.3vh), 24px);
+      height: clamp(9px, calc(var(--s) * 1.3vh), 24px);
       border-radius: 50%;
       transform: translate(-50%, -50%);
       background: radial-gradient(circle at 35% 35%, #e0ffe8, #2ecc55 60%, #167a34);
@@ -545,7 +558,7 @@
     #cd-runner.running .cd-runner-head { animation: runner-glow 0.9s ease-in-out infinite; }
     #cd-runner.running .cd-runner-trail {
       background: linear-gradient(90deg, transparent, rgba(240,160,48,0.4));
-      width: calc(var(--s) * clamp(20px, 2.6vw, 45px));
+      width: clamp(20px, calc(var(--s) * 2.6vw), 70px);
     }
     #cd-runner.running .cd-runner-head {
       background: radial-gradient(circle at 35% 35%, #ffe9c2, #f0a030 55%, #a86a10);
@@ -600,11 +613,12 @@
       min-height: unset;
     }
 
-    /* 세로 모드 시계: CSS 레벨에서 폭 초과 원천 차단 */
-    /* 8ch ≈ font-size × 4.8 → 4.8 × fs ≤ 100vh → fs ≤ 20.8vh */
+    /* 세로 모드 시계: CSS 레벨에서 크기 초과 원천 차단.
+       90도 회전 구조라 body의 flex-column이 쌓이는 실제 축은 화면상 "가로"(vw)다 —
+       vh는 회전과 무관하게 항상 실제 뷰포트 높이를 가리키므로 여기선 예산 축이 아니다. */
     body.portrait-right #clock,
     body.portrait-left  #clock {
-      font-size: min(var(--clock-fs, 8rem), 20vh) !important;
+      font-size: min(var(--clock-fs, 8rem), 38vw) !important;
     }
 
   </style>
@@ -655,11 +669,17 @@
       <div id="cd-fill"></div>
       <div class="cd-marker" id="cd-marker-start">
         <span class="cd-marker-dot"></span>
-        <span class="cd-marker-label" id="cd-marker-start-label">시작</span>
+        <span class="cd-marker-label">
+          <span class="cd-marker-program" id="cd-marker-start-program"></span>
+          <span id="cd-marker-start-label">시작</span>
+        </span>
       </div>
       <div class="cd-marker" id="cd-marker-end">
         <span class="cd-marker-dot"></span>
-        <span class="cd-marker-label" id="cd-marker-end-label">종료</span>
+        <span class="cd-marker-label">
+          <span class="cd-marker-program" id="cd-marker-end-program"></span>
+          <span id="cd-marker-end-label">종료</span>
+        </span>
       </div>
       <div id="cd-runner" class="walking">
         <span class="cd-runner-trail"></span>
@@ -714,6 +734,8 @@
   const cdMarkerStart      = document.getElementById('cd-marker-start');
   const cdMarkerStartLabel = document.getElementById('cd-marker-start-label');
   const cdMarkerEndLabel   = document.getElementById('cd-marker-end-label');
+  const cdMarkerStartProgram = document.getElementById('cd-marker-start-program');
+  const cdMarkerEndProgram   = document.getElementById('cd-marker-end-program');
   const stopwatchCol     = document.getElementById('stopwatch-col');
   const stopwatchLabel   = document.getElementById('stopwatch-label');
   const stopwatchTimerEl = document.getElementById('stopwatch-timer');
@@ -747,6 +769,7 @@
   let scheduleVisible = true;
   let broadcastTime = '', broadcastEndTime = '';
   let broadcastTimeNextDay = false, broadcastEndTimeNextDay = false;
+  let broadcastProgramName = '';
   let lastCdSignature = '';
   let cdBoxScale = 1, cdTextScale = 1, cdLabelScale = 1;
   let swBoxScale = 1, swTextScale = 1;
@@ -758,27 +781,45 @@
   /* ── 크기 실제 적용 (가로/세로 공용) ───────────────────────── */
   function setClockFontSize(rem) {
     if (isPortraitMode()) {
+      // 90도 회전 구조라 두 축이 뒤바뀐다:
+      // - #clock의 '너비'(8ch, 로컬 좌표)는 화면에선 '세로' 길이가 됨 → innerHeight 기준 제한
+      // - #center가 상태박스/일정과 나눠쓰는 '쌓임 축' 예산은 화면상 '가로' → innerWidth 기준 제한
+      clockEl.style.transform = '';
       clockEl.style.removeProperty('font-size');
+      const stackCapRem = (window.innerWidth * 0.30) / 16;
+      rem = Math.min(rem, stackCapRem);
       clockEl.style.setProperty('--clock-fs', rem + 'rem');
-      const capPx  = window.innerHeight * 0.20;
-      const capRem = capPx / 16;
-      if (rem > capRem) {
-        const scale    = rem / capRem;
-        const maxScale = (window.innerWidth - 60) / Math.max(capPx, 1);
-        clockEl.style.transform = `scaleY(${Math.min(scale, maxScale).toFixed(3)})`;
-      } else {
-        clockEl.style.transform = '';
+      const maxPx = window.innerHeight - 120;
+      const w = clockEl.offsetWidth;
+      if (w > maxPx) {
+        clockEl.style.setProperty('--clock-fs', (rem * maxPx / w) + 'rem');
       }
     } else {
       clockEl.style.removeProperty('--clock-fs');
       clockEl.style.transform = '';
+      const capRem = (window.innerHeight * 0.25) / 16;
+      rem = Math.min(rem, capRem);
       clockEl.style.fontSize = rem + 'rem';
+      const maxPx = window.innerWidth - 80;
+      const w = clockEl.offsetWidth;
+      if (w > maxPx) {
+        clockEl.style.fontSize = (rem * maxPx / w) + 'rem';
+      }
     }
   }
   function setTallyFontSize(rem) {
-    statusText.style.fontSize = rem + 'rem';
     if (isPortraitMode()) {
+      statusText.style.fontSize = rem + 'rem';
       const maxPx = window.innerHeight - 80;
+      const w = statusText.offsetWidth;
+      if (w > maxPx) {
+        statusText.style.fontSize = (rem * maxPx / w) + 'rem';
+      }
+    } else {
+      const capRem = (window.innerHeight * 0.19) / 16;
+      rem = Math.min(rem, capRem);
+      statusText.style.fontSize = rem + 'rem';
+      const maxPx = window.innerWidth - 80;
       const w = statusText.offsetWidth;
       if (w > maxPx) {
         statusText.style.fontSize = (rem * maxPx / w) + 'rem';
@@ -787,8 +828,10 @@
   }
   function setSchFontSize(rem) {
     scheduleEl.style.setProperty('--sch-scale', (rem / SCH_BASELINE).toFixed(3));
-    document.querySelectorAll('.sch-name').forEach(el => el.style.fontSize = rem + 'rem');
-    document.querySelectorAll('.sch-timerange').forEach(el => el.style.fontSize = (rem * 0.75) + 'rem');
+    const capRem = (window.innerHeight * 0.045) / 16;
+    const nameRem = Math.min(rem, capRem);
+    document.querySelectorAll('.sch-name').forEach(el => el.style.fontSize = nameRem + 'rem');
+    document.querySelectorAll('.sch-timerange').forEach(el => el.style.fontSize = (nameRem * 0.75) + 'rem');
   }
 
   function applyLandscapeSizes() {
@@ -957,11 +1000,13 @@
     }
     cdTrack.classList.add('show');
     cdMarkerStartLabel.textContent = (broadcastTimeNextDay ? '시작 N ' : '시작 ') + hhmm(start);
+    cdMarkerStartProgram.textContent = broadcastProgramName;
     renderBoundedTrack(now, start, end, durationSec);
   }
 
   function renderBoundedTrack(now, start, end, durationSec) {
     cdMarkerEndLabel.textContent = (broadcastEndTimeNextDay ? '종료 N ' : '종료 ') + hhmm(end);
+    cdMarkerEndProgram.textContent = broadcastProgramName;
 
     const isBeforeStart = now < start;
 
@@ -1141,12 +1186,13 @@
     if (s.broadcastEndTime !== undefined) broadcastEndTime = s.broadcastEndTime;
     broadcastTimeNextDay = !!s.broadcastTimeNextDay;
     broadcastEndTimeNextDay = !!s.broadcastEndTimeNextDay;
+    broadcastProgramName = s.broadcastProgramName || '';
     if (s.cdBoxScale !== undefined) { cdBoxScale = parseFloat(s.cdBoxScale); countdownEl.style.setProperty('--cd-box-scale', cdBoxScale.toFixed(3)); }
     if (s.cdTextScale !== undefined) { cdTextScale = parseFloat(s.cdTextScale); countdownEl.style.setProperty('--cd-text-scale', cdTextScale.toFixed(3)); }
     if (s.cdLabelScale !== undefined) { cdLabelScale = parseFloat(s.cdLabelScale); countdownEl.style.setProperty('--cd-label-scale', cdLabelScale.toFixed(3)); }
     // 시작/종료 시각·모드가 실제로 바뀌었을 때만 즉시 갱신 — 매 3초 폴링마다 무조건 다시 그리면
     // 매초 진행 중인 러너/채움바 트랜지션과 위상이 어긋나며 움직임이 불규칙해 보이는 원인이 된다.
-    const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay;
+    const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay + ':' + broadcastProgramName;
     if (countdownModeOn && cdSignature !== lastCdSignature) updateCountdown();
     lastCdSignature = cdSignature;
 

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SBS Web Tally Controller</title>
+  <style>
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/static/fonts/Pretendard-SemiBold.woff2') format('woff2');
+      font-weight: 600;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/static/fonts/Pretendard-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/static/fonts/Pretendard-ExtraBold.woff2') format('woff2');
+      font-weight: 800;
+      font-display: swap;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100dvh;
+      background: #0a0a0a;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      color: #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #card {
+      width: 100%;
+      max-width: 360px;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-top: 3px solid #3a7bd5;
+      border-radius: 14px;
+      padding: 28px 24px;
+    }
+
+    h1 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .sub {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 22px;
+    }
+
+    input[type=password] {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #fff;
+      border-radius: 8px;
+      padding: 14px 14px;
+      font-family: inherit;
+      font-size: 1.3rem;
+      letter-spacing: 0.3em;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    input[type=password]:focus { outline: none; border-color: #3a7bd5; }
+
+    button {
+      width: 100%;
+      margin-top: 14px;
+      background: #1a4a8a;
+      border: none;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 8px;
+      padding: 14px;
+      cursor: pointer;
+    }
+    button:active { background: #163f77; }
+
+    .error {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #ff6a6a;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="card">
+    <h1>🔒 SBS Web Tally Controller</h1>
+    <div class="sub">PIN을 입력하세요</div>
+    <form method="POST">
+      <input type="password" name="pin" inputmode="numeric" autocomplete="off" maxlength="12" autofocus />
+      <button type="submit">확인</button>
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    </form>
+  </div>
+</body>
+</html>
