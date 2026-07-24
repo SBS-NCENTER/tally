@@ -115,7 +115,9 @@ def update_on_air():
 
 
 # ── RCP 메시지 파싱 ────────────────────────────────────────────────────────────
-_RE = re.compile(r'NOTIFY.*InCh/Fader/Level\s+(\d+)\s+\d+\s+(-?\d+)', re.ASCII)
+# DM7는 파라미터 변경을 자동으로 NOTIFY하지 않고 get 요청에만 응답하므로,
+# "OK get ..." 응답과 (혹시 모를) "NOTIFY ..." 푸시를 모두 매치하도록 접두어 무관하게 파싱.
+_RE = re.compile(r'InCh/Fader/Level\s+(\d+)\s+\d+\s+(-?\d+)', re.ASCII)
 
 def parse(line: str):
     m = _RE.search(line)
@@ -167,6 +169,8 @@ def mint_token():
 
 
 # ── DM7 TCP 리스너 ─────────────────────────────────────────────────────────────
+DM7_POLL_INTERVAL = 0.2  # get 요청 주기(초) — DM7는 파라미터 변경을 자동 push하지 않아 직접 폴링
+
 dm7_sock_lock = threading.Lock()
 dm7_current_sock = None
 dm7_force_reconnect = threading.Event()
@@ -189,17 +193,24 @@ def dm7_listener():
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.settimeout(10)
                 sock.connect((host, DM7_PORT))
-                sock.settimeout(30)
                 with dm7_sock_lock:
                     dm7_current_sock = sock
                 print(f"[DM7] 연결 성공 → {host}:{DM7_PORT}", flush=True)
 
                 buf = ""
                 while True:
-                    chunk = sock.recv(4096).decode('utf-8', errors='ignore')
-                    if not chunk:
-                        raise ConnectionResetError("연결 끊김")
-                    buf += chunk
+                    for ch in range(8):
+                        sock.sendall(f"get MIXER:Current/InCh/Fader/Level {ch} 0\n".encode())
+
+                    sock.settimeout(DM7_POLL_INTERVAL)
+                    try:
+                        while True:
+                            chunk = sock.recv(4096)
+                            if not chunk:
+                                raise ConnectionResetError("연결 끊김")
+                            buf += chunk.decode('utf-8', errors='ignore')
+                    except socket.timeout:
+                        pass
 
                     while '\n' in buf:
                         line, buf = buf.split('\n', 1)
@@ -216,10 +227,10 @@ def dm7_listener():
                         flag = "▲ ON AIR" if val > THRESHOLD else "▼ 대기"
                         print(f"[Fader] ch{ch+1:02d}  {db:+7.2f} dB  {flag}", flush=True)
 
-                        new = calc_on_air()
-                        if new != dm7_state:
-                            dm7_state = new
-                            update_on_air()
+                    new = calc_on_air()
+                    if new != dm7_state:
+                        dm7_state = new
+                        update_on_air()
 
         except Exception as e:
             with dm7_sock_lock:
