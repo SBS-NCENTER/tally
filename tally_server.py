@@ -1,10 +1,17 @@
 import socket
+import sys
 import threading
 import time
 import re
 import os
 import json
 import tomllib
+import urllib.parse
+
+# 콘솔/서비스 로케일이 UTF-8이 아닐 때도 한글·특수문자 print()가 죽지 않도록 강제
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, Response, render_template, jsonify, request
@@ -31,6 +38,22 @@ CALENDAR_IDS = {
 CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), 'credentials.json')
 TOKEN_FILE       = os.path.join(os.path.dirname(__file__), 'token.json')
 SETTINGS_FILE    = os.path.join(os.path.dirname(__file__), 'settings.json')
+
+
+def extract_calendar_id(raw: str) -> str:
+    """구글 캘린더 공유 URL(...?src=xxx) 또는 원시 캘린더 ID 문자열에서 캘린더 ID만 추출."""
+    raw = (raw or '').strip()
+    if not raw:
+        return ''
+    if 'src=' in raw:
+        try:
+            query = urllib.parse.urlparse(raw).query
+            qs = urllib.parse.parse_qs(query)
+            if 'src' in qs and qs['src']:
+                return qs['src'][0]
+        except Exception:
+            pass
+    return raw
 
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 5005
@@ -67,6 +90,8 @@ def get_dm7_host():
 # ── 상태 ──────────────────────────────────────────────────────────────────────
 fader = {i: -32768 for i in range(8)}
 on_air = False
+dm7_state = False   # DM7 페이더 기준 on-air
+gpio_state = False  # GPIO 접점 기준 on-air
 clients: list[Queue] = []
 clients_lock = threading.Lock()
 
@@ -76,6 +101,17 @@ def broadcast(state: str):
     with clients_lock:
         for q in clients:
             q.put(f"data: {state}\n\n")
+
+
+def update_on_air():
+    """DM7 / GPIO 등 여러 탈리 입력원 중 하나라도 on-air면 전체 on-air로 반영."""
+    global on_air
+    new = dm7_state or gpio_state
+    if new != on_air:
+        on_air = new
+        label = 'ON_AIR' if on_air else 'STANDBY'
+        print(f"★ [Tally] → {label}", flush=True)
+        broadcast(label)
 
 
 # ── RCP 메시지 파싱 ────────────────────────────────────────────────────────────
@@ -131,8 +167,22 @@ def mint_token():
 
 
 # ── DM7 TCP 리스너 ─────────────────────────────────────────────────────────────
+dm7_sock_lock = threading.Lock()
+dm7_current_sock = None
+dm7_force_reconnect = threading.Event()
+
+def dm7_request_reconnect():
+    """설정에서 dm7Host가 바뀌면 호출 — 기존 연결을 즉시 끊어 재접속을 앞당김."""
+    dm7_force_reconnect.set()
+    with dm7_sock_lock:
+        if dm7_current_sock is not None:
+            try:
+                dm7_current_sock.close()
+            except Exception:
+                pass
+
 def dm7_listener():
-    global on_air
+    global dm7_state, dm7_current_sock
     while True:
         try:
             host = get_dm7_host()
@@ -140,6 +190,8 @@ def dm7_listener():
                 sock.settimeout(10)
                 sock.connect((host, DM7_PORT))
                 sock.settimeout(30)
+                with dm7_sock_lock:
+                    dm7_current_sock = sock
                 print(f"[DM7] 연결 성공 → {host}:{DM7_PORT}", flush=True)
 
                 buf = ""
@@ -165,21 +217,118 @@ def dm7_listener():
                         print(f"[Fader] ch{ch+1:02d}  {db:+7.2f} dB  {flag}", flush=True)
 
                         new = calc_on_air()
-                        if new != on_air:
-                            on_air = new
-                            label = 'ON_AIR' if on_air else 'STANDBY'
-                            print(f"★ [Tally] → {label}", flush=True)
-                            broadcast(label)
+                        if new != dm7_state:
+                            dm7_state = new
+                            update_on_air()
 
         except Exception as e:
-            print(f"[DM7] 오류: {e}  → 5초 후 재연결", flush=True)
-            time.sleep(5)
+            with dm7_sock_lock:
+                dm7_current_sock = None
+            if dm7_force_reconnect.is_set():
+                dm7_force_reconnect.clear()
+                print(f"[DM7] IP 변경 감지 → 즉시 재연결", flush=True)
+            else:
+                print(f"[DM7] 오류: {e}  → 5초 후 재연결", flush=True)
+                time.sleep(5)
+
+
+# ── GPIO 접점 탈리 입력 (라즈베리파이 전용, DM7 같은 네트워크 탈리가 없는 콘솔용) ──────────
+GPIO_PIN_DEFAULT = 17
+
+def get_gpio_settings():
+    try:
+        with open(SETTINGS_FILE, encoding='utf-8') as f:
+            s = json.load(f)
+        return (
+            bool(s.get('gpioEnabled', False)),
+            int(s.get('gpioPin', GPIO_PIN_DEFAULT)),
+            bool(s.get('gpioActiveLow', True)),
+        )
+    except Exception:
+        return False, GPIO_PIN_DEFAULT, True
+
+
+def gpio_listener():
+    """STUDER Vista8, SSL C100HD 등 네트워크 탈리가 없는 콘솔의 GPO/접점 출력을 라즈베리파이
+    GPIO 핀으로 받아 tally 상태에 반영. RPi.GPIO가 없는 플랫폼(개발 PC 등)에서는 곧바로
+    종료하며, 서버의 나머지 기능에는 전혀 영향을 주지 않음."""
+    global gpio_state
+    try:
+        import RPi.GPIO as GPIO
+    except Exception:
+        print("[GPIO] RPi.GPIO 모듈 없음 → GPIO 탈리 입력 비활성화(라즈베리파이 전용 기능)", flush=True)
+        return
+
+    GPIO.setmode(GPIO.BCM)
+    configured_pin = None
+    try:
+        while True:
+            enabled, pin, active_low = get_gpio_settings()
+
+            if not enabled:
+                if configured_pin is not None:
+                    GPIO.cleanup(configured_pin)
+                    configured_pin = None
+                if gpio_state:
+                    gpio_state = False
+                    update_on_air()
+                time.sleep(1)
+                continue
+
+            if configured_pin != pin:
+                if configured_pin is not None:
+                    GPIO.cleanup(configured_pin)
+                pull = GPIO.PUD_UP if active_low else GPIO.PUD_DOWN
+                GPIO.setup(pin, GPIO.IN, pull_up_down=pull)
+                configured_pin = pin
+                print(f"[GPIO] 입력 시작 → BCM{pin} (active_{'low' if active_low else 'high'})", flush=True)
+
+            raw = GPIO.input(configured_pin)
+            active = (raw == GPIO.LOW) if active_low else (raw == GPIO.HIGH)
+            if active != gpio_state:
+                gpio_state = active
+                update_on_air()
+
+            time.sleep(0.1)
+    finally:
+        GPIO.cleanup()
+
+
+# ── 생방송 모드 자동 종료 전환 ─────────────────────────────────────────────────
+def auto_revert_watcher():
+    """생방송(카운트다운) 모드 + 종료시각 + 자동전환(분) 설정이 있으면,
+    종료시각 + N분이 지나면 일반(일정) 모드로 자동 전환."""
+    while True:
+        try:
+            with open(SETTINGS_FILE, encoding='utf-8') as f:
+                s = json.load(f)
+            revert_min = float(s.get('liveAutoRevertMinutes', 0) or 0)
+            end_val = s.get('broadcastEndTime')
+            if s.get('countdownMode') and revert_min > 0 and end_val:
+                now = datetime.now(KST)
+                end_time = datetime.strptime(end_val, '%H:%M:%S').time()
+                end_dt = datetime.combine(now.date(), end_time, tzinfo=KST)
+                if now >= end_dt + timedelta(minutes=revert_min):
+                    s['countdownMode'] = False
+                    s['broadcastTime'] = ''
+                    s['broadcastEndTime'] = ''
+                    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+                        json.dump(s, f)
+                    print(f"[AutoRevert] 생방송 종료 {revert_min}분 경과 → 일반 모드로 전환 (시작/종료 시각 초기화)", flush=True)
+        except Exception:
+            pass
+        time.sleep(15)
 
 
 # ── Flask ─────────────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/control')
+def control():
+    return render_template('control.html')
 
 
 @app.route('/health')
@@ -198,8 +347,13 @@ def get_settings():
 @app.route('/settings', methods=['POST'])
 def save_settings():
     try:
+        new_settings = request.get_json(force=True)
+        old_host = get_dm7_host()
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(request.get_json(force=True), f)
+            json.dump(new_settings, f)
+        new_host = new_settings.get('dm7Host', DM7_HOST_DEFAULT)
+        if new_host != old_host:
+            dm7_request_reconnect()
     except Exception:
         pass
     return ('', 204)
@@ -250,17 +404,27 @@ def get_calendar():
         today_end   = now.replace(hour=23, minute=59, second=59, microsecond=0).isoformat()
 
         selected = request.args.getlist('cal')
-        cal_ids = [CALENDAR_IDS[k] for k in selected if k in CALENDAR_IDS] or list(CALENDAR_IDS.values())
+        cal_ids = [CALENDAR_IDS[k] for k in selected if k in CALENDAR_IDS]
+        custom_raw = request.args.get('customCal', '')
+        custom_id = extract_calendar_id(custom_raw)
+        if custom_id:
+            cal_ids.append(custom_id)
+        if not cal_ids:
+            cal_ids = list(CALENDAR_IDS.values())
 
         all_events = []
         for cal_id in cal_ids:
-            result = service.events().list(
-                calendarId=cal_id,
-                timeMin=today_start,
-                timeMax=today_end,
-                singleEvents=True,
-                orderBy='startTime'
-            ).execute()
+            try:
+                result = service.events().list(
+                    calendarId=cal_id,
+                    timeMin=today_start,
+                    timeMax=today_end,
+                    singleEvents=True,
+                    orderBy='startTime'
+                ).execute()
+            except Exception:
+                # 캘린더 하나가 잘못됐거나(오타) 접근 권한이 없어도 나머지 캘린더는 계속 표시
+                continue
 
             for ev in result.get('items', []):
                 start = ev['start'].get('dateTime', ev['start'].get('date', ''))
@@ -314,5 +478,7 @@ if __name__ == '__main__':
     if not os.path.exists(TOKEN_FILE):
         print(f"[Auth] 경고: {TOKEN_FILE} 없음 — /calendar 는 발급 전까지 에러 반환(핵심 tally 는 정상 동작).", flush=True)
     threading.Thread(target=dm7_listener, daemon=True, name='dm7').start()
+    threading.Thread(target=gpio_listener, daemon=True, name='gpio').start()
+    threading.Thread(target=auto_revert_watcher, daemon=True, name='auto-revert').start()
     print(f"[tally] '{cfg['name']}' → http://{cfg['host']}:{cfg['port']}", flush=True)
     app.run(host=cfg['host'], port=cfg['port'], threaded=True)

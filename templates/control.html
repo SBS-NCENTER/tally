@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SBS Web Tally Controller</title>
+  <style>
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/static/fonts/Pretendard-SemiBold.woff2') format('woff2');
+      font-weight: 600;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/static/fonts/Pretendard-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/static/fonts/Pretendard-ExtraBold.woff2') format('woff2');
+      font-weight: 800;
+      font-display: swap;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100dvh;
+      background: #0a0a0a;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      color: #eee;
+      padding: 20px 16px 60px;
+    }
+
+    #wrap {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: #ccc;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid #222;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #h1-title { display: flex; align-items: center; gap: 8px; }
+    #brand-icon { width: 1.3em; height: 1.3em; flex-shrink: 0; }
+    #save-flash {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #2ecc55;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #save-flash.show { opacity: 1; }
+
+    .card {
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-top: 3px solid #333;
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+    }
+    .card-size     { border-top-color: #3a7bd5; }
+    .card-orient   { border-top-color: #8a5cf6; }
+    .card-bottom   { border-top-color: #666; }
+    .card-advanced { border-top-color: #444; }
+
+    .setting-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #999;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .setting-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .setting-row:last-child { margin-bottom: 0; }
+    .setting-row-inline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .val { font-size: 0.8rem; font-weight: 700; color: #888; min-width: 44px; text-align: right; }
+    .setting-hint {
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: #777;
+      line-height: 1.5;
+      margin-top: 2px;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: #2a2a2a;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: pointer;
+    }
+    input[type=text] {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #fff;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.95rem;
+      width: 100%;
+    }
+
+    .time-input-row { display: flex; gap: 8px; align-items: center; }
+    .time-input-row input[type=text] { flex: 1; }
+    button.clear-btn {
+      flex-shrink: 0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1a;
+      color: #888;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.clear-btn:active { background: #222; color: #ccc; }
+    button.nday-toggle {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1a;
+      color: #666;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    button.nday-toggle.active {
+      background: rgba(240,160,48,0.16);
+      border-color: #f0a030;
+      color: #f0a030;
+    }
+
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .toggle-label { font-size: 0.85rem; font-weight: 600; color: #ccc; letter-spacing: 0.02em; }
+    .toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute; inset: 0;
+      background: #2a2a2a;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      left: 3px; top: 3px;
+      width: 18px; height: 18px;
+      background: #666;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle input:checked + .toggle-track { background: #1a4a8a; }
+    .toggle input:checked + .toggle-track::after { transform: translateX(18px); background: #fff; }
+
+    .sub-panel {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #222;
+    }
+    .sub-panel.open { display: flex; }
+
+    .btn-row { display: flex; gap: 10px; }
+    button.action-btn {
+      flex: 1;
+      padding: 12px 0;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #1a1a1a;
+      color: #ccc;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    button.action-btn:active { background: #222; }
+    button.action-btn.running { background: #7a1010; border-color: #b0101a; color: #fff; }
+
+    #sw-display, #timer-display {
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-variant-numeric: tabular-nums;
+      font-size: 2rem;
+      font-weight: 900;
+      text-align: center;
+      color: #fff;
+      margin-bottom: 14px;
+    }
+    .preset-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    button.preset-btn {
+      flex: 1;
+      padding: 9px 0;
+      border-radius: 8px;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1a;
+      color: #999;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    button.preset-btn:active { background: #222; color: #ccc; }
+    button.preset-btn.active { background: rgba(112,134,255,0.14); border-color: #7086ff; color: #a8b4ff; }
+
+    /* ── 하단 표시 모드 세그먼트 ─────────────────────────────────── */
+    .segmented {
+      display: flex;
+      gap: 6px;
+      background: #0e0e0e;
+      border: 1px solid #262626;
+      padding: 4px;
+      border-radius: 11px;
+    }
+    .seg-btn {
+      flex: 1;
+      padding: 11px 0;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #777;
+      font-weight: 700;
+      font-size: 0.86rem;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .seg-btn.active {
+      background: rgba(90,140,255,0.12);
+      color: #7fa8ff;
+      box-shadow: inset 0 0 0 1px rgba(90,140,255,0.5);
+    }
+    .seg-btn.seg-amber.active {
+      background: rgba(240,160,48,0.12);
+      color: #f0a030;
+      box-shadow: inset 0 0 0 1px rgba(240,160,48,0.5);
+    }
+    .seg-btn.seg-cyan.active {
+      background: rgba(0,212,255,0.10);
+      color: #00d4ff;
+      box-shadow: inset 0 0 0 1px rgba(0,212,255,0.5);
+    }
+
+    /* ── 고급 설정 접기/펼치기 ───────────────────────────────────── */
+    .collapse-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: none;
+      border: none;
+      color: #999;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      padding: 0;
+    }
+    .collapse-header .chevron { transition: transform 0.2s ease; color: #555; font-size: 0.9rem; }
+    .collapse-header.open .chevron { transform: rotate(180deg); }
+    .collapse-header.open { margin-bottom: 12px; }
+
+    #display-link {
+      display: block;
+      text-align: center;
+      margin-top: 24px;
+      color: #556;
+      font-size: 0.8rem;
+      text-decoration: none;
+    }
+    #display-link:hover { color: #789; }
+  </style>
+</head>
+<body>
+<div id="wrap">
+  <h1>
+    <span id="h1-title">
+      <svg id="brand-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="50" cy="50" r="37" fill="none" stroke="#0090d1" stroke-width="21" stroke-linecap="round"/>
+        <circle cx="46" cy="50" r="22" fill="none" stroke="#f7a823" stroke-width="15" stroke-linecap="round"/>
+        <circle cx="46" cy="50" r="14.5" fill="#ffffff"/>
+      </svg>
+      SBS Web Tally Controller
+    </span>
+    <span id="save-flash">저장됨</span>
+  </h1>
+
+  <div class="card card-bottom">
+    <span class="setting-label">⏱ 모드 선택</span>
+    <div class="segmented" id="bottom-mode-seg">
+      <button type="button" class="seg-btn" data-mode="schedule">일반</button>
+      <button type="button" class="seg-btn seg-amber" data-mode="countdown">생방송</button>
+      <button type="button" class="seg-btn seg-cyan" data-mode="stopwatch">타이머</button>
+    </div>
+
+    <div class="sub-panel" id="schedule-sub">
+      <div class="setting-row">
+        <div class="toggle-row">
+          <span class="toggle-label">일정표 표시</span>
+          <label class="toggle"><input type="checkbox" id="schedule-visible-toggle" checked /><span class="toggle-track"></span></label>
+        </div>
+        <div class="setting-hint">끄면 화면에 탈리와 시계만 표시됩니다.</div>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label" style="margin-bottom:4px">캘린더 선택</span>
+        <div class="toggle-row" style="margin-bottom:12px">
+          <span class="toggle-label">TS-5</span>
+          <label class="toggle"><input type="checkbox" id="cal-ts5" checked /><span class="toggle-track"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">TS-5(방송)</span>
+          <label class="toggle"><input type="checkbox" id="cal-ts5b" checked /><span class="toggle-track"></span></label>
+        </div>
+        <div class="toggle-row" style="margin-top:12px">
+          <span class="toggle-label">사용자 지정 캘린더</span>
+          <label class="toggle"><input type="checkbox" id="cal-custom-enable" /><span class="toggle-track"></span></label>
+        </div>
+        <div class="time-input-row" style="margin-top:8px">
+          <input type="text" id="cal-custom-url" placeholder="구글 캘린더 URL 또는 ID 붙여넣기" style="flex:1" />
+        </div>
+      </div>
+      <button type="button" class="collapse-header" id="sch-size-toggle">
+        <span>크기 설정</span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="sub-panel" id="sch-size-sub">
+        <div class="setting-row">
+          <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="sch-box-size-val">1.0x</span></div>
+          <input type="range" id="sch-box-size" min="0.6" max="2" step="0.05" value="1" />
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-inline"><span>글자 크기</span><span class="val" id="sch-size-val">1.00x</span></div>
+          <input type="range" id="sch-size" min="0.5" max="2" step="0.05" value="1" />
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-panel" id="countdown-sub">
+      <div class="setting-row">
+        <span class="setting-label" style="margin-bottom:4px">방송 시작 시각</span>
+        <div class="time-input-row">
+          <button type="button" class="nday-toggle" id="broadcast-time-nday" title="익일(다음날)">N</button>
+          <input type="text" id="broadcast-time" placeholder="18:00:00" inputmode="numeric" maxlength="8" />
+          <button type="button" class="clear-btn" id="broadcast-time-clear">지우기</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label" style="margin-bottom:4px">방송 종료 예정</span>
+        <div class="time-input-row">
+          <button type="button" class="nday-toggle" id="broadcast-end-time-nday" title="익일(다음날)">N</button>
+          <input type="text" id="broadcast-end-time" placeholder="18:00:00" inputmode="numeric" maxlength="8" />
+          <button type="button" class="clear-btn" id="broadcast-end-time-clear">지우기</button>
+        </div>
+        <div class="setting-hint">자정을 넘기는 방송이면 N을 켜서 "다음날 이 시각"으로 표시하세요. 예: 시작 23:00 + 종료 N 01:00 = 다음날 새벽 1시 종료.</div>
+      </div>
+      <button type="button" class="collapse-header" id="cd-size-toggle">
+        <span>크기 설정</span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="sub-panel" id="cd-size-sub">
+        <div class="setting-row">
+          <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="cd-box-size-val">1.0x</span></div>
+          <input type="range" id="cd-box-size" min="0.6" max="2" step="0.05" value="1" />
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-inline"><span>타이머 글자 크기</span><span class="val" id="cd-text-size-val">1.0x</span></div>
+          <input type="range" id="cd-text-size" min="0.6" max="2.5" step="0.05" value="1" />
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-inline"><span>시작/종료 글자 크기</span><span class="val" id="cd-label-size-val">1.0x</span></div>
+          <input type="range" id="cd-label-size" min="0.6" max="2.5" step="0.05" value="1" />
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-panel" id="stopwatch-sub">
+      <div class="setting-row">
+        <span class="setting-label" style="margin-bottom:8px">⏲ 타이머</span>
+        <div id="timer-display">-05:00</div>
+        <div class="time-input-row" style="margin-bottom:10px">
+          <input type="text" id="timer-duration-input" placeholder="05:00" inputmode="numeric" maxlength="5" />
+        </div>
+        <div class="preset-row">
+          <button type="button" class="preset-btn" data-sec="60">1분</button>
+          <button type="button" class="preset-btn" data-sec="300">5분</button>
+          <button type="button" class="preset-btn" data-sec="600">10분</button>
+          <button type="button" class="preset-btn" data-sec="1200">20분</button>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="action-btn" id="timer-start-btn">시작</button>
+          <button type="button" class="action-btn" id="timer-reset-btn">리셋</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label" style="margin-bottom:8px">⏱ 스톱워치</span>
+        <div id="sw-display">+00:00</div>
+        <div class="btn-row">
+          <button type="button" class="action-btn" id="sw-start-btn">시작</button>
+          <button type="button" class="action-btn" id="sw-reset-btn">리셋</button>
+        </div>
+      </div>
+
+      <button type="button" class="collapse-header" id="sw-size-toggle">
+        <span>크기 설정</span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="sub-panel" id="sw-size-sub">
+        <div class="setting-row">
+          <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="sw-box-size-val">1.0x</span></div>
+          <input type="range" id="sw-box-size" min="0.6" max="2" step="0.05" value="1" />
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-inline"><span>글자 크기</span><span class="val" id="sw-text-size-val">1.0x</span></div>
+          <input type="range" id="sw-text-size" min="0.6" max="2.5" step="0.05" value="1" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-size">
+    <button type="button" class="collapse-header" id="size-toggle">
+      <span>📐 화면 크기</span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="sub-panel" id="size-sub">
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>탈리 박스 높이</span><span class="val" id="tally-box-size-val">1.00x</span></div>
+        <input type="range" id="tally-box-size" min="0.6" max="2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>탈리 글자 크기</span><span class="val" id="tally-size-val">1.00x</span></div>
+        <input type="range" id="tally-size" min="0.5" max="3" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>시계 박스 높이</span><span class="val" id="clock-box-size-val">1.00x</span></div>
+        <input type="range" id="clock-box-size" min="0.6" max="3" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>시계 글자 크기</span><span class="val" id="clock-size-val">1.00x</span></div>
+        <input type="range" id="clock-size" min="0.5" max="2" step="0.05" value="1" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="toggle-row">
+      <span class="toggle-label">📅 날짜/날씨 표시</span>
+      <label class="toggle"><input type="checkbox" id="date-weather-toggle" checked /><span class="toggle-track"></span></label>
+    </div>
+  </div>
+
+  <div class="card card-orient">
+    <div class="toggle-row">
+      <span class="setting-label" style="margin-bottom:0">🔄 세로 모드</span>
+      <label class="toggle"><input type="checkbox" id="portrait-toggle" /><span class="toggle-track"></span></label>
+    </div>
+    <div class="sub-panel" id="portrait-sub">
+      <div class="toggle-row">
+        <span class="toggle-label">← 왼쪽 회전</span>
+        <label class="toggle"><input type="checkbox" id="portrait-left-toggle" /><span class="toggle-track"></span></label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>탈리 (세로)</span><span class="val" id="p-tally-size-val">1.00x</span></div>
+        <input type="range" id="p-tally-size" min="0.5" max="2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>시계 (세로)</span><span class="val" id="p-clock-size-val">1.00x</span></div>
+        <input type="range" id="p-clock-size" min="0.5" max="2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>일정 (세로)</span><span class="val" id="p-sch-size-val">1.00x</span></div>
+        <input type="range" id="p-sch-size" min="0.5" max="2" step="0.05" value="1" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-advanced">
+    <button type="button" class="collapse-header" id="advanced-toggle">
+      <span>🔧 고급 설정</span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="sub-panel" id="advanced-sub">
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>⏱ 시간 보정</span><span class="val" id="time-offset-val">0.0초</span></div>
+        <input type="range" id="time-offset" min="-10" max="10" step="0.1" value="0" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>↩️ 생방송 종료 후 일반모드 전환</span><span class="val" id="live-revert-val">사용 안 함</span></div>
+        <input type="range" id="live-revert" min="0" max="60" step="1" value="0" />
+      </div>
+      <div class="setting-row">
+        <span class="setting-label" style="margin-bottom:4px">🎙 YAMAHA DM7 IP</span>
+        <input type="text" id="dm7-host" placeholder="192.168.3.210" />
+      </div>
+      <div class="setting-row">
+        <div class="toggle-row">
+          <span class="toggle-label">🔌 GPIO 접점 탈리 (라즈베리파이)</span>
+          <label class="toggle"><input type="checkbox" id="gpio-enable-toggle" /><span class="toggle-track"></span></label>
+        </div>
+        <div class="sub-panel" id="gpio-sub">
+          <div class="setting-row" style="margin-top:10px">
+            <span class="setting-label" style="margin-bottom:4px">GPIO 핀 번호 (BCM)</span>
+            <input type="text" id="gpio-pin-input" inputmode="numeric" maxlength="2" placeholder="17" />
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">신호 반전 (접점 ON = LOW)</span>
+            <label class="toggle"><input type="checkbox" id="gpio-active-low-toggle" checked /><span class="toggle-track"></span></label>
+          </div>
+          <div class="setting-hint">DM7 같은 네트워크 탈리가 없는 콘솔(STUDER Vista8, SSL C100HD 등)의 GPO/접점 출력을 라즈베리파이 GPIO 핀과 GND에 연결하세요. 접점이 닫히면(ON) 핀이 GND로 당겨지는 방식이 기본값입니다.</div>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="toggle-row">
+          <span class="toggle-label">🧪 탈리 테스트 (강제 ON — 실제 마이크와 무관)</span>
+          <label class="toggle"><input type="checkbox" id="tally-test-toggle" /><span class="toggle-track"></span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <a id="display-link" href="/">↗ 화면 페이지 열기</a>
+</div>
+
+<script>
+  const clockSizeSlider = document.getElementById('clock-size');
+  const clockSizeVal    = document.getElementById('clock-size-val');
+  const clockBoxSizeSlider = document.getElementById('clock-box-size');
+  const clockBoxSizeVal    = document.getElementById('clock-box-size-val');
+  const tallySizeSlider = document.getElementById('tally-size');
+  const tallySizeVal    = document.getElementById('tally-size-val');
+  const tallyBoxSizeSlider = document.getElementById('tally-box-size');
+  const tallyBoxSizeVal    = document.getElementById('tally-box-size-val');
+  const schSizeSlider   = document.getElementById('sch-size');
+  const schSizeVal      = document.getElementById('sch-size-val');
+  const schBoxSizeSlider = document.getElementById('sch-box-size');
+  const schBoxSizeVal    = document.getElementById('sch-box-size-val');
+  const timeOffsetSlider = document.getElementById('time-offset');
+  const timeOffsetVal    = document.getElementById('time-offset-val');
+  const dateWeatherToggle = document.getElementById('date-weather-toggle');
+
+  const portraitToggle     = document.getElementById('portrait-toggle');
+  const portraitLeftToggle = document.getElementById('portrait-left-toggle');
+  const portraitSub        = document.getElementById('portrait-sub');
+  const pClockSlider = document.getElementById('p-clock-size');
+  const pClockVal    = document.getElementById('p-clock-size-val');
+  const pTallySlider = document.getElementById('p-tally-size');
+  const pTallyVal    = document.getElementById('p-tally-size-val');
+  const pSchSlider   = document.getElementById('p-sch-size');
+  const pSchVal      = document.getElementById('p-sch-size-val');
+
+  const segButtons    = Array.from(document.querySelectorAll('.seg-btn'));
+  const scheduleSub   = document.getElementById('schedule-sub');
+  const countdownSub  = document.getElementById('countdown-sub');
+  const broadcastTimeInput    = document.getElementById('broadcast-time');
+  const broadcastEndTimeInput = document.getElementById('broadcast-end-time');
+  const broadcastTimeNdayBtn    = document.getElementById('broadcast-time-nday');
+  const broadcastEndTimeNdayBtn = document.getElementById('broadcast-end-time-nday');
+  const cdBoxSizeSlider  = document.getElementById('cd-box-size');
+  const cdBoxSizeVal     = document.getElementById('cd-box-size-val');
+  const cdTextSizeSlider = document.getElementById('cd-text-size');
+  const cdTextSizeVal    = document.getElementById('cd-text-size-val');
+  const cdLabelSizeSlider = document.getElementById('cd-label-size');
+  const cdLabelSizeVal    = document.getElementById('cd-label-size-val');
+
+  const stopwatchSub = document.getElementById('stopwatch-sub');
+  const swStartBtn = document.getElementById('sw-start-btn');
+  const swResetBtn = document.getElementById('sw-reset-btn');
+  const swDisplay  = document.getElementById('sw-display');
+  const swBoxSizeSlider  = document.getElementById('sw-box-size');
+  const swBoxSizeVal     = document.getElementById('sw-box-size-val');
+  const swTextSizeSlider = document.getElementById('sw-text-size');
+  const swTextSizeVal    = document.getElementById('sw-text-size-val');
+
+  const timerDisplay = document.getElementById('timer-display');
+  const timerDurationInput = document.getElementById('timer-duration-input');
+  const timerStartBtn = document.getElementById('timer-start-btn');
+  const timerResetBtn = document.getElementById('timer-reset-btn');
+  const presetBtns = Array.from(document.querySelectorAll('.preset-btn'));
+
+  const advancedToggle = document.getElementById('advanced-toggle');
+  const advancedSub    = document.getElementById('advanced-sub');
+  const liveRevertSlider = document.getElementById('live-revert');
+  const liveRevertVal    = document.getElementById('live-revert-val');
+  const dm7HostInput = document.getElementById('dm7-host');
+  const gpioEnableToggle    = document.getElementById('gpio-enable-toggle');
+  const gpioSub             = document.getElementById('gpio-sub');
+  const gpioPinInput        = document.getElementById('gpio-pin-input');
+  const gpioActiveLowToggle = document.getElementById('gpio-active-low-toggle');
+  const scheduleVisibleToggle = document.getElementById('schedule-visible-toggle');
+  const calTs5  = document.getElementById('cal-ts5');
+  const calTs5b = document.getElementById('cal-ts5b');
+  const calCustomEnable = document.getElementById('cal-custom-enable');
+  const calCustomUrl    = document.getElementById('cal-custom-url');
+
+  const saveFlash = document.getElementById('save-flash');
+
+  let swRunning = false, swStartedAt = null, swElapsedMs = 0;
+  let timerDurationSec = 300, timerRunning = false, timerStartedAt = null, timerRemainingMs = 300000;
+  let bottomMode = 'schedule'; // 'schedule' | 'countdown' | 'stopwatch'
+
+  function currentSettings() {
+    return {
+      clockScale:   parseFloat(clockSizeSlider.value),
+      clockBoxScale: parseFloat(clockBoxSizeSlider.value),
+      tallyScale:   parseFloat(tallySizeSlider.value),
+      tallyBoxScale: parseFloat(tallyBoxSizeSlider.value),
+      schScale:     parseFloat(schSizeSlider.value),
+      schBoxScale:  parseFloat(schBoxSizeSlider.value),
+      timeOffset:   parseFloat(timeOffsetSlider.value),
+      showDateWeather: dateWeatherToggle.checked,
+      scheduleVisible: scheduleVisibleToggle.checked,
+      'cal-ts5':    calTs5.checked,
+      'cal-ts5b':   calTs5b.checked,
+      customCalendarUrl: calCustomUrl.value.trim(),
+      customCalendarEnabled: calCustomEnable.checked,
+      dm7Host:      dm7HostInput.value.trim(),
+      gpioEnabled:  gpioEnableToggle.checked,
+      gpioPin:      parseInt(gpioPinInput.value, 10) || 17,
+      gpioActiveLow: gpioActiveLowToggle.checked,
+      countdownMode: bottomMode === 'countdown',
+      broadcastTime: broadcastTimeInput.value,
+      broadcastEndTime: broadcastEndTimeInput.value,
+      broadcastTimeNextDay: broadcastTimeNdayBtn.classList.contains('active'),
+      broadcastEndTimeNextDay: broadcastEndTimeNdayBtn.classList.contains('active'),
+      cdBoxScale: parseFloat(cdBoxSizeSlider.value),
+      cdTextScale: parseFloat(cdTextSizeSlider.value),
+      cdLabelScale: parseFloat(cdLabelSizeSlider.value),
+      liveAutoRevertMinutes: parseFloat(liveRevertSlider.value),
+      stopwatchMode: bottomMode === 'stopwatch',
+      portrait:     portraitToggle.checked,
+      portraitLeft: portraitLeftToggle.checked,
+      pClockScale:  parseFloat(pClockSlider.value),
+      pTallyScale:  parseFloat(pTallySlider.value),
+      pSchScale:    parseFloat(pSchSlider.value),
+      stopwatchRunning: swRunning,
+      stopwatchStartedAt: swStartedAt,
+      stopwatchElapsedMs: swElapsedMs,
+      swBoxScale: parseFloat(swBoxSizeSlider.value),
+      swTextScale: parseFloat(swTextSizeSlider.value),
+      timerDurationSec: timerDurationSec,
+      timerRunning: timerRunning,
+      timerStartedAt: timerStartedAt,
+      timerRemainingMs: timerRemainingMs,
+    };
+  }
+
+  let flashTimer = null;
+  function saveSettings() {
+    fetch('/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(currentSettings()),
+    }).then(() => {
+      saveFlash.classList.add('show');
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => saveFlash.classList.remove('show'), 900);
+    }).catch(() => {});
+  }
+
+  /* ── 슬라이더/토글 표시 갱신 + 저장 바인딩 ─────────────────────── */
+  function bindRange(slider, valEl, suffix, onChange) {
+    function refresh() {
+      valEl.textContent = parseFloat(slider.value).toFixed(2) + suffix;
+    }
+    refresh();
+    slider.addEventListener('input', () => { refresh(); if (onChange) onChange(); saveSettings(); });
+  }
+  bindRange(clockSizeSlider, clockSizeVal, 'x');
+  bindRange(clockBoxSizeSlider, clockBoxSizeVal, 'x');
+  bindRange(tallySizeSlider, tallySizeVal, 'x');
+  bindRange(tallyBoxSizeSlider, tallyBoxSizeVal, 'x');
+  bindRange(schSizeSlider,   schSizeVal,   'x');
+  bindRange(schBoxSizeSlider, schBoxSizeVal, 'x');
+  bindRange(pClockSlider, pClockVal, 'x');
+  bindRange(pTallySlider, pTallyVal, 'x');
+  bindRange(pSchSlider,   pSchVal,   'x');
+  bindRange(cdBoxSizeSlider,  cdBoxSizeVal,  'x');
+  bindRange(cdTextSizeSlider, cdTextSizeVal, 'x');
+  bindRange(cdLabelSizeSlider, cdLabelSizeVal, 'x');
+  bindRange(swBoxSizeSlider,  swBoxSizeVal,  'x');
+  bindRange(swTextSizeSlider, swTextSizeVal, 'x');
+
+  timeOffsetSlider.addEventListener('input', () => {
+    const v = parseFloat(timeOffsetSlider.value);
+    timeOffsetVal.textContent = (v >= 0 ? '+' : '') + v.toFixed(1) + '초';
+    saveSettings();
+  });
+
+  dateWeatherToggle.addEventListener('change', saveSettings);
+
+  function refreshLiveRevert() {
+    const v = parseFloat(liveRevertSlider.value);
+    liveRevertVal.textContent = v === 0 ? '사용 안 함' : v + '분 후';
+  }
+  refreshLiveRevert();
+  liveRevertSlider.addEventListener('input', () => { refreshLiveRevert(); saveSettings(); });
+
+  portraitToggle.addEventListener('change', () => {
+    portraitSub.classList.toggle('open', portraitToggle.checked);
+    saveSettings();
+  });
+  portraitLeftToggle.addEventListener('change', saveSettings);
+
+  /* ── 하단 표시 모드 세그먼트 ─────────────────────────────────── */
+  function applyBottomModeUI() {
+    segButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === bottomMode));
+    scheduleSub.classList.toggle('open', bottomMode === 'schedule');
+    countdownSub.classList.toggle('open', bottomMode === 'countdown');
+    stopwatchSub.classList.toggle('open', bottomMode === 'stopwatch');
+  }
+  segButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      bottomMode = btn.dataset.mode;
+      applyBottomModeUI();
+      saveSettings();
+    });
+  });
+
+  /* 시간 입력칸 — 오전/오후 없는 24시간제 텍스트 입력 (브라우저/OS 로케일과 무관하게 동작) */
+  function attachTimeMask(el) {
+    el.addEventListener('input', () => {
+      const digits = el.value.replace(/\D/g, '').slice(0, 6);
+      const parts = [];
+      if (digits.length > 0) parts.push(digits.slice(0, 2));
+      if (digits.length > 2) parts.push(digits.slice(2, 4));
+      if (digits.length > 4) parts.push(digits.slice(4, 6));
+      el.value = parts.join(':');
+    });
+    el.addEventListener('blur', () => {
+      if (!el.value) { saveSettings(); return; }
+      const m = el.value.match(/^(\d{1,2}):?(\d{1,2})?:?(\d{1,2})?$/);
+      if (!m) { el.value = ''; saveSettings(); return; }
+      const h  = Math.min(23, parseInt(m[1], 10) || 0);
+      const mi = Math.min(59, parseInt(m[2] || '0', 10) || 0);
+      const se = Math.min(59, parseInt(m[3] || '0', 10) || 0);
+      el.value = `${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}:${String(se).padStart(2,'0')}`;
+      saveSettings();
+    });
+  }
+  attachTimeMask(broadcastTimeInput);
+  attachTimeMask(broadcastEndTimeInput);
+  document.getElementById('broadcast-time-clear').addEventListener('click', () => {
+    broadcastTimeInput.value = '';
+    broadcastTimeNdayBtn.classList.remove('active');
+    saveSettings();
+  });
+  document.getElementById('broadcast-end-time-clear').addEventListener('click', () => {
+    broadcastEndTimeInput.value = '';
+    broadcastEndTimeNdayBtn.classList.remove('active');
+    saveSettings();
+  });
+  broadcastTimeNdayBtn.addEventListener('click', () => {
+    broadcastTimeNdayBtn.classList.toggle('active');
+    saveSettings();
+  });
+  broadcastEndTimeNdayBtn.addEventListener('click', () => {
+    broadcastEndTimeNdayBtn.classList.toggle('active');
+    saveSettings();
+  });
+
+  function bindCollapse(headerEl, subEl) {
+    headerEl.addEventListener('click', () => {
+      const open = !subEl.classList.contains('open');
+      subEl.classList.toggle('open', open);
+      headerEl.classList.toggle('open', open);
+    });
+  }
+  bindCollapse(advancedToggle, advancedSub);
+  bindCollapse(document.getElementById('size-toggle'), document.getElementById('size-sub'));
+  bindCollapse(document.getElementById('sch-size-toggle'), document.getElementById('sch-size-sub'));
+  bindCollapse(document.getElementById('cd-size-toggle'), document.getElementById('cd-size-sub'));
+  bindCollapse(document.getElementById('sw-size-toggle'), document.getElementById('sw-size-sub'));
+
+  dm7HostInput.addEventListener('change', saveSettings);
+  gpioEnableToggle.addEventListener('change', () => {
+    gpioSub.classList.toggle('open', gpioEnableToggle.checked);
+    saveSettings();
+  });
+  gpioPinInput.addEventListener('change', saveSettings);
+  gpioActiveLowToggle.addEventListener('change', saveSettings);
+  scheduleVisibleToggle.addEventListener('change', saveSettings);
+  calTs5.addEventListener('change', saveSettings);
+  calTs5b.addEventListener('change', saveSettings);
+  calCustomEnable.addEventListener('change', saveSettings);
+  calCustomUrl.addEventListener('change', saveSettings);
+
+  /* ── 탈리 테스트 (설정 저장과 무관, 서버의 /test/on·off 즉시 호출) ─ */
+  const tallyTestToggle = document.getElementById('tally-test-toggle');
+  tallyTestToggle.addEventListener('change', () => {
+    fetch(`/test/${tallyTestToggle.checked ? 'on' : 'off'}`).catch(() => {});
+  });
+
+  /* ── 스톱워치 ───────────────────────────────────────────────── */
+  function formatStopwatch(ms) {
+    const totalSec = Math.floor(Math.max(0, ms) / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = v => String(v).padStart(2, '0');
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  }
+  function swCurrentElapsedMs() {
+    return swElapsedMs + (swRunning && swStartedAt ? Date.now() - swStartedAt : 0);
+  }
+  function updateSwDisplay() {
+    swDisplay.textContent = '+' + formatStopwatch(swCurrentElapsedMs());
+    swStartBtn.textContent = swRunning ? '정지' : '시작';
+    swStartBtn.classList.toggle('running', swRunning);
+  }
+  setInterval(updateSwDisplay, 1000);
+
+  swStartBtn.addEventListener('click', () => {
+    if (!swRunning) {
+      swRunning = true;
+      swStartedAt = Date.now();
+    } else {
+      swRunning = false;
+      swElapsedMs += Date.now() - swStartedAt;
+      swStartedAt = null;
+    }
+    updateSwDisplay();
+    saveSettings();
+  });
+  swResetBtn.addEventListener('click', () => {
+    swRunning = false;
+    swElapsedMs = 0;
+    swStartedAt = null;
+    updateSwDisplay();
+    saveSettings();
+  });
+
+  /* ── 타이머 ─────────────────────────────────────────────────── */
+  function timerCurrentRemainingMs() {
+    const raw = timerRemainingMs - (timerRunning && timerStartedAt ? Date.now() - timerStartedAt : 0);
+    return Math.max(0, raw);
+  }
+  function updateTimerDisplay() {
+    timerDisplay.textContent = '-' + formatStopwatch(timerCurrentRemainingMs());
+    timerStartBtn.textContent = timerRunning ? '일시정지' : '시작';
+    timerStartBtn.classList.toggle('running', timerRunning);
+    presetBtns.forEach(b => b.classList.toggle('active', parseInt(b.dataset.sec, 10) === timerDurationSec));
+  }
+  setInterval(updateTimerDisplay, 1000);
+
+  function setTimerDuration(sec) {
+    timerDurationSec = Math.max(1, sec);
+    timerRunning = false;
+    timerStartedAt = null;
+    timerRemainingMs = timerDurationSec * 1000;
+    timerDurationInput.value = formatStopwatch(timerRemainingMs);
+    updateTimerDisplay();
+    saveSettings();
+  }
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => setTimerDuration(parseInt(btn.dataset.sec, 10)));
+  });
+
+  timerStartBtn.addEventListener('click', () => {
+    if (!timerRunning) {
+      if (timerCurrentRemainingMs() <= 0) return;
+      timerRunning = true;
+      timerStartedAt = Date.now();
+    } else {
+      timerRemainingMs = timerCurrentRemainingMs();
+      timerRunning = false;
+      timerStartedAt = null;
+    }
+    updateTimerDisplay();
+    saveSettings();
+  });
+  timerResetBtn.addEventListener('click', () => {
+    timerRunning = false;
+    timerStartedAt = null;
+    timerRemainingMs = timerDurationSec * 1000;
+    updateTimerDisplay();
+    saveSettings();
+  });
+
+  timerDurationInput.addEventListener('input', () => {
+    const digits = timerDurationInput.value.replace(/\D/g, '').slice(0, 4);
+    const parts = [];
+    if (digits.length > 0) parts.push(digits.slice(0, 2));
+    if (digits.length > 2) parts.push(digits.slice(2, 4));
+    timerDurationInput.value = parts.join(':');
+  });
+  timerDurationInput.addEventListener('blur', () => {
+    const m = timerDurationInput.value.match(/^(\d{1,2}):?(\d{1,2})?$/);
+    if (!m) { timerDurationInput.value = formatStopwatch(timerDurationSec * 1000); return; }
+    const mi = Math.min(99, parseInt(m[1], 10) || 0);
+    const se = Math.min(59, parseInt(m[2] || '0', 10) || 0);
+    setTimerDuration(mi * 60 + se);
+  });
+
+  /* ── 초기 로드 ──────────────────────────────────────────────── */
+  fetch('/settings')
+    .then(r => r.json())
+    .then(s => {
+      if (s.clockScale !== undefined) clockSizeSlider.value = s.clockScale;
+      if (s.clockBoxScale !== undefined) clockBoxSizeSlider.value = s.clockBoxScale;
+      if (s.tallyScale !== undefined) tallySizeSlider.value = s.tallyScale;
+      if (s.tallyBoxScale !== undefined) tallyBoxSizeSlider.value = s.tallyBoxScale;
+      if (s.schScale   !== undefined) schSizeSlider.value   = s.schScale;
+      if (s.schBoxScale !== undefined) schBoxSizeSlider.value = s.schBoxScale;
+      if (s.pClockScale !== undefined) pClockSlider.value = s.pClockScale;
+      if (s.pTallyScale !== undefined) pTallySlider.value = s.pTallyScale;
+      if (s.pSchScale   !== undefined) pSchSlider.value   = s.pSchScale;
+      if (s.cdBoxScale  !== undefined) cdBoxSizeSlider.value  = s.cdBoxScale;
+      if (s.cdTextScale !== undefined) cdTextSizeSlider.value = s.cdTextScale;
+      if (s.cdLabelScale !== undefined) cdLabelSizeSlider.value = s.cdLabelScale;
+      if (s.swBoxScale  !== undefined) swBoxSizeSlider.value  = s.swBoxScale;
+      if (s.swTextScale !== undefined) swTextSizeSlider.value = s.swTextScale;
+
+      // 값 표시만 갱신 (저장 트리거 없이)
+      clockSizeVal.textContent = parseFloat(clockSizeSlider.value).toFixed(2) + 'x';
+      clockBoxSizeVal.textContent = parseFloat(clockBoxSizeSlider.value).toFixed(2) + 'x';
+      tallySizeVal.textContent = parseFloat(tallySizeSlider.value).toFixed(2) + 'x';
+      tallyBoxSizeVal.textContent = parseFloat(tallyBoxSizeSlider.value).toFixed(2) + 'x';
+      schSizeVal.textContent   = parseFloat(schSizeSlider.value).toFixed(2)   + 'x';
+      schBoxSizeVal.textContent = parseFloat(schBoxSizeSlider.value).toFixed(2) + 'x';
+      pClockVal.textContent = parseFloat(pClockSlider.value).toFixed(2) + 'x';
+      pTallyVal.textContent = parseFloat(pTallySlider.value).toFixed(2) + 'x';
+      pSchVal.textContent   = parseFloat(pSchSlider.value).toFixed(2)   + 'x';
+      cdBoxSizeVal.textContent  = parseFloat(cdBoxSizeSlider.value).toFixed(2)  + 'x';
+      cdTextSizeVal.textContent = parseFloat(cdTextSizeSlider.value).toFixed(2) + 'x';
+      cdLabelSizeVal.textContent = parseFloat(cdLabelSizeSlider.value).toFixed(2) + 'x';
+      swBoxSizeVal.textContent  = parseFloat(swBoxSizeSlider.value).toFixed(2)  + 'x';
+      swTextSizeVal.textContent = parseFloat(swTextSizeSlider.value).toFixed(2) + 'x';
+
+      if (s.timeOffset !== undefined) {
+        timeOffsetSlider.value = s.timeOffset;
+        const v = parseFloat(s.timeOffset);
+        timeOffsetVal.textContent = (v >= 0 ? '+' : '') + v.toFixed(1) + '초';
+      }
+      dateWeatherToggle.checked = s.showDateWeather !== undefined ? !!s.showDateWeather : true;
+      scheduleVisibleToggle.checked = s.scheduleVisible !== undefined ? !!s.scheduleVisible : true;
+
+      if (s.liveAutoRevertMinutes !== undefined) liveRevertSlider.value = s.liveAutoRevertMinutes;
+      refreshLiveRevert();
+
+      portraitToggle.checked = !!s.portrait;
+      portraitLeftToggle.checked = !!s.portraitLeft;
+      portraitSub.classList.toggle('open', portraitToggle.checked);
+
+      if (s.broadcastTime !== undefined) broadcastTimeInput.value = s.broadcastTime;
+      if (s.broadcastEndTime !== undefined) broadcastEndTimeInput.value = s.broadcastEndTime;
+      broadcastTimeNdayBtn.classList.toggle('active', !!s.broadcastTimeNextDay);
+      broadcastEndTimeNdayBtn.classList.toggle('active', !!s.broadcastEndTimeNextDay);
+
+      bottomMode = s.countdownMode ? 'countdown' : (s.stopwatchMode ? 'stopwatch' : 'schedule');
+      applyBottomModeUI();
+
+      if (s.dm7Host !== undefined) dm7HostInput.value = s.dm7Host;
+      gpioEnableToggle.checked = !!s.gpioEnabled;
+      gpioSub.classList.toggle('open', gpioEnableToggle.checked);
+      if (s.gpioPin !== undefined) gpioPinInput.value = s.gpioPin;
+      gpioActiveLowToggle.checked = s.gpioActiveLow !== undefined ? !!s.gpioActiveLow : true;
+      if (s['cal-ts5']  !== undefined) calTs5.checked  = s['cal-ts5'];
+      if (s['cal-ts5b'] !== undefined) calTs5b.checked = s['cal-ts5b'];
+      if (s.customCalendarUrl !== undefined) calCustomUrl.value = s.customCalendarUrl;
+      if (s.customCalendarEnabled !== undefined) calCustomEnable.checked = !!s.customCalendarEnabled;
+
+      swRunning   = !!s.stopwatchRunning;
+      swElapsedMs = s.stopwatchElapsedMs !== undefined ? parseFloat(s.stopwatchElapsedMs) : 0;
+      swStartedAt = s.stopwatchStartedAt ? parseFloat(s.stopwatchStartedAt) : null;
+      updateSwDisplay();
+
+      timerDurationSec = s.timerDurationSec !== undefined ? parseFloat(s.timerDurationSec) : 300;
+      timerRunning     = !!s.timerRunning;
+      timerRemainingMs = s.timerRemainingMs !== undefined ? parseFloat(s.timerRemainingMs) : timerDurationSec * 1000;
+      timerStartedAt   = s.timerStartedAt ? parseFloat(s.timerStartedAt) : null;
+      timerDurationInput.value = formatStopwatch(timerDurationSec * 1000);
+      updateTimerDisplay();
+    })
+    .catch(() => {});
+</script>
+</body>
+</html>

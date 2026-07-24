@@ -3,8 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TALLY — Live Studio</title>
+  <title>SBS Web Tally</title>
   <style>
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/static/fonts/Pretendard-SemiBold.woff2') format('woff2');
+      font-weight: 600;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/static/fonts/Pretendard-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/static/fonts/Pretendard-ExtraBold.woff2') format('woff2');
+      font-weight: 800;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      src: url('/static/fonts/Pretendard-Black.woff2') format('woff2');
+      font-weight: 900;
+      font-display: swap;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -13,47 +37,55 @@
       flex-direction: column;
       align-items: center;
       background: #0a0a0a;
-      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       user-select: none;
       overflow: hidden;
+      cursor: none;
     }
 
-    /* ── 상태 박스 ───────────────────────────────────────────────── */
+    /* ── 상태 박스 (아날로그 탈리 램프) ───────────────────────────── */
     #status-box {
       position: relative;
       width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: clamp(22px, 4vh, 48px) clamp(20px, 4vw, 60px) clamp(18px, 3vh, 36px);
-      border-bottom: 2px solid #1a3a1a;
-      overflow: visible;
-      transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-      background: #0b1f0b;
-      box-shadow: 0 6px 50px 8px rgba(10,140,10,0.18);
+      padding: calc(var(--tally-box-scale, 1) * clamp(22px, 4vh, 48px)) clamp(20px, 4vw, 60px) calc(var(--tally-box-scale, 1) * clamp(18px, 3vh, 36px));
+      overflow: hidden;
+      transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, padding 0.2s ease;
+      background: linear-gradient(160deg, #170a0a 0%, #0c0505 55%, #060303 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        inset 0 -24px 40px rgba(0,0,0,0.4);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
     }
     #status-box.on-air {
-      background: #b0101a;
-      border-color: #d02030;
-      box-shadow: 0 6px 60px 10px rgba(200,15,30,0.40);
+      background: linear-gradient(160deg, #ff4040 0%, #e11c1c 45%, #a80f0f 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.28),
+        inset 0 -24px 50px rgba(0,0,0,0.22),
+        0 6px 70px 10px rgba(255,20,20,0.45);
+      border-bottom-color: rgba(255,255,255,0.18);
     }
-
 
     #status-text {
       font-size: clamp(3rem, 8vw, 7rem);
-      font-weight: 900;
-      letter-spacing: 0.22em;
-      color: #22cc44;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: rgba(140,50,50,0.45);
       text-transform: uppercase;
-      transition: color 0.25s;
+      transition: color 0.3s ease, text-shadow 0.3s ease;
       position: relative;
-      z-index: 1;
-      text-shadow: 0 0 24px rgba(30,200,60,0.35);
+      z-index: 3;
+      text-shadow: none;
       white-space: nowrap;
     }
     #status-box.on-air #status-text {
       color: #fff;
-      text-shadow: 0 0 24px rgba(255,180,180,0.4);
+      text-shadow:
+        0 1px 3px rgba(0,0,0,0.25),
+        0 0 26px rgba(255,255,255,0.55),
+        0 0 60px rgba(255,50,50,0.4);
     }
 
     /* ── 시계 영역 ──────────────────────────────────────────────── */
@@ -67,14 +99,15 @@
     }
 
     #clock {
-      font-family: 'Consolas', 'Menlo', 'Monaco', monospace;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
       font-weight: 800;
       color: #ffffff;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.02em;
       line-height: 1;
       text-shadow: 0 0 40px rgba(255,255,255,0.08);
-      transition: font-size 0.2s ease;
+      transition: font-size 0.2s ease, padding 0.2s ease;
+      padding: calc(var(--clock-box-scale, 1) * clamp(6px, 1.4vh, 18px)) 0;
       width: 8ch;
       text-align: center;
       display: block;
@@ -120,7 +153,8 @@
       background: #0d0d0d;
       display: grid;
       grid-template-columns: 1fr 1.5fr 1fr;
-      min-height: clamp(100px, 17vh, 160px);
+      min-height: calc(var(--sch-box-scale, 1) * clamp(100px, 17vh, 160px));
+      transition: min-height 0.2s ease;
     }
     .sch-slot {
       display: flex;
@@ -140,7 +174,7 @@
     .sch-slot.next  { opacity: 0.70; }
 
     .sch-label {
-      font-size: clamp(1rem, 2vw, 1.5rem);
+      font-size: calc(var(--sch-scale, 1) * clamp(1rem, 2vw, 1.5rem));
       font-weight: 800;
       letter-spacing: 0.14em;
       color: #fff;
@@ -154,7 +188,7 @@
     }
 
     .sch-timerange {
-      font-family: 'Consolas', 'Menlo', monospace;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-size: clamp(1.2rem, 2.2vw, 1.8rem);
       font-weight: 700;
       color: #5a82b8;
@@ -182,161 +216,358 @@
       letter-spacing: 0.08em;
     }
 
-    /* ── 연결 표시 ──────────────────────────────────────────────── */
-    #conn {
-      position: fixed;
-      bottom: 10px;
-      left: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.68rem;
-      color: #2c2c2c;
-      letter-spacing: 0.05em;
-      z-index: 100;
-    }
-    #dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: #222;
-      transition: background 0.3s;
-    }
-    #dot.connected  { background: #1a5e1a; }
-    #dot.connecting { background: #5e4a00; }
-
-    /* ── 설정 버튼 (우상단) ─────────────────────────────────────── */
-    #settings-btn {
-      position: fixed;
-      top: 12px;
-      right: 16px;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #333;
-      transition: color 0.2s, background 0.2s;
-      z-index: 100;
-    }
-    #settings-btn:hover { color: #666; background: #181818; }
-    #settings-btn svg { width: 20px; height: 20px; }
-
-    /* ── 설정 팝업 ──────────────────────────────────────────────── */
-    #settings-panel {
-      position: fixed;
-      top: 54px;
-      right: 16px;
-      width: 260px;
-      background: #161616;
-      border: 1px solid #2a2a2a;
-      border-radius: 14px;
-      padding: 20px;
-      z-index: 200;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    /* ── 방송 시작 카운트다운 ───────────────────────────────────── */
+    #countdown {
+      width: 100%;
+      border-top: 2px solid #2a2a2a;
+      background: #0d0d0d;
       display: none;
       flex-direction: column;
-      gap: 18px;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(
+        var(--cd-box-scale, 1) * clamp(90px, 14vh, 150px) +
+        var(--cd-text-scale, 1) * clamp(40px, 6vh, 70px)
+      );
+      gap: clamp(0px, 0.4vh, 4px);
+      transition: background 0.3s ease, box-shadow 0.3s ease, min-height 0.2s ease;
     }
-    #settings-panel.open { display: flex; }
+    #countdown.elapsed {
+      background: #1f1400;
+      box-shadow: inset 0 0 60px rgba(240,160,48,0.22);
+    }
 
-    .setting-label {
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: #555;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
+    /* ── 타이머 + 스톱워치 (좌: 타이머 / 우: 스톱워치) ─────────────── */
+    #stopwatch {
+      width: 100%;
+      border-top: 2px solid #2a2a2a;
+      background: radial-gradient(ellipse 90% 100% at 50% 100%, #0d1420 0%, #0a0a0a 70%);
+      display: none;
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: center;
+      min-height: calc(var(--sw-box-scale, 1) * clamp(130px, 20vh, 210px));
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s ease, min-height 0.2s ease;
     }
-    .setting-row {
+    #stopwatch.show { display: flex; }
+    .tm-col {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-    }
-    .setting-row-inline {
-      display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    #clock-size-val, #time-offset-val {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: #888;
-      min-width: 40px;
-      text-align: right;
-    }
-
-    input[type=range] {
-      -webkit-appearance: none;
-      width: 100%;
-      height: 4px;
-      border-radius: 2px;
-      background: #2a2a2a;
-      outline: none;
-      cursor: pointer;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #ffffff;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    input[type=range]::-webkit-slider-thumb:hover { background: #aaa; }
-
-
-    .panel-title {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #666;
-      letter-spacing: 0.08em;
-      padding-bottom: 14px;
-      border-bottom: 1px solid #222;
-    }
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .toggle-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #888;
-      letter-spacing: 0.04em;
-    }
-    .toggle {
+      justify-content: center;
+      gap: clamp(4px, 1vh, 10px);
+      padding: 0 clamp(10px, 2vw, 24px);
       position: relative;
-      width: 36px;
-      height: 20px;
-      flex-shrink: 0;
     }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-track {
-      position: absolute;
-      inset: 0;
-      background: #2a2a2a;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .toggle-track::after {
+    .tm-col::before {
       content: '';
       position: absolute;
-      left: 3px; top: 3px;
-      width: 14px; height: 14px;
-      background: #555;
-      border-radius: 50%;
-      transition: transform 0.2s, background 0.2s;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--tm-accent, #444) 50%, transparent);
+      opacity: 0.3;
+      transition: opacity 0.4s ease, box-shadow 0.4s ease;
     }
-    .toggle input:checked + .toggle-track { background: #1a4a8a; }
-    .toggle input:checked + .toggle-track::after { transform: translateX(16px); background: #fff; }
+    .tm-col.running::before, .tm-col.finished::before { opacity: 1; box-shadow: 0 0 16px 2px var(--tm-accent-glow, transparent); }
+    #timer-col   { --tm-accent: #7086ff; --tm-accent-glow: rgba(112,134,255,0.6); }
+    #stopwatch-col { --tm-accent: #00d4ff; --tm-accent-glow: rgba(0,212,255,0.6); }
+    #timer-col.finished { --tm-accent: #ff5050; --tm-accent-glow: rgba(255,80,80,0.6); }
+
+    .tm-divider {
+      width: 1px;
+      align-self: center;
+      height: 60%;
+      background: linear-gradient(180deg, transparent, rgba(255,255,255,0.14), transparent);
+      flex-shrink: 0;
+    }
+    .tm-label-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6em;
+    }
+    .tm-dot {
+      width: 0.55em;
+      height: 0.55em;
+      border-radius: 50%;
+      background: #333;
+      flex-shrink: 0;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    .tm-col.running .tm-dot, .tm-col.finished .tm-dot {
+      background: var(--tm-accent);
+      box-shadow: 0 0 10px 2px var(--tm-accent-glow);
+      animation: sw-dot-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes sw-dot-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.7); }
+    }
+    .tm-label {
+      font-size: calc(var(--sw-text-scale, 1) * clamp(0.85rem, 1.7vw, 1.35rem));
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: #777;
+      text-transform: uppercase;
+      transition: color 0.3s ease;
+    }
+    .tm-col.running .tm-label, .tm-col.finished .tm-label { color: var(--tm-accent); }
+    .tm-value {
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-variant-numeric: tabular-nums;
+      font-size: calc(var(--sw-text-scale, 1) * clamp(1.8rem, 4.6vw, 3.6rem));
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      color: #fff;
+      line-height: 1;
+      text-shadow: 0 0 16px color-mix(in srgb, var(--tm-accent) 30%, transparent);
+      transition: text-shadow 0.3s ease, color 0.3s ease;
+    }
+    .tm-col.running .tm-value, .tm-col.finished .tm-value { text-shadow: 0 0 28px color-mix(in srgb, var(--tm-accent) 65%, transparent); }
+    .tm-col.finished .tm-value { color: var(--tm-accent); }
+
+    /* ── 카운트다운 타임라인 (말 트랙) ───────────────────────────── */
+    #cd-track {
+      --s: var(--cd-box-scale, 1);
+      position: relative;
+      width: min(94%, 1500px);
+      height: calc(var(--s) * clamp(50px, 7vh, 84px));
+      margin-top: calc(var(--cd-text-scale, 1) * clamp(46px, 7.2vh, 84px));
+      display: none;
+    }
+    #cd-track.show { display: block; }
+    #cd-track-line {
+      position: absolute;
+      left: 0; right: 0; top: 30%;
+      height: calc(var(--s) * clamp(5px, 0.9vh, 9px));
+      transform: translateY(-50%);
+      background: #232323;
+      border-radius: 5px;
+    }
+    #cd-fill {
+      position: absolute;
+      left: 0; top: 30%;
+      height: calc(var(--s) * clamp(5px, 0.9vh, 9px));
+      transform: translateY(-50%);
+      background: #2ecc55;
+      border-radius: 5px;
+      width: 0%;
+      transition: width 1.05s linear, background 0.4s ease;
+    }
+    #cd-fill.cross-anim { transition: width 0.8s cubic-bezier(0.4,0,0.2,1), background 0.4s ease, left 0.8s cubic-bezier(0.4,0,0.2,1); }
+    #countdown.elapsed #cd-fill { background: linear-gradient(90deg, #a86a10, #f0a030); }
+
+    .cd-marker {
+      position: absolute;
+      top: 30%;
+      left: 0%;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+      transition: left 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+    #cd-marker-end { left: 100%; }
+    .cd-marker-dot {
+      display: block;
+      width: calc(var(--s) * clamp(14px, 2vh, 22px));
+      height: calc(var(--s) * clamp(14px, 2vh, 22px));
+      border-radius: 50%;
+      background: #555;
+      border: 2px solid #0d0d0d;
+    }
+    #cd-marker-start .cd-marker-dot,
+    #cd-marker-end   .cd-marker-dot {
+      background: radial-gradient(circle at 35% 35%, #ffffff, #cfcfcf 60%, #8a8a8a);
+      box-shadow: 0 0 12px 4px rgba(255,255,255,0.35);
+    }
+    .cd-marker-dot {
+      position: relative;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+    #cd-marker-start.crossed .cd-marker-dot {
+      opacity: 0.16;
+      transition: opacity 0.6s ease 0.45s;
+    }
+    .cd-marker-dot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      opacity: 0;
+    }
+    .cd-marker-dot.hit {
+      animation: marker-hit-scale 0.55s ease-out;
+    }
+    .cd-marker-dot.hit::after {
+      animation: marker-hit-ring 0.65s ease-out;
+    }
+    @keyframes marker-hit-scale {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.7); }
+      65%  { transform: scale(0.92); }
+      100% { transform: scale(1); }
+    }
+    @keyframes marker-hit-ring {
+      0%   { transform: scale(0.7); opacity: 0.95; }
+      100% { transform: scale(3); opacity: 0; }
+    }
+    .cd-marker-label {
+      position: absolute;
+      top: calc(var(--s) * clamp(16px, 2.2vh, 24px));
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: calc(var(--cd-label-scale, 1) * clamp(0.85rem, 1.5vw, 1.2rem));
+      font-weight: 800;
+      color: #ffedd5;
+      white-space: nowrap;
+      letter-spacing: 0.03em;
+    }
+    #cd-marker-end .cd-marker-label { color: #dce8ff; }
+    #cd-runner {
+      position: absolute;
+      top: 30%;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      transform: translateX(0px);
+      transition: transform 1.05s linear;
+      z-index: 2;
+    }
+    #cd-runner.cross-anim { transition: transform 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .cd-runner-tag {
+      position: absolute;
+      left: 0;
+      bottom: 100%;
+      margin-bottom: calc(var(--cd-text-scale, 1) * clamp(6px, 1vh, 10px));
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+    #cd-runner.cross-anim .cd-runner-tag { transition: transform 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .cd-runner-tag-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #1c1c1c;
+      border: 1px solid #3a3a3a;
+      color: #fff;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-variant-numeric: tabular-nums;
+      padding: calc(var(--cd-text-scale, 1) * clamp(3px, 0.5vh, 5px)) calc(var(--cd-text-scale, 1) * clamp(8px, 1.3vw, 13px));
+      border-radius: 9px;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+    .cd-tag-main {
+      color: #ffedd5;
+      text-shadow: 0 0 10px rgba(255,237,213,0.4);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      font-size: calc(var(--cd-text-scale, 1) * clamp(1rem, 2vw, 1.6rem));
+      line-height: 1.15;
+    }
+    .cd-tag-sub {
+      display: none;
+      color: #dce8ff;
+      text-shadow: 0 0 10px rgba(220,232,255,0.4);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      font-size: calc(var(--cd-text-scale, 1) * clamp(0.78rem, 1.4vw, 1.15rem));
+      line-height: 1.15;
+      margin-top: 2px;
+      padding-top: 3px;
+      width: 100%;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .cd-tag-sub.show { display: block; }
+    .cd-runner-tag-arrow {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 7px solid #1c1c1c;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
+      transition: border-top-color 0.3s ease;
+    }
+    #countdown.elapsed .cd-runner-tag-pill {
+      background: #241705;
+      border-color: #a86a10;
+    }
+    #countdown.elapsed .cd-runner-tag-arrow { border-top-color: #241705; }
+    .cd-runner-trail {
+      position: absolute;
+      top: 50%;
+      right: 100%;
+      width: calc(var(--s) * clamp(60px, 9vw, 130px));
+      height: calc(var(--s) * clamp(4px, 0.7vh, 7px));
+      transform: translateY(-50%);
+      background: linear-gradient(90deg, transparent, rgba(46,204,85,0.6));
+      border-radius: 6px;
+      transition: background 0.4s ease, width 0.3s ease;
+    }
+    .cd-runner-ring {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: calc(var(--s) * clamp(9px, 1.3vh, 15px));
+      height: calc(var(--s) * clamp(9px, 1.3vh, 15px));
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid rgba(46,204,85,0.55);
+      pointer-events: none;
+    }
+    #cd-runner.walking .cd-runner-ring { animation: runner-ping 2.4s cubic-bezier(.2,.6,.35,1) infinite; }
+    #cd-runner.running .cd-runner-ring {
+      border-color: rgba(240,160,48,0.6);
+      animation: runner-ping 1.1s cubic-bezier(.2,.6,.35,1) infinite;
+    }
+    #cd-runner.finished .cd-runner-ring { display: none; }
+    .cd-runner-head {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: calc(var(--s) * clamp(9px, 1.3vh, 15px));
+      height: calc(var(--s) * clamp(9px, 1.3vh, 15px));
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle at 35% 35%, #e0ffe8, #2ecc55 60%, #167a34);
+      box-shadow: 0 0 calc(var(--s) * 9px) calc(var(--s) * 3px) rgba(46,204,85,0.55);
+      transition: background 0.4s ease, box-shadow 0.4s ease;
+    }
+    #cd-runner.walking .cd-runner-head { animation: runner-glow 2.4s ease-in-out infinite; }
+    #cd-runner.running .cd-runner-head { animation: runner-glow 0.9s ease-in-out infinite; }
+    #cd-runner.running .cd-runner-trail {
+      background: linear-gradient(90deg, transparent, rgba(240,160,48,0.4));
+      width: calc(var(--s) * clamp(20px, 2.6vw, 45px));
+    }
+    #cd-runner.running .cd-runner-head {
+      background: radial-gradient(circle at 35% 35%, #ffe9c2, #f0a030 55%, #a86a10);
+      box-shadow: 0 0 calc(var(--s) * 13px) calc(var(--s) * 4px) rgba(240,160,48,0.65);
+    }
+    #cd-runner.finished .cd-runner-head {
+      background: radial-gradient(circle at 35% 35%, #fff, #ffd34d 55%, #c99a00);
+      box-shadow: 0 0 calc(var(--s) * 11px) calc(var(--s) * 3px) rgba(255,211,77,0.6);
+      animation: none;
+    }
+    #cd-runner.finished .cd-runner-trail {
+      background: linear-gradient(90deg, transparent, rgba(255,211,77,0.7));
+    }
+
+    @keyframes runner-ping {
+      0%   { transform: translate(-50%, -50%) scale(0.85); opacity: 0.65; }
+      100% { transform: translate(-50%, -50%) scale(2.3); opacity: 0; }
+    }
+    @keyframes runner-glow {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+      50%      { transform: translate(-50%, -50%) scale(1.07); filter: brightness(1.2); }
+    }
 
     /* ── 세로 모드 (전체 화면 90도 회전) ───────────────────────── */
     body.portrait-right, body.portrait-left {
@@ -362,7 +593,9 @@
       font-size: clamp(2.5rem, 5vh, 4.5rem);
     }
     body.portrait-right #schedule,
-    body.portrait-left  #schedule {
+    body.portrait-left  #schedule,
+    body.portrait-right #countdown,
+    body.portrait-left  #countdown {
       flex: 0 0 clamp(140px, 20vh, 220px);
       min-height: unset;
     }
@@ -373,107 +606,14 @@
     body.portrait-left  #clock {
       font-size: min(var(--clock-fs, 8rem), 20vh) !important;
     }
+
   </style>
 </head>
 <body>
 
-  <div id="conn"><span id="dot"></span><span id="conn-label">연결 중…</span></div>
-
-  <!-- 설정 버튼 -->
-  <button id="settings-btn" title="설정">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-    </svg>
-  </button>
-
-  <!-- 설정 팝업 -->
-  <div id="settings-panel">
-    <div class="panel-title">⚙ 화면 설정</div>
-    <div class="setting-row">
-      <div class="setting-row-inline">
-        <span class="setting-label">시계 크기</span>
-        <span id="clock-size-val">13rem</span>
-      </div>
-      <input type="range" id="clock-size" min="4" max="22" step="0.5" value="13" />
-    </div>
-    <div class="setting-row">
-      <div class="setting-row-inline">
-        <span class="setting-label">탈리 크기</span>
-        <span id="tally-size-val">3rem</span>
-      </div>
-      <input type="range" id="tally-size" min="1.5" max="16" step="0.5" value="3" />
-    </div>
-    <div class="setting-row">
-      <div class="setting-row-inline">
-        <span class="setting-label">일정 크기</span>
-        <span id="sch-size-val">1.3rem</span>
-      </div>
-      <input type="range" id="sch-size" min="0.7" max="6" step="0.1" value="1.3" />
-    </div>
-    <div class="setting-row">
-      <div class="setting-row-inline">
-        <span class="setting-label">시간 보정</span>
-        <span id="time-offset-val">0.0초</span>
-      </div>
-      <input type="range" id="time-offset" min="-10" max="10" step="0.5" value="0" />
-    </div>
-    <div class="setting-row">
-      <span class="setting-label">화면 방향</span>
-      <div class="toggle-row" style="margin-top:6px">
-        <span class="toggle-label">세로 모드</span>
-        <label class="toggle">
-          <input type="checkbox" id="portrait-toggle" />
-          <span class="toggle-track"></span>
-        </label>
-      </div>
-      <div class="toggle-row" id="portrait-dir-row" style="margin-top:6px; display:none">
-        <span class="toggle-label">← 왼쪽 회전</span>
-        <label class="toggle">
-          <input type="checkbox" id="portrait-left-toggle" />
-          <span class="toggle-track"></span>
-        </label>
-      </div>
-      <div id="portrait-sizes" style="display:none; flex-direction:column; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid #1e1e1e;">
-        <div class="setting-row-inline">
-          <span class="setting-label" style="margin-bottom:0">시계 (세로)</span>
-          <span id="p-clock-size-val" style="font-size:0.8rem;font-weight:700;color:#888;min-width:40px;text-align:right">12rem</span>
-        </div>
-        <input type="range" id="p-clock-size" min="2" max="20" step="0.5" value="12" />
-        <div class="setting-row-inline">
-          <span class="setting-label" style="margin-bottom:0">탈리 (세로)</span>
-          <span id="p-tally-size-val" style="font-size:0.8rem;font-weight:700;color:#888;min-width:40px;text-align:right">4rem</span>
-        </div>
-        <input type="range" id="p-tally-size" min="1" max="16" step="0.5" value="4" />
-        <div class="setting-row-inline">
-          <span class="setting-label" style="margin-bottom:0">일정 (세로)</span>
-          <span id="p-sch-size-val" style="font-size:0.8rem;font-weight:700;color:#888;min-width:40px;text-align:right">1.2rem</span>
-        </div>
-        <input type="range" id="p-sch-size" min="0.4" max="6" step="0.1" value="1.2" />
-      </div>
-    </div>
-    <div class="setting-row">
-      <span class="setting-label">캘린더 선택</span>
-      <div class="toggle-row" style="margin-top:6px">
-        <span class="toggle-label">TS-5</span>
-        <label class="toggle">
-          <input type="checkbox" id="cal-ts5" checked />
-          <span class="toggle-track"></span>
-        </label>
-      </div>
-      <div class="toggle-row" style="margin-top:6px">
-        <span class="toggle-label">TS-5(방송)</span>
-        <label class="toggle">
-          <input type="checkbox" id="cal-ts5b" checked />
-          <span class="toggle-track"></span>
-        </label>
-      </div>
-    </div>
-  </div>
-
-  <!-- 상태 박스 -->
+  <!-- 상태 박스 (아날로그 탈리 램프) -->
   <div id="status-box">
-    <span id="status-text">방송 준비중</span>
+    <span id="status-text">ON AIR</span>
   </div>
 
   <!-- 시계 + 날짜 + 날씨 -->
@@ -508,65 +648,119 @@
     </div>
   </div>
 
+  <!-- 방송 시작 카운트다운 -->
+  <div id="countdown">
+    <div id="cd-track">
+      <div id="cd-track-line"></div>
+      <div id="cd-fill"></div>
+      <div class="cd-marker" id="cd-marker-start">
+        <span class="cd-marker-dot"></span>
+        <span class="cd-marker-label" id="cd-marker-start-label">시작</span>
+      </div>
+      <div class="cd-marker" id="cd-marker-end">
+        <span class="cd-marker-dot"></span>
+        <span class="cd-marker-label" id="cd-marker-end-label">종료</span>
+      </div>
+      <div id="cd-runner" class="walking">
+        <span class="cd-runner-trail"></span>
+        <span class="cd-runner-ring"></span>
+        <span class="cd-runner-head"></span>
+        <div class="cd-runner-tag" id="cd-runner-tag">
+          <span class="cd-runner-tag-pill" id="cd-runner-tag-text">
+            <span class="cd-tag-main" id="cd-tag-main">--:--</span>
+            <span class="cd-tag-sub" id="cd-tag-sub"></span>
+          </span>
+          <span class="cd-runner-tag-arrow"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 타이머 + 스톱워치 -->
+  <div id="stopwatch">
+    <div class="tm-col" id="timer-col">
+      <div class="tm-label-row">
+        <span class="tm-dot" id="timer-dot"></span>
+        <span class="tm-label" id="timer-label">타이머</span>
+      </div>
+      <span class="tm-value" id="timer-value">-05:00</span>
+    </div>
+    <div class="tm-divider"></div>
+    <div class="tm-col" id="stopwatch-col">
+      <div class="tm-label-row">
+        <span class="tm-dot" id="stopwatch-dot"></span>
+        <span class="tm-label" id="stopwatch-label">스톱워치</span>
+      </div>
+      <span class="tm-value" id="stopwatch-timer">+00:00</span>
+    </div>
+  </div>
+
 <script>
   const box         = document.getElementById('status-box');
   const statusText  = document.getElementById('status-text');
+  const scheduleEl  = document.getElementById('schedule');
+  const countdownEl = document.getElementById('countdown');
+  const stopwatchEl = document.getElementById('stopwatch');
   const clockEl     = document.getElementById('clock');
+  const infoRow     = document.getElementById('info-row');
   const dateEl      = document.getElementById('date');
   const weatherIcon = document.getElementById('weather-icon');
   const weatherText = document.getElementById('weather-text');
-  const dot         = document.getElementById('dot');
-  const connLabel   = document.getElementById('conn-label');
-  const settingsBtn = document.getElementById('settings-btn');
-  const settingsPanel = document.getElementById('settings-panel');
-  const clockSizeSlider = document.getElementById('clock-size');
-  const clockSizeVal    = document.getElementById('clock-size-val');
-  const tallySizeSlider = document.getElementById('tally-size');
-  const tallySizeVal    = document.getElementById('tally-size-val');
-  const schSizeSlider   = document.getElementById('sch-size');
-  const schSizeVal      = document.getElementById('sch-size-val');
+  const cdTagMain   = document.getElementById('cd-tag-main');
+  const cdTagSub    = document.getElementById('cd-tag-sub');
+  const cdTrack     = document.getElementById('cd-track');
+  const cdFill      = document.getElementById('cd-fill');
+  const cdRunner    = document.getElementById('cd-runner');
+  const cdMarkerStart      = document.getElementById('cd-marker-start');
+  const cdMarkerStartLabel = document.getElementById('cd-marker-start-label');
+  const cdMarkerEndLabel   = document.getElementById('cd-marker-end-label');
+  const stopwatchCol     = document.getElementById('stopwatch-col');
+  const stopwatchLabel   = document.getElementById('stopwatch-label');
+  const stopwatchTimerEl = document.getElementById('stopwatch-timer');
+  const timerCol   = document.getElementById('timer-col');
+  const timerLabel = document.getElementById('timer-label');
+  const timerValueEl = document.getElementById('timer-value');
 
   const DAYS = ['일','월','화','수','목','금','토'];
 
-  /* ── 설정 저장/불러오기 ──────────────────────────────────────── */
   function isPortraitMode() {
     return document.body.classList.contains('portrait-right') ||
            document.body.classList.contains('portrait-left');
   }
 
-  function currentSettings() {
-    return {
-      clockSize:    parseFloat(clockSizeSlider.value),
-      tallySize:    parseFloat(tallySizeSlider.value),
-      schSize:      parseFloat(schSizeSlider.value),
-      timeOffset:   timeOffsetSec,
-      'cal-ts5':    calTs5.checked,
-      'cal-ts5b':   calTs5b.checked,
-      portrait:     document.getElementById('portrait-toggle').checked,
-      portraitLeft: document.getElementById('portrait-left-toggle').checked,
-      pClockSize:   parseFloat(document.getElementById('p-clock-size').value),
-      pTallySize:   parseFloat(document.getElementById('p-tally-size').value),
-      pSchSize:     parseFloat(document.getElementById('p-sch-size').value),
-    };
-  }
+  /* ── 배율 기준값 (설정 페이지와 동일) ─────────────────────────── */
+  const CLOCK_BASELINE   = 13;
+  const TALLY_BASELINE   = 5;
+  const SCH_BASELINE     = 1.3;
+  const P_CLOCK_BASELINE = 12;
+  const P_TALLY_BASELINE = 4;
+  const P_SCH_BASELINE   = 1.2;
 
-  function saveSetting(key, val) {
-    localStorage.setItem(key, val);
-    fetch('/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(currentSettings()),
-    });
+  /* ── 화면에 적용되는 현재 설정값 (컨트롤 페이지에서 폴링으로 받아옴) ─ */
+  let timeOffsetSec  = 0;
+  let clockScale = 1, tallyScale = 1, schScale = 1, schBoxScale = 1;
+  let tallyBoxScale = 1, clockBoxScale = 1;
+  let pClockScale = 1, pTallyScale = 1, pSchScale = 1;
+  let calTs5On = true, calTs5bOn = true;
+  let customCalUrl = '', customCalOn = false;
+  let countdownModeOn = false, stopwatchModeOn = false;
+  let scheduleVisible = true;
+  let broadcastTime = '', broadcastEndTime = '';
+  let broadcastTimeNextDay = false, broadcastEndTimeNextDay = false;
+  let lastCdSignature = '';
+  let cdBoxScale = 1, cdTextScale = 1, cdLabelScale = 1;
+  let swBoxScale = 1, swTextScale = 1;
+
+  function getNow() {
+    return new Date(Date.now() + timeOffsetSec * 1000);
   }
 
   /* ── 크기 실제 적용 (가로/세로 공용) ───────────────────────── */
   function setClockFontSize(rem) {
     if (isPortraitMode()) {
-      // CSS min(var(--clock-fs), 20vh) 가 폭 초과를 원천 차단
-      // JS는 캡(20vh) 초과분을 scaleY 세로 성장으로만 담당
       clockEl.style.removeProperty('font-size');
       clockEl.style.setProperty('--clock-fs', rem + 'rem');
-      const capPx  = window.innerHeight * 0.20; // 20vh = CSS min() 캡
+      const capPx  = window.innerHeight * 0.20;
       const capRem = capPx / 16;
       if (rem > capRem) {
         const scale    = rem / capRem;
@@ -582,126 +776,32 @@
     }
   }
   function setTallyFontSize(rem) {
-    const el = document.getElementById('status-text');
-    el.style.fontSize = rem + 'rem';
+    statusText.style.fontSize = rem + 'rem';
     if (isPortraitMode()) {
       const maxPx = window.innerHeight - 80;
-      const w = el.offsetWidth; // CSS 텍스트 폭
+      const w = statusText.offsetWidth;
       if (w > maxPx) {
-        el.style.fontSize = (rem * maxPx / w) + 'rem';
+        statusText.style.fontSize = (rem * maxPx / w) + 'rem';
       }
     }
   }
   function setSchFontSize(rem) {
+    scheduleEl.style.setProperty('--sch-scale', (rem / SCH_BASELINE).toFixed(3));
     document.querySelectorAll('.sch-name').forEach(el => el.style.fontSize = rem + 'rem');
     document.querySelectorAll('.sch-timerange').forEach(el => el.style.fontSize = (rem * 0.75) + 'rem');
-    document.querySelectorAll('.sch-label').forEach(el => el.style.fontSize = '');
   }
 
-  /* ── 시계 크기 설정 (가로) ──────────────────────────────────── */
-  function applyClockSize(rem) {
-    clockSizeVal.textContent = rem + 'rem';
-    clockSizeSlider.value = rem;
-    if (!isPortraitMode()) setClockFontSize(rem);
+  function applyLandscapeSizes() {
+    if (isPortraitMode()) return;
+    setClockFontSize(CLOCK_BASELINE * clockScale);
+    setTallyFontSize(TALLY_BASELINE * tallyScale);
+    setSchFontSize(SCH_BASELINE * schScale);
   }
-  applyClockSize(parseFloat(localStorage.getItem('clockSize') || '13'));
-  clockSizeSlider.addEventListener('input', () => {
-    const v = parseFloat(clockSizeSlider.value);
-    applyClockSize(v);
-    saveSetting('clockSize', v);
-  });
-
-  /* ── 탈리 크기 설정 (가로) ──────────────────────────────────── */
-  function applyTallySize(rem) {
-    tallySizeVal.textContent = rem + 'rem';
-    tallySizeSlider.value = rem;
-    if (!isPortraitMode()) setTallyFontSize(rem);
-  }
-  applyTallySize(parseFloat(localStorage.getItem('tallySize') || '3'));
-  tallySizeSlider.addEventListener('input', () => {
-    const v = parseFloat(tallySizeSlider.value);
-    applyTallySize(v);
-    saveSetting('tallySize', v);
-  });
-
-  /* ── 일정 크기 설정 (가로) ──────────────────────────────────── */
-  function applySchSize(rem) {
-    schSizeVal.textContent = rem + 'rem';
-    schSizeSlider.value = rem;
-    if (!isPortraitMode()) setSchFontSize(rem);
-  }
-  applySchSize(parseFloat(localStorage.getItem('schSize') || '1.3'));
-  schSizeSlider.addEventListener('input', () => {
-    const v = parseFloat(schSizeSlider.value);
-    applySchSize(v);
-    saveSetting('schSize', v);
-  });
-
-  /* ── 세로 전용 크기 설정 ────────────────────────────────────── */
-  const pClockSlider  = document.getElementById('p-clock-size');
-  const pClockVal     = document.getElementById('p-clock-size-val');
-  const pTallySlider  = document.getElementById('p-tally-size');
-  const pTallyVal     = document.getElementById('p-tally-size-val');
-  const pSchSlider    = document.getElementById('p-sch-size');
-  const pSchVal       = document.getElementById('p-sch-size-val');
-  const portraitSizes = document.getElementById('portrait-sizes');
-
   function applyPortraitSizes() {
-    setClockFontSize(parseFloat(pClockSlider.value));
-    setTallyFontSize(parseFloat(pTallySlider.value));
-    setSchFontSize(parseFloat(pSchSlider.value));
-  }
-
-  pClockSlider.value = parseFloat(localStorage.getItem('pClockSize') || '12');
-  pClockVal.textContent = pClockSlider.value + 'rem';
-  pTallySlider.value = parseFloat(localStorage.getItem('pTallySize') || '4');
-  pTallyVal.textContent = pTallySlider.value + 'rem';
-  pSchSlider.value = parseFloat(localStorage.getItem('pSchSize') || '1.2');
-  pSchVal.textContent = pSchSlider.value + 'rem';
-
-  pClockSlider.addEventListener('input', () => {
-    pClockVal.textContent = pClockSlider.value + 'rem';
-    if (isPortraitMode()) setClockFontSize(parseFloat(pClockSlider.value));
-    saveSetting('pClockSize', pClockSlider.value);
-  });
-  pTallySlider.addEventListener('input', () => {
-    pTallyVal.textContent = pTallySlider.value + 'rem';
-    if (isPortraitMode()) setTallyFontSize(parseFloat(pTallySlider.value));
-    saveSetting('pTallySize', pTallySlider.value);
-  });
-  pSchSlider.addEventListener('input', () => {
-    pSchVal.textContent = pSchSlider.value + 'rem';
-    if (isPortraitMode()) setSchFontSize(parseFloat(pSchSlider.value));
-    saveSetting('pSchSize', pSchSlider.value);
-  });
-
-  /* ── 설정 팝업 토글 ─────────────────────────────────────────── */
-  settingsBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    settingsPanel.classList.toggle('open');
-  });
-  document.addEventListener('click', (e) => {
-    if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
-      settingsPanel.classList.remove('open');
-    }
-  });
-
-  /* ── 시간 보정 ───────────────────────────────────────────────── */
-  const timeOffsetSlider = document.getElementById('time-offset');
-  const timeOffsetVal    = document.getElementById('time-offset-val');
-
-  let timeOffsetSec = parseFloat(localStorage.getItem('timeOffset') || '0');
-  timeOffsetSlider.value = timeOffsetSec;
-  timeOffsetVal.textContent = (timeOffsetSec >= 0 ? '+' : '') + timeOffsetSec.toFixed(1) + '초';
-
-  timeOffsetSlider.addEventListener('input', () => {
-    timeOffsetSec = parseFloat(timeOffsetSlider.value);
-    timeOffsetVal.textContent = (timeOffsetSec >= 0 ? '+' : '') + timeOffsetSec.toFixed(1) + '초';
-    saveSetting('timeOffset', timeOffsetSec);
-  });
-
-  function getNow() {
-    return new Date(Date.now() + timeOffsetSec * 1000);
+    if (!isPortraitMode()) return;
+    setClockFontSize(P_CLOCK_BASELINE * pClockScale);
+    setTallyFontSize(P_TALLY_BASELINE * pTallyScale);
+    setSchFontSize(P_SCH_BASELINE * pSchScale);
   }
 
   /* ── 시계 & 날짜 ─────────────────────────────────────────────── */
@@ -714,7 +814,6 @@
       `${n.getFullYear()}년 ${pad(n.getMonth()+1)}월 ${pad(n.getDate())}일 (${DAYS[n.getDay()]})`;
   }
   updateClock();
-  setInterval(updateClock, 1000);
 
   /* ── 날씨 ────────────────────────────────────────────────────── */
   const WMO = {
@@ -751,25 +850,15 @@
   loadWeather();
   setInterval(loadWeather, 10 * 60 * 1000);
 
-  /* ── 캘린더 선택 토글 ───────────────────────────────────────── */
-  const calTs5  = document.getElementById('cal-ts5');
-  const calTs5b = document.getElementById('cal-ts5b');
-
-  calTs5.checked  = localStorage.getItem('cal-ts5')  !== 'false';
-  calTs5b.checked = localStorage.getItem('cal-ts5b') !== 'false';
-
-  calTs5.addEventListener('change',  () => { saveSetting('cal-ts5',  calTs5.checked);  loadSchedule(); });
-  calTs5b.addEventListener('change', () => { saveSetting('cal-ts5b', calTs5b.checked); loadSchedule(); });
-
+  /* ── 캘린더 타임라인 ─────────────────────────────────────────── */
   function getCalendarUrl() {
     const params = [];
-    if (calTs5.checked)  params.push('cal=TS-5');
-    if (calTs5b.checked) params.push('cal=TS-5(%EB%B0%A9%EC%86%A1)');
+    if (calTs5On)  params.push('cal=TS-5');
+    if (calTs5bOn) params.push('cal=TS-5(%EB%B0%A9%EC%86%A1)');
+    if (customCalOn && customCalUrl) params.push('customCal=' + encodeURIComponent(customCalUrl));
     params.push('offset=' + timeOffsetSec);
     return '/calendar?' + params.join('&');
   }
-
-  /* ── 캘린더 타임라인 ─────────────────────────────────────────── */
   function setSlot(timeEl, nameEl, ev) {
     if (ev) {
       timeEl.textContent = ev.allday ? '종일' : `${ev.start} – ${ev.end}`;
@@ -779,111 +868,319 @@
       nameEl.innerHTML = '<span class="sch-none">일정 없음</span>';
     }
   }
-
   function loadSchedule() {
     fetch(getCalendarUrl())
       .then(r => r.json())
       .then(d => {
-        setSlot(
-          document.getElementById('sch-prev-time'),
-          document.getElementById('sch-prev-name'),
-          d.prev
-        );
-        setSlot(
-          document.getElementById('sch-cur-time'),
-          document.getElementById('sch-cur-name'),
-          d.current
-        );
-        setSlot(
-          document.getElementById('sch-next-time'),
-          document.getElementById('sch-next-name'),
-          d.next
-        );
+        setSlot(document.getElementById('sch-prev-time'), document.getElementById('sch-prev-name'), d.prev);
+        setSlot(document.getElementById('sch-cur-time'),  document.getElementById('sch-cur-name'),  d.current);
+        setSlot(document.getElementById('sch-next-time'), document.getElementById('sch-next-name'), d.next);
       })
       .catch(() => {});
   }
   loadSchedule();
   setInterval(loadSchedule, 60 * 1000);
 
-  /* ── 세로 모드 + 방향 ───────────────────────────────────────── */
-  const portraitToggle     = document.getElementById('portrait-toggle');
-  const portraitLeftToggle = document.getElementById('portrait-left-toggle');
-  const portraitDirRow     = document.getElementById('portrait-dir-row');
+  /* ── 하단 표시 모드 전환 (일정 / 카운트다운 / 스톱워치) ───────── */
+  function applyBottomDisplay() {
+    scheduleEl.style.display  = (!countdownModeOn && !stopwatchModeOn && scheduleVisible) ? 'grid' : 'none';
+    countdownEl.style.display = countdownModeOn ? 'flex' : 'none';
+    stopwatchEl.style.display = stopwatchModeOn ? 'flex' : 'none';
+  }
 
+  /* ── 방송 시작 카운트다운 ───────────────────────────────────── */
+  const CD_LEAD_SEC = 15 * 60;
+  let cdWasBeforeStart = null;
+
+  function triggerStartHit() {
+    const dotEl = cdMarkerStart.querySelector('.cd-marker-dot');
+    dotEl.classList.remove('hit');
+    void dotEl.offsetWidth;
+    dotEl.classList.add('hit');
+  }
+
+  function formatDuration(totalSec) {
+    totalSec = Math.max(0, Math.round(totalSec));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = v => String(v).padStart(2, '0');
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  }
+  function pad2(v) { return String(v).padStart(2, '0'); }
+  function hhmm(d) { return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
+  function timeToday(now, hhmmStr, nextDay) {
+    const [h, m, s] = hhmmStr.split(':').map(Number);
+    const d = new Date(now);
+    d.setHours(h, m, s || 0, 0);
+    if (nextDay) d.setDate(d.getDate() + 1);
+    return d;
+  }
+
+  function updateCountdown() {
+    if (!countdownModeOn) return;
+    const startVal = broadcastTime;
+    const endVal   = broadcastEndTime;
+    const now = getNow();
+
+    if (!startVal) {
+      cdTagMain.textContent = '--:--';
+      cdTagSub.classList.remove('show');
+      countdownEl.classList.remove('elapsed');
+      cdTrack.classList.remove('show');
+      return;
+    }
+
+    const start = timeToday(now, startVal, broadcastTimeNextDay);
+    const rawDiffMs = start - now;
+
+    if (rawDiffMs > 0) {
+      cdTagMain.textContent = '-' + formatDuration(Math.floor(rawDiffMs / 1000));
+      cdTagSub.classList.remove('show');
+      countdownEl.classList.remove('elapsed');
+    } else {
+      cdTagMain.textContent = '+' + formatDuration(Math.floor(-rawDiffMs / 1000));
+      countdownEl.classList.add('elapsed');
+    }
+
+    if (!endVal) {
+      cdTagSub.classList.remove('show');
+      cdTrack.classList.remove('show');
+      return;
+    }
+    const end = timeToday(now, endVal, broadcastEndTimeNextDay);
+    const durationSec = (end - start) / 1000;
+    if (durationSec <= 0) {
+      cdTagSub.classList.remove('show');
+      cdTrack.classList.remove('show');
+      return;
+    }
+    cdTrack.classList.add('show');
+    cdMarkerStartLabel.textContent = (broadcastTimeNextDay ? '시작 N ' : '시작 ') + hhmm(start);
+    renderBoundedTrack(now, start, end, durationSec);
+  }
+
+  function renderBoundedTrack(now, start, end, durationSec) {
+    cdMarkerEndLabel.textContent = (broadcastEndTimeNextDay ? '종료 N ' : '종료 ') + hhmm(end);
+
+    const isBeforeStart = now < start;
+
+    // 시작점을 지나면 트랙 좌표계를 '시작~종료'로 재구성 — 리드인 구간이 차지하던 공간을
+    // 되찾아 트랙이 화면 전체 폭으로 길어진다 (크로싱 순간에만 cross-anim으로 부드럽게 전환).
+    let startPct, pct;
+    if (isBeforeStart) {
+      const leadSec    = Math.min(CD_LEAD_SEC, durationSec);
+      const trackStart = new Date(start.getTime() - leadSec * 1000);
+      startPct = (leadSec / (leadSec + durationSec)) * 100;
+      const totalSec = (end - trackStart) / 1000;
+      const elapsedFromTrackStart = (now - trackStart) / 1000;
+      pct = Math.max(0, Math.min(1, elapsedFromTrackStart / totalSec)) * 100;
+    } else {
+      startPct = 0;
+      pct = Math.max(0, Math.min(1, (now - start) / (end - start))) * 100;
+    }
+    // cross-anim 클래스는 반드시 left/width 값을 바꾸기 '전'에 붙여야 함 — 나중에 붙이면
+    // 브라우저가 이미 기본(0.9s linear) 트랜지션으로 애니메이션을 시작해버려 러너만 처지는
+    // 현상이 생긴다(마커·채움바와 속도가 어긋나 보였던 원인).
+    const justCrossed = cdWasBeforeStart === true && !isBeforeStart;
+    if (justCrossed) {
+      cdRunner.classList.add('cross-anim');
+      cdFill.classList.add('cross-anim');
+      setTimeout(() => {
+        cdRunner.classList.remove('cross-anim');
+        cdFill.classList.remove('cross-anim');
+      }, 850);
+    }
+
+    if (!cdTrackWidthPx) cdTrackWidthPx = cdTrack.getBoundingClientRect().width;
+
+    cdMarkerStart.style.left = startPct + '%';
+    cdRunner.style.transform = 'translateX(' + (pct / 100 * cdTrackWidthPx) + 'px)';
+
+    if (!isBeforeStart) {
+      const remainSec = Math.max(0, Math.floor((end - now) / 1000));
+      cdTagSub.textContent = '-' + formatDuration(remainSec);
+      cdTagSub.classList.add('show');
+    } else {
+      cdTagSub.classList.remove('show');
+    }
+
+    if (justCrossed) {
+      triggerStartHit();
+    }
+    cdWasBeforeStart = isBeforeStart;
+    cdMarkerStart.classList.toggle('crossed', !isBeforeStart);
+
+    if (now < start) {
+      cdFill.style.left = startPct + '%';
+      cdFill.style.width = '0%';
+      cdRunner.classList.remove('running', 'finished');
+      cdRunner.classList.add('walking');
+    } else if (now < end) {
+      cdFill.style.left = startPct + '%';
+      cdFill.style.width = Math.max(0, pct - startPct) + '%';
+      cdRunner.classList.remove('walking', 'finished');
+      cdRunner.classList.add('running');
+    } else {
+      cdFill.style.left = startPct + '%';
+      cdFill.style.width = (100 - startPct) + '%';
+      cdRunner.classList.remove('walking', 'running');
+      cdRunner.classList.add('finished');
+    }
+
+  }
+
+  let cdTrackWidthPx = 0;
+  window.addEventListener('resize', () => { cdTrackWidthPx = 0; });
+
+  /* ── 스톱워치 + 타이머 (서버 상태 기준 — 컨트롤 페이지와 공유) ─── */
+  let swRunning = false, swElapsedMs = 0, swStartedAt = null;
+
+  function formatStopwatch(ms) {
+    const totalSec = Math.floor(Math.max(0, ms) / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = v => String(v).padStart(2, '0');
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  }
+  function swCurrentElapsedMs() {
+    return swElapsedMs + (swRunning && swStartedAt ? Date.now() - swStartedAt : 0);
+  }
+  function updateStopwatchDisplay() {
+    stopwatchTimerEl.textContent = '+' + formatStopwatch(swCurrentElapsedMs());
+    stopwatchCol.classList.toggle('running', swRunning);
+    stopwatchLabel.textContent = swRunning ? '스톱워치 진행중' : '스톱워치';
+  }
+
+  let timerDurationSec = 300, timerRunning = false, timerRemainingMs = 300000, timerStartedAt = null;
+
+  function timerCurrentRemainingMs() {
+    const raw = timerRemainingMs - (timerRunning && timerStartedAt ? Date.now() - timerStartedAt : 0);
+    return Math.max(0, raw);
+  }
+  function updateTimerDisplay() {
+    const remainMs = timerCurrentRemainingMs();
+    const finished = timerRunning && remainMs <= 0;
+    timerValueEl.textContent = '-' + formatStopwatch(remainMs);
+    timerCol.classList.toggle('running', timerRunning && !finished);
+    timerCol.classList.toggle('finished', finished);
+    timerLabel.textContent = finished ? '타이머 종료' : (timerRunning ? '타이머 진행중' : '타이머');
+  }
+  updateStopwatchDisplay();
+
+  // 시계·카운트다운·스톱워치·타이머를 하나의 틱으로 묶어서 매초 같은 시점에 함께 갱신
+  // (독립된 setInterval 여러 개는 서로 미세하게 위상이 어긋나 위 시계와 비교했을 때
+  //  빨라지거나 느려지는 것처럼 보이는 원인이 됨)
+  setInterval(() => {
+    updateClock();
+    updateCountdown();
+    updateStopwatchDisplay();
+    updateTimerDisplay();
+  }, 1000);
+
+  /* ── 세로 모드 ─────────────────────────────────────────────── */
   function applyPortrait(on, left) {
     document.body.classList.remove('portrait-right', 'portrait-left');
     if (on) document.body.classList.add(left ? 'portrait-left' : 'portrait-right');
-    portraitToggle.checked       = on;
-    portraitLeftToggle.checked   = left;
-    portraitDirRow.style.display = on ? 'flex' : 'none';
-    portraitSizes.style.display  = on ? 'flex' : 'none';
-    if (on) {
-      applyPortraitSizes();
-    } else {
-      setClockFontSize(parseFloat(clockSizeSlider.value));
-      setTallyFontSize(parseFloat(tallySizeSlider.value));
-      setSchFontSize(parseFloat(schSizeSlider.value));
-    }
+    if (on) applyPortraitSizes(); else applyLandscapeSizes();
   }
 
-  const savedPortrait     = localStorage.getItem('portrait')     === 'true';
-  const savedPortraitLeft = localStorage.getItem('portraitLeft') === 'true';
-  applyPortrait(savedPortrait, savedPortraitLeft);
+  /* ── 메인 탈리 (아날로그 램프) — 모든 모드에서 DM7 마이크 상태로만 구동 ─── */
+  function updateMainTally() {
+    box.classList.toggle('on-air', micLiveRaw);
+  }
 
-  portraitToggle.addEventListener('change', () => {
-    applyPortrait(portraitToggle.checked, portraitLeftToggle.checked);
-    saveSetting('portrait', portraitToggle.checked);
-  });
-  portraitLeftToggle.addEventListener('change', () => {
-    applyPortrait(portraitToggle.checked, portraitLeftToggle.checked);
-    saveSetting('portraitLeft', portraitLeftToggle.checked);
-  });
-
-  /* ── 서버 설정 동기화 (브라우저 캐시 초기화 후에도 유지) ─────── */
-  fetch('/settings')
-    .then(r => r.json())
-    .then(s => {
-      if (s.clockSize  !== undefined) applyClockSize(s.clockSize);
-      if (s.tallySize  !== undefined) applyTallySize(s.tallySize);
-      if (s.schSize    !== undefined) applySchSize(s.schSize);
-      if (s.timeOffset !== undefined) {
-        timeOffsetSec = s.timeOffset;
-        timeOffsetSlider.value = s.timeOffset;
-        timeOffsetVal.textContent = (s.timeOffset >= 0 ? '+' : '') + parseFloat(s.timeOffset).toFixed(1) + '초';
-      }
-      if (s['cal-ts5']  !== undefined) calTs5.checked  = s['cal-ts5'];
-      if (s['cal-ts5b'] !== undefined) calTs5b.checked = s['cal-ts5b'];
-      if (s.pClockSize !== undefined) { pClockSlider.value = s.pClockSize; pClockVal.textContent = s.pClockSize + 'rem'; }
-      if (s.pTallySize !== undefined) { pTallySlider.value = s.pTallySize; pTallyVal.textContent = s.pTallySize + 'rem'; }
-      if (s.pSchSize   !== undefined) { pSchSlider.value   = s.pSchSize;   pSchVal.textContent   = s.pSchSize   + 'rem'; }
-      if (s.portrait !== undefined) applyPortrait(s.portrait, s.portraitLeft || false);
-    })
-    .catch(() => {});
-
-  /* ── SSE 탈리 ────────────────────────────────────────────────── */
-  function applyState(state) {
-    if (state === 'ON_AIR') {
-      box.classList.add('on-air');
-      statusText.textContent = '방  송  중';
-    } else {
-      box.classList.remove('on-air');
-      statusText.textContent = '방송 준비중';
-    }
+  /* ── 마이크(DM7 페이더) — SSE ─────────────────────────────────── */
+  let micLiveRaw = false;
+  function applyMicState(state) {
+    micLiveRaw = state === 'ON_AIR';
+    updateMainTally();
   }
   function connect() {
-    dot.className = 'connecting';
-    connLabel.textContent = '연결 중…';
     const es = new EventSource('/stream');
-    es.onopen = () => { dot.className = 'connected'; connLabel.textContent = 'DM7 연결됨'; };
-    es.onmessage = e => applyState(e.data.trim());
+    es.onmessage = e => applyMicState(e.data.trim());
     es.onerror = () => {
-      dot.className = '';
-      connLabel.textContent = '연결 끊김 — 재시도 중…';
       es.close();
       setTimeout(connect, 3000);
     };
   }
   connect();
+
+  /* ── 서버 설정 폴링 (컨트롤 페이지에서 바꾼 설정 반영) ───────── */
+  let lastCalKey = '';
+  function applySettings(s) {
+    if (s.timeOffset !== undefined) timeOffsetSec = parseFloat(s.timeOffset);
+    infoRow.style.display = s.showDateWeather === false ? 'none' : 'flex';
+
+    if (s.clockScale !== undefined) clockScale = parseFloat(s.clockScale);
+    if (s.tallyScale !== undefined) tallyScale = parseFloat(s.tallyScale);
+    if (s.tallyBoxScale !== undefined) { tallyBoxScale = parseFloat(s.tallyBoxScale); box.style.setProperty('--tally-box-scale', tallyBoxScale.toFixed(3)); }
+    if (s.clockBoxScale !== undefined) { clockBoxScale = parseFloat(s.clockBoxScale); clockEl.style.setProperty('--clock-box-scale', clockBoxScale.toFixed(3)); }
+    if (s.schScale   !== undefined) schScale   = parseFloat(s.schScale);
+    if (s.schBoxScale !== undefined) { schBoxScale = parseFloat(s.schBoxScale); scheduleEl.style.setProperty('--sch-box-scale', schBoxScale.toFixed(3)); }
+    if (s.pClockScale !== undefined) pClockScale = parseFloat(s.pClockScale);
+    if (s.pTallyScale !== undefined) pTallyScale = parseFloat(s.pTallyScale);
+    if (s.pSchScale   !== undefined) pSchScale   = parseFloat(s.pSchScale);
+
+    const portraitOn   = !!s.portrait;
+    const portraitLeft = !!s.portraitLeft;
+    const wasPortrait = isPortraitMode();
+    applyPortrait(portraitOn, portraitLeft);
+    if (wasPortrait === portraitOn) {
+      // 방향 안 바뀌었어도 크기값은 갱신
+      if (portraitOn) applyPortraitSizes(); else applyLandscapeSizes();
+    }
+
+    countdownModeOn  = !!s.countdownMode;
+    stopwatchModeOn  = !!s.stopwatchMode;
+    scheduleVisible  = s.scheduleVisible === undefined ? true : !!s.scheduleVisible;
+    applyBottomDisplay();
+
+    if (s.broadcastTime !== undefined) broadcastTime = s.broadcastTime;
+    if (s.broadcastEndTime !== undefined) broadcastEndTime = s.broadcastEndTime;
+    broadcastTimeNextDay = !!s.broadcastTimeNextDay;
+    broadcastEndTimeNextDay = !!s.broadcastEndTimeNextDay;
+    if (s.cdBoxScale !== undefined) { cdBoxScale = parseFloat(s.cdBoxScale); countdownEl.style.setProperty('--cd-box-scale', cdBoxScale.toFixed(3)); }
+    if (s.cdTextScale !== undefined) { cdTextScale = parseFloat(s.cdTextScale); countdownEl.style.setProperty('--cd-text-scale', cdTextScale.toFixed(3)); }
+    if (s.cdLabelScale !== undefined) { cdLabelScale = parseFloat(s.cdLabelScale); countdownEl.style.setProperty('--cd-label-scale', cdLabelScale.toFixed(3)); }
+    // 시작/종료 시각·모드가 실제로 바뀌었을 때만 즉시 갱신 — 매 3초 폴링마다 무조건 다시 그리면
+    // 매초 진행 중인 러너/채움바 트랜지션과 위상이 어긋나며 움직임이 불규칙해 보이는 원인이 된다.
+    const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay;
+    if (countdownModeOn && cdSignature !== lastCdSignature) updateCountdown();
+    lastCdSignature = cdSignature;
+
+    if (s.swBoxScale !== undefined) { swBoxScale = parseFloat(s.swBoxScale); stopwatchEl.style.setProperty('--sw-box-scale', swBoxScale.toFixed(3)); }
+    if (s.swTextScale !== undefined) { swTextScale = parseFloat(s.swTextScale); stopwatchEl.style.setProperty('--sw-text-scale', swTextScale.toFixed(3)); }
+
+    if (s['cal-ts5']  !== undefined) calTs5On  = !!s['cal-ts5'];
+    if (s['cal-ts5b'] !== undefined) calTs5bOn = !!s['cal-ts5b'];
+    if (s.customCalendarUrl !== undefined) customCalUrl = s.customCalendarUrl;
+    if (s.customCalendarEnabled !== undefined) customCalOn = !!s.customCalendarEnabled;
+    const calKey = calTs5On + ':' + calTs5bOn + ':' + customCalOn + ':' + customCalUrl;
+    if (calKey !== lastCalKey) { lastCalKey = calKey; loadSchedule(); }
+
+    swRunning   = !!s.stopwatchRunning;
+    swElapsedMs = s.stopwatchElapsedMs !== undefined ? parseFloat(s.stopwatchElapsedMs) : 0;
+    swStartedAt = s.stopwatchStartedAt ? parseFloat(s.stopwatchStartedAt) : null;
+    updateStopwatchDisplay();
+
+    timerDurationSec = s.timerDurationSec !== undefined ? parseFloat(s.timerDurationSec) : 300;
+    timerRunning     = !!s.timerRunning;
+    timerRemainingMs = s.timerRemainingMs !== undefined ? parseFloat(s.timerRemainingMs) : timerDurationSec * 1000;
+    timerStartedAt   = s.timerStartedAt ? parseFloat(s.timerStartedAt) : null;
+    updateTimerDisplay();
+  }
+
+  function pollSettings() {
+    fetch('/settings')
+      .then(r => r.json())
+      .then(applySettings)
+      .catch(() => {});
+  }
+  pollSettings();
+  setInterval(pollSettings, 3000);
+  updateMainTally();
 </script>
 </body>
 </html>
