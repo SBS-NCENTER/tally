@@ -968,7 +968,10 @@
     // 정확히 구해지므로, 그 길이를 유지한 채 now와 가장 가까운(또는 지금 그 구간
     // 안에 있는) 날짜로 통째로 옮겨 앉힌다.
     const baseStart = timeToday(now, startVal, startNextDay);
-    const baseEnd = endVal ? timeToday(now, endVal, endNextDay) : null;
+    // endNextDay는 "종료가 now 기준" 며칠 뒤가 아니라 "시작(start) 기준" 며칠 뒤인지이므로,
+    // baseStart를 기준 삼아 앉혀야 한다 — now를 기준으로 하면 시작 자체가 내일인 경우
+    // (아래 dayOffset 탐색 이전에) 종료가 오늘 기준으로 계산되어 시작보다 앞서버린다.
+    const baseEnd = endVal ? timeToday(baseStart, endVal, endNextDay) : null;
     const durationMs = baseEnd ? baseEnd - baseStart : 0;
 
     let bestStart = baseStart, bestDist = Infinity;
