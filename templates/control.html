@@ -909,7 +909,12 @@
         const now = new Date();
         const nowStr = now.toTimeString().slice(0, 8);
         spsLiveList.innerHTML = items.map(it => {
-          const state = nowStr >= it.end ? 'past' : (nowStr >= it.start ? 'current' : '');
+          // start/end는 시각 문자열이라 자정을 넘기는 항목(end가 start보다 이름)은
+          // 일반 비교로 판정 못 함 — "지금이 start 이후이거나 end 이전"이면 진행 중.
+          const overnight = it.end < it.start;
+          const state = overnight
+            ? ((nowStr >= it.start || nowStr < it.end) ? 'current' : '')
+            : (nowStr >= it.end ? 'past' : (nowStr >= it.start ? 'current' : ''));
           return `<div class="sps-row ${state}">
             <div>
               <div class="sps-time">${it.start} ~ ${it.end}</div>

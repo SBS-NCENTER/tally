@@ -960,6 +960,28 @@
     return d;
   }
 
+  function anchorBroadcastWindow(now, startVal, startNextDay, endVal, endNextDay) {
+    // HH:MM:SS 문자열엔 날짜가 없어서, timeToday()로 "오늘 그 시각"에 앉히면 자정을
+    // 넘겨서까지 진행 중인 방송을 자정 이후에 볼 때 시작 시각이 "오늘 저녁(=아직
+    // 안 됨)"으로 재해석돼 실제로는 진행 중인데 "시작 전"처럼 보이는 문제가 있었다.
+    // 시작~종료 사이 실제 길이(durationMs)는 두 시각과 N 플래그만으로 날짜와 무관하게
+    // 정확히 구해지므로, 그 길이를 유지한 채 now와 가장 가까운(또는 지금 그 구간
+    // 안에 있는) 날짜로 통째로 옮겨 앉힌다.
+    const baseStart = timeToday(now, startVal, startNextDay);
+    const baseEnd = endVal ? timeToday(now, endVal, endNextDay) : null;
+    const durationMs = baseEnd ? baseEnd - baseStart : 0;
+
+    let bestStart = baseStart, bestDist = Infinity;
+    for (const dayOffset of [-1, 0, 1]) {
+      const s = new Date(baseStart);
+      s.setDate(s.getDate() + dayOffset);
+      const e = baseEnd ? new Date(s.getTime() + durationMs) : s;
+      const dist = now < s ? (s - now) : (now >= e ? (now - e) : 0);
+      if (dist < bestDist) { bestDist = dist; bestStart = s; }
+    }
+    return { start: bestStart, end: baseEnd ? new Date(bestStart.getTime() + durationMs) : null };
+  }
+
   function updateCountdown() {
     if (!countdownModeOn) return;
     const startVal = broadcastTime;
@@ -974,7 +996,7 @@
       return;
     }
 
-    const start = timeToday(now, startVal, broadcastTimeNextDay);
+    const { start, end } = anchorBroadcastWindow(now, startVal, broadcastTimeNextDay, endVal, broadcastEndTimeNextDay);
     const rawDiffMs = start - now;
 
     if (rawDiffMs > 0) {
@@ -986,12 +1008,11 @@
       countdownEl.classList.add('elapsed');
     }
 
-    if (!endVal) {
+    if (!endVal || !end) {
       cdTagSub.classList.remove('show');
       cdTrack.classList.remove('show');
       return;
     }
-    const end = timeToday(now, endVal, broadcastEndTimeNextDay);
     const durationSec = (end - start) / 1000;
     if (durationSec <= 0) {
       cdTagSub.classList.remove('show');

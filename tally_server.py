@@ -501,6 +501,18 @@ def gpio_listener():
 
 
 # ── 생방송 모드 자동 종료 전환 ─────────────────────────────────────────────────
+def closest_time_occurrence(now, hhmmss):
+    """'HH:MM:SS'는 날짜가 없는 시각이라 now.date()에 그대로 앉히면, 자정 전에
+    시작해 자정을 넘겨 진행 중인 방송을 검사할 때 실제 종료 시각(어제 날짜 기준)이
+    아니라 "오늘 그 시각"(아직 한참 남은 미래)으로 잘못 계산된다 — 예를 들어
+    23:00~01:00(N) 방송을 23:30에 검사하면 종료 01:00이 now.date()에 앉혀져
+    '오늘 새벽 1시(=22시간 전, 이미 지남)'로 오판되어 방송 시작 직후 자동전환이
+    잘못 발동한다. 어제/오늘/내일 중 now와 가장 가까운 occurrence를 선택해 방지."""
+    t = datetime.strptime(hhmmss, '%H:%M:%S').time()
+    candidates = [datetime.combine(now.date() + timedelta(days=d), t, tzinfo=KST) for d in (-1, 0, 1)]
+    return min(candidates, key=lambda c: abs((c - now).total_seconds()))
+
+
 def auto_revert_watcher():
     """생방송(카운트다운) 모드 + 종료시각 + 자동전환(분) 설정이 있으면,
     종료시각 + N분이 지나면 일반(일정) 모드로 자동 전환."""
@@ -512,8 +524,7 @@ def auto_revert_watcher():
             end_val = s.get('broadcastEndTime')
             if s.get('countdownMode') and revert_min > 0 and end_val:
                 now = datetime.now(KST)
-                end_time = datetime.strptime(end_val, '%H:%M:%S').time()
-                end_dt = datetime.combine(now.date(), end_time, tzinfo=KST)
+                end_dt = closest_time_occurrence(now, end_val)
                 if now >= end_dt + timedelta(minutes=revert_min):
                     s['countdownMode'] = False
                     s['broadcastTime'] = ''
@@ -626,6 +637,16 @@ def save_settings():
             for key in ('broadcastTime', 'broadcastEndTime',
                         'broadcastTimeNextDay', 'broadcastEndTimeNextDay'):
                 new_settings[key] = old_settings.get(key, new_settings.get(key))
+        # 화면 하단 표시는 countdownMode/stopwatchMode 중 하나만 켜져 있다고 가정하고
+        # 렌더링한다(둘 다 true면 생방송 위젯과 타이머/스톱워치 위젯이 동시에 표시됨).
+        # 컨트롤 페이지 UI는 세그먼트 버튼 하나로 배타적으로 저장하지만, 다른 경로로
+        # 두 값이 함께 true가 되는 걸 막기 위해 서버에서도 강제로 배타성을 지킨다 —
+        # 나중에 저장된 쪽(요청에 명시적으로 true로 온 쪽)을 우선한다.
+        if new_settings.get('countdownMode') and new_settings.get('stopwatchMode'):
+            if old_settings.get('countdownMode'):
+                new_settings['countdownMode'] = False
+            else:
+                new_settings['stopwatchMode'] = False
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
             json.dump(new_settings, f)
         new_host = new_settings.get('dm7Host', DM7_HOST_DEFAULT)
