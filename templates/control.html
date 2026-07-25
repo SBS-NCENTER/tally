@@ -38,6 +38,20 @@
       margin: 0 auto;
     }
 
+    .icon {
+      width: 1em;
+      height: 1em;
+      flex-shrink: 0;
+      vertical-align: -0.15em;
+      margin-right: 0.45em;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.7;
+    }
+
     h1 {
       font-size: 1.1rem;
       font-weight: 800;
@@ -334,6 +348,37 @@
   </style>
 </head>
 <body>
+{% macro icon(name) -%}
+<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+{%- if name == 'link' -%}
+<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+{%- elif name == 'resize' -%}
+<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+{%- elif name == 'calendar' -%}
+<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+{%- elif name == 'rotate' -%}
+<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+{%- elif name == 'arrow-left' -%}
+<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+{%- elif name == 'external' -%}
+<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+{%- elif name == 'revert' -%}
+<polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+{%- elif name == 'skip' -%}
+<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>
+{%- elif name == 'sliders' -%}
+<line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/>
+{%- elif name == 'mic' -%}
+<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+{%- elif name == 'plug' -%}
+<path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v5a6 6 0 0 1-12 0V8z"/><path d="M12 19v3"/>
+{%- elif name == 'flask' -%}
+<path d="M10 2v6.5L4.5 19a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 8.5V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/><line x1="7" y1="15" x2="17" y2="15"/>
+{%- elif name == 'timer' -%}
+<line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/>
+{%- endif -%}
+</svg>
+{%- endmacro %}
 <div id="wrap">
   <h1>
     <span id="h1-title">
@@ -348,7 +393,7 @@
   </h1>
 
   <div class="card card-bottom">
-    <span class="setting-label">⏱ 모드 선택</span>
+    <span class="setting-label">{{ icon('timer') }}모드 선택</span>
     <div class="segmented" id="bottom-mode-seg">
       <button type="button" class="seg-btn" data-mode="schedule">일반</button>
       <button type="button" class="seg-btn seg-amber" data-mode="countdown">생방송</button>
@@ -361,7 +406,7 @@
           <span class="toggle-label">일정표 표시</span>
           <label class="toggle"><input type="checkbox" id="schedule-visible-toggle" checked /><span class="toggle-track"></span></label>
         </div>
-        <div class="setting-hint">끄면 화면에 탈리와 시계만 표시됩니다.</div>
+        <div class="setting-hint">끄면 방송 화면에는 탈리와 시계만 남고 일정표는 숨겨집니다.</div>
       </div>
       <div class="setting-row">
         <span class="setting-label" style="margin-bottom:4px">캘린더 선택</span>
@@ -400,10 +445,10 @@
     <div class="sub-panel" id="countdown-sub">
       <div class="setting-row">
         <div class="toggle-row">
-          <span class="toggle-label">🔗 자동 운행표 연동</span>
+          <span class="toggle-label">{{ icon('link') }}자동 운행표 연동</span>
           <label class="toggle"><input type="checkbox" id="sps-auto-toggle" checked /><span class="toggle-track"></span></label>
         </div>
-        <div class="setting-hint">켜면 SPS 운행표에서 생방송(TS-n) 구간을 자동으로 찾아 시작/종료 시각을 채웁니다. 끄면 아래를 직접 입력하세요.</div>
+        <div class="setting-hint">켜면 방송 운행표를 확인해서 생방송 시작·종료 시각과 방송명을 자동으로 채워줍니다. 끄면 아래 칸에 직접 입력하세요.</div>
       </div>
 
       <div id="sps-studio-row" class="setting-row">
@@ -418,15 +463,15 @@
           <option value="TS-6">TS-6 (6부조)</option>
           <option value="TS-7">TS-7 (7부조)</option>
         </select>
-        <div class="setting-hint">화면(방송 화면)에도 여기서 고른 부조정실의 생방송만 반영됩니다.</div>
+        <div class="setting-hint">방송 화면에는 여기서 고른 부조정실의 생방송만 반영됩니다. "전체"를 고르면 어느 부조정실이든 생방송 중이면 반영됩니다.</div>
       </div>
 
       <div id="sps-live-list" class="setting-row"></div>
 
-      <div class="setting-row">
-        <div class="setting-row-inline"><span>⏭ 다음 방송 전환 대기</span><span class="val" id="sps-gap-val">즉시 전환</span></div>
+      <div id="sps-gap-row" class="setting-row">
+        <div class="setting-row-inline"><span>{{ icon('skip') }}다음 방송 전환 대기</span><span class="val" id="sps-gap-val">즉시 전환</span></div>
         <input type="range" id="sps-gap" min="0" max="30" step="1" value="0" />
-        <div class="setting-hint">방송이 끝난 직후 바로 다음 방송 정보로 넘어갈지, 몇 분 더 방금 끝난 방송을 보여줄지 정합니다.</div>
+        <div class="setting-hint">방송이 끝나면 바로 다음 방송으로 넘어갈지, 몇 분간 방금 끝난 방송을 더 보여줄지 정합니다. "즉시 전환"이면 끝나자마자 다음 방송으로 바뀝니다.</div>
       </div>
 
       <div id="sps-manual-box">
@@ -445,7 +490,7 @@
             <input type="text" id="broadcast-end-time" placeholder="18:00:00" inputmode="numeric" maxlength="8" />
             <button type="button" class="clear-btn" id="broadcast-end-time-clear">지우기</button>
           </div>
-          <div class="setting-hint">자정을 넘기는 방송이면 N을 켜서 "다음날 이 시각"으로 표시하세요. 예: 시작 23:00 + 종료 N 01:00 = 다음날 새벽 1시 종료.</div>
+          <div class="setting-hint">자정을 넘겨서 끝나는 방송이면 N을 켜세요. 예: 시작 23:00 · 종료 N 01:00 → 다음날 새벽 1시에 끝난다는 뜻입니다.</div>
         </div>
       </div>
       <button type="button" class="collapse-header" id="cd-size-toggle">
@@ -488,7 +533,7 @@
       </div>
 
       <div class="setting-row">
-        <span class="setting-label" style="margin-bottom:8px">⏱ 스톱워치</span>
+        <span class="setting-label" style="margin-bottom:8px">{{ icon('timer') }}스톱워치</span>
         <div id="sw-display">+00:00</div>
         <div class="btn-row">
           <button type="button" class="action-btn" id="sw-start-btn">시작</button>
@@ -515,7 +560,7 @@
 
   <div class="card card-size">
     <button type="button" class="collapse-header" id="size-toggle">
-      <span>📐 화면 크기</span>
+      <span>{{ icon('resize') }}화면 크기</span>
       <span class="chevron">▾</span>
     </button>
     <div class="sub-panel" id="size-sub">
@@ -540,19 +585,19 @@
 
   <div class="card">
     <div class="toggle-row">
-      <span class="toggle-label">📅 날짜/날씨 표시</span>
+      <span class="toggle-label">{{ icon('calendar') }}날짜/날씨 표시</span>
       <label class="toggle"><input type="checkbox" id="date-weather-toggle" checked /><span class="toggle-track"></span></label>
     </div>
   </div>
 
   <div class="card card-orient">
     <div class="toggle-row">
-      <span class="setting-label" style="margin-bottom:0">🔄 세로 모드</span>
+      <span class="setting-label" style="margin-bottom:0">{{ icon('rotate') }}세로 모드</span>
       <label class="toggle"><input type="checkbox" id="portrait-toggle" /><span class="toggle-track"></span></label>
     </div>
     <div class="sub-panel" id="portrait-sub">
       <div class="toggle-row">
-        <span class="toggle-label">← 왼쪽 회전</span>
+        <span class="toggle-label">{{ icon('arrow-left') }}왼쪽 회전</span>
         <label class="toggle"><input type="checkbox" id="portrait-left-toggle" /><span class="toggle-track"></span></label>
       </div>
       <div class="setting-row">
@@ -572,25 +617,25 @@
 
   <div class="card card-advanced">
     <button type="button" class="collapse-header" id="advanced-toggle">
-      <span>🔧 고급 설정</span>
+      <span>{{ icon('sliders') }}고급 설정</span>
       <span class="chevron">▾</span>
     </button>
     <div class="sub-panel" id="advanced-sub">
       <div class="setting-row">
-        <div class="setting-row-inline"><span>⏱ 시간 보정</span><span class="val" id="time-offset-val">0.0초</span></div>
+        <div class="setting-row-inline"><span>{{ icon('timer') }}시간 보정</span><span class="val" id="time-offset-val">0.0초</span></div>
         <input type="range" id="time-offset" min="-10" max="10" step="0.1" value="0" />
       </div>
       <div class="setting-row">
-        <div class="setting-row-inline"><span>↩️ 생방송 종료 후 일반모드 전환</span><span class="val" id="live-revert-val">사용 안 함</span></div>
+        <div class="setting-row-inline"><span>{{ icon('revert') }}생방송 종료 후 일반모드 전환</span><span class="val" id="live-revert-val">사용 안 함</span></div>
         <input type="range" id="live-revert" min="0" max="60" step="1" value="0" />
       </div>
       <div class="setting-row">
-        <span class="setting-label" style="margin-bottom:4px">🎙 YAMAHA DM7 IP</span>
+        <span class="setting-label" style="margin-bottom:4px">{{ icon('mic') }}YAMAHA DM7 IP</span>
         <input type="text" id="dm7-host" placeholder="192.168.3.210" />
       </div>
       <div class="setting-row">
         <div class="toggle-row">
-          <span class="toggle-label">🔌 GPIO 접점 탈리 (라즈베리파이)</span>
+          <span class="toggle-label">{{ icon('plug') }}GPIO 접점 탈리 (라즈베리파이)</span>
           <label class="toggle"><input type="checkbox" id="gpio-enable-toggle" /><span class="toggle-track"></span></label>
         </div>
         <div class="sub-panel" id="gpio-sub">
@@ -602,19 +647,19 @@
             <span class="toggle-label">신호 반전 (접점 ON = LOW)</span>
             <label class="toggle"><input type="checkbox" id="gpio-active-low-toggle" checked /><span class="toggle-track"></span></label>
           </div>
-          <div class="setting-hint">DM7 같은 네트워크 탈리가 없는 콘솔(STUDER Vista8, SSL C100HD 등)의 GPO/접점 출력을 라즈베리파이 GPIO 핀과 GND에 연결하세요. 접점이 닫히면(ON) 핀이 GND로 당겨지는 방식이 기본값입니다.</div>
+          <div class="setting-hint">DM7처럼 네트워크로 탈리 신호를 안 주는 콘솔(STUDER Vista8, SSL C100HD 등)은 GPO/접점 출력을 라즈베리파이 GPIO 핀과 GND에 연결해서 쓰세요. 기본값은 "접점이 닫히면(ON) 핀이 GND로 당겨지는" 방식이고, 콘솔이 반대로 동작하면 위 '신호 반전'을 꺼주세요.</div>
         </div>
       </div>
       <div class="setting-row">
         <div class="toggle-row">
-          <span class="toggle-label">🧪 탈리 테스트 (강제 ON — 실제 마이크와 무관)</span>
+          <span class="toggle-label">{{ icon('flask') }}탈리 테스트 (강제 ON — 실제 마이크와 무관)</span>
           <label class="toggle"><input type="checkbox" id="tally-test-toggle" /><span class="toggle-track"></span></label>
         </div>
       </div>
     </div>
   </div>
 
-  <a id="display-link" href="/">↗ 화면 페이지 열기</a>
+  <a id="display-link" href="/">{{ icon('external') }}화면 페이지 열기</a>
 </div>
 
 <script>
@@ -658,6 +703,7 @@
   const spsStudioSelect = document.getElementById('sps-studio-select');
   const spsGapSlider  = document.getElementById('sps-gap');
   const spsGapVal     = document.getElementById('sps-gap-val');
+  const spsGapRow     = document.getElementById('sps-gap-row');
   const cdBoxSizeSlider  = document.getElementById('cd-box-size');
   const cdBoxSizeVal     = document.getElementById('cd-box-size-val');
   const cdTextSizeSlider = document.getElementById('cd-text-size');
@@ -838,6 +884,7 @@
     spsManualBox.style.flexDirection = 'column';
     spsManualBox.style.gap = '16px';
     spsStudioRow.style.display = spsAutoToggle.checked ? 'flex' : 'none';
+    spsGapRow.style.display = spsAutoToggle.checked ? 'flex' : 'none';
     spsLiveList.style.display = spsAutoToggle.checked ? 'flex' : 'none';
     spsLiveList.style.flexDirection = 'column';
     if (spsAutoToggle.checked) pollSpsSchedule();
