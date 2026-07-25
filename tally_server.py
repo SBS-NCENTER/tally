@@ -616,6 +616,16 @@ def save_settings():
         except Exception:
             old_settings = {}
         new_settings['broadcastProgramName'] = old_settings.get('broadcastProgramName', '')
+        # SPS 자동모드가 켜진 상태에서는 sps_listener가 방송 시간의 유일한 소스여야 한다.
+        # 컨트롤 페이지는 최초 로드 이후 이 필드들을 재폴링하지 않으므로, 페이지를 오래
+        # 띄워두고 스튜디오 변경 등 다른 설정만 저장해도 오래된 시간값이 그대로 다시
+        # 전송돼 sps_listener가 이미 감지해 둔 최신 시간을 덮어써버릴 수 있다 — 그러면
+        # 프로그램명(보호됨)과 시간(덮어써짐)이 서로 다른 방송의 값으로 뒤섞인다.
+        # 자동모드 중엔 이 네 필드도 broadcastProgramName처럼 기존 값을 그대로 유지한다.
+        if new_settings.get('spsAutoDetect', old_settings.get('spsAutoDetect', True)):
+            for key in ('broadcastTime', 'broadcastEndTime',
+                        'broadcastTimeNextDay', 'broadcastEndTimeNextDay'):
+                new_settings[key] = old_settings.get(key, new_settings.get(key))
         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
             json.dump(new_settings, f)
         new_host = new_settings.get('dm7Host', DM7_HOST_DEFAULT)
