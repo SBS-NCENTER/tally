@@ -405,7 +405,12 @@ def sps_listener():
     spsAutoDetect를 false로 두면 즉시 끌 수 있다(스레드는 계속 돌되 아무것도 하지 않음).
     같은 방송 구간(key)에 대해서는 딱 한 번만 countdownMode를 강제로 켠다 — 그 뒤 사용자가
     컨트롤 페이지에서 수동으로 다른 모드로 바꾸면, 그 방송이 끝나고 다음 구간으로 넘어갈
-    때까지는 존중해서 다시 켜지 않는다(매 폴링마다 강제로 되돌리면 수동 전환이 안 먹힘)."""
+    때까지는 존중해서 다시 켜지 않는다(매 폴링마다 강제로 되돌리면 수동 전환이 안 먹힘).
+    sps_find_live_segment가 None을 반환하는 건 "오늘 남은 생방송이 더 없음"이라는 뜻인데
+    (gap_minutes 유예까지 이미 다 지난 뒤에만 None이 됨) — 이 경우를 그냥 넘기면 마지막으로
+    추적하던 방송의 카운트다운이 화면에 영원히 멈춰 있게 된다(예: 오늘 마지막 생방송이
+    끝난 뒤 다음 생방송이 없으면 그 종료시각을 계속 붙든 채 +경과가 계속 늘어남). 이때는
+    일반(일정) 모드로 되돌린다."""
     last_applied = None
     last_error = None
     while True:
@@ -429,6 +434,18 @@ def sps_listener():
                             json.dump(s, f)
                         print(f"[SPS] 생방송 감지 → {program_name} {start_str} ~ {end_str} 자동 반영", flush=True)
                         last_applied = key
+                elif last_applied is not None:
+                    with open(SETTINGS_FILE, encoding='utf-8') as f:
+                        s = json.load(f)
+                    if s.get('countdownMode'):
+                        s['countdownMode'] = False
+                        s['broadcastTime'] = ''
+                        s['broadcastEndTime'] = ''
+                        s['broadcastProgramName'] = ''
+                        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+                            json.dump(s, f)
+                        print("[SPS] 오늘 남은 생방송 없음 → 일반 모드로 전환", flush=True)
+                    last_applied = None
             last_error = None
         except Exception as e:
             msg = str(e)
