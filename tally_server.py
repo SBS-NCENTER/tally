@@ -566,28 +566,26 @@ def sps_listener():
                     result = sps_to_result(picked, now)
                     is_live = on_air_event_id is not None and on_air_event_id == result['eventId']
 
-                    # 앞 생방송이 실제로 끝나야(=onAirIndex가 더 이상 그걸 가리키지 않아야)
-                    # 캐스케이드가 멎고 이 방송의 시작 시각이 확정된다. 앞에 그런 핸드오프
-                    # 관계가 아예 없으면(오늘 첫 방송 등) 애초에 캐스케이드로 흔들릴 위험이
-                    # 없으니 "확정 표시" 자체가 필요 없다고 보고 has_dependency=False로 둔다.
+                    # 앞에 SPS_HANDOFF_GAP 이내로 바로 붙는 생방송이 없으면(오늘 첫 방송
+                    # 등) 캐스케이드로 당장 흔들릴 상대가 없으니 처음부터 확정으로 본다.
+                    # 있으면, 그 앞 생방송이 실제로 끝나야(=onAirIndex가 더 이상 그걸
+                    # 가리키지 않아야) 확정 — 그 전까지는 계속 밀릴 수 있는 잠정값이다.
                     preceding = sps_find_preceding_handoff(all_live_today, picked)
-                    has_dependency = preceding is not None
-                    start_confirmed = False
-                    if has_dependency and on_air_event_id is not None:
-                        on_air_entry = next((e for e in repos if e.get('eventId') == on_air_event_id), None)
-                        if on_air_entry:
-                            try:
-                                on_air_start = datetime.strptime(on_air_entry['startTime'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=KST)
-                                start_confirmed = on_air_start >= preceding['end']
-                            except Exception:
-                                pass
+                    start_confirmed = True
+                    if preceding is not None:
+                        start_confirmed = False
+                        if on_air_event_id is not None:
+                            on_air_entry = next((e for e in repos if e.get('eventId') == on_air_event_id), None)
+                            if on_air_entry:
+                                try:
+                                    on_air_start = datetime.strptime(on_air_entry['startTime'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=KST)
+                                    start_confirmed = on_air_start >= preceding['end']
+                                except Exception:
+                                    pass
 
                     with open(SETTINGS_FILE, encoding='utf-8') as f:
                         s = json.load(f)
                     changed = False
-                    if s.get('broadcastHasHandoffDependency') != has_dependency:
-                        s['broadcastHasHandoffDependency'] = has_dependency
-                        changed = True
                     if s.get('broadcastStartConfirmed') != start_confirmed:
                         s['broadcastStartConfirmed'] = start_confirmed
                         changed = True
@@ -687,8 +685,7 @@ def sps_listener():
                         s['broadcastProgramName'] = ''
                         s['broadcastScheduledEndTime'] = ''
                         s['broadcastIsLive'] = False
-                        s['broadcastHasHandoffDependency'] = False
-                        s['broadcastStartConfirmed'] = False
+                        s['broadcastStartConfirmed'] = True
                         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
                             json.dump(s, f)
                         print(f"[SPS] 앞으로 {SPS_LOOKAHEAD_DAYS}일 안에 예정된 생방송 없음 → 일반 모드로 전환", flush=True)
@@ -953,7 +950,7 @@ def save_settings():
         # 비어 있는 채로) 저장해도 덮어써지지 않도록 항상 기존 값을 그대로 유지한다.
         for key in ('broadcastProgramName', 'broadcastEventId', 'broadcastIsLive',
                     'broadcastScheduledEndTime', 'broadcastScheduledEndTimeNextDay',
-                    'broadcastHasHandoffDependency', 'broadcastStartConfirmed'):
+                    'broadcastStartConfirmed'):
             new_settings[key] = old_settings.get(key)
         # SPS 자동모드가 켜진 상태에서는 sps_listener가 방송 시간의 유일한 소스여야 한다.
         # 컨트롤 페이지는 최초 로드 이후 이 필드들을 재폴링하지 않으므로, 페이지를 오래
