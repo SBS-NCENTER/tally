@@ -492,26 +492,22 @@
       box-shadow: 0 4px 16px rgba(0,0,0,0.5);
       transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
     }
-    .cd-live-badge {
-      display: none;
+    .cd-tag-main-row {
+      display: flex;
       align-items: center;
-      gap: 0.35em;
-      color: #ff5252;
-      font-weight: 800;
-      font-size: clamp(0.62rem, calc(var(--cd-text-scale, 1) * 1vw), 1.3rem);
-      letter-spacing: 0.14em;
-      margin-bottom: 0.3em;
-      text-shadow: 0 0 10px rgba(255,82,82,0.5);
+      gap: 0.4em;
     }
-    .cd-live-badge.show { display: flex; }
     .cd-live-dot {
-      width: 0.55em;
-      height: 0.55em;
+      display: none;
+      width: 0.5em;
+      height: 0.5em;
       border-radius: 50%;
       background: #ff5252;
-      box-shadow: 0 0 8px 2px rgba(255,82,82,0.7);
+      box-shadow: 0 0 8px 2px rgba(255,82,82,0.75);
+      flex-shrink: 0;
       animation: cd-live-pulse 1.4s ease-in-out infinite;
     }
+    .cd-live-dot.show { display: inline-block; }
     @keyframes cd-live-pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.35; transform: scale(0.8); }
@@ -556,6 +552,14 @@
       border-color: #a86a10;
     }
     #countdown.elapsed .cd-runner-tag-arrow { border-top-color: #241705; }
+    /* LIVE 확정되면(onAirIndex 기준) 말풍선 자체를 붉게 — ON AIR와 같은 색 언어를
+       재사용해서 별도 뱃지 없이도 "지금 진짜 방송 중"이 한눈에 들어오게 한다. */
+    #cd-runner-tag.is-live .cd-runner-tag-pill {
+      background: #2a1414;
+      border-color: #ff5252;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 18px 2px rgba(255,82,82,0.4);
+    }
+    #cd-runner-tag.is-live .cd-runner-tag-arrow { border-top-color: #2a1414; }
     .cd-runner-trail {
       position: absolute;
       top: 50%;
@@ -730,8 +734,10 @@
         <span class="cd-runner-head"></span>
         <div class="cd-runner-tag" id="cd-runner-tag">
           <span class="cd-runner-tag-pill" id="cd-runner-tag-text">
-            <span class="cd-live-badge" id="cd-live-badge"><span class="cd-live-dot"></span>LIVE</span>
-            <span class="cd-tag-main" id="cd-tag-main">--:--</span>
+            <span class="cd-tag-main-row">
+              <span class="cd-live-dot" id="cd-live-dot"></span>
+              <span class="cd-tag-main" id="cd-tag-main">--:--</span>
+            </span>
             <span class="cd-tag-sub" id="cd-tag-sub"></span>
           </span>
           <span class="cd-runner-tag-arrow"></span>
@@ -781,7 +787,8 @@
   const cdMarkerStartProgram = document.getElementById('cd-marker-start-program');
   const cdMarkerEndProgram   = document.getElementById('cd-marker-end-program');
   const cdMarkerEndActual    = document.getElementById('cd-marker-end-actual');
-  const cdLiveBadge          = document.getElementById('cd-live-badge');
+  const cdRunnerTagEl        = document.getElementById('cd-runner-tag');
+  const cdLiveDot            = document.getElementById('cd-live-dot');
   const stopwatchCol     = document.getElementById('stopwatch-col');
   const stopwatchLabel   = document.getElementById('stopwatch-label');
   const stopwatchTimerEl = document.getElementById('stopwatch-timer');
@@ -1079,7 +1086,8 @@
       return;
     }
 
-    cdLiveBadge.classList.toggle('show', broadcastIsLive);
+    cdRunnerTagEl.classList.toggle('is-live', broadcastIsLive);
+    cdLiveDot.classList.toggle('show', broadcastIsLive);
 
     const { start, end } = anchorBroadcastWindow(now, startVal, broadcastTimeNextDay, endVal, broadcastEndTimeNextDay);
     const rawDiffMs = start - now;
