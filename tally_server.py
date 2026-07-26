@@ -539,6 +539,7 @@ def sps_listener():
     사라지므로, 컨트롤 페이지에서 지난 방송들을 나중에 조회할 수 있게 하기 위함."""
     last_event_id = None
     last_was_live = False
+    ever_live = False   # 지금 추적 중인 eventId가 한 번이라도 LIVE였는지(끝나면 다시 False로 안 꺼짐)
     last_video_source = None
     last_error = None
     while True:
@@ -621,7 +622,7 @@ def sps_listener():
                                 'actualStart': old_start or '',
                                 'actualEnd': old_end or '',
                                 'actualDurationSec': dur,
-                                'wasLive': bool(s.get('broadcastIsLive')) or last_was_live,
+                                'wasLive': ever_live,
                                 'recordedAt': now.isoformat(),
                             })
                         s['countdownMode'] = True
@@ -636,6 +637,7 @@ def sps_listener():
                         last_event_id = result['eventId']
                         last_video_source = result['videoSource']
                         last_was_live = False
+                        ever_live = False
                         changed = True
                         when = f"{'내일 이후 ' if result['start_next_day'] else ''}{result['programName']} {result['start_str']} ~ {result['end_str']}"
                         print(f"[SPS] 생방송 감지 → {when} 자동 반영", flush=True)
@@ -658,6 +660,8 @@ def sps_listener():
                     if s.get('broadcastIsLive') != is_live:
                         s['broadcastIsLive'] = is_live
                         changed = True
+                    if is_live:
+                        ever_live = True
                     last_was_live = is_live
                     if changed:
                         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
@@ -685,7 +689,7 @@ def sps_listener():
                         'actualStart': old_start or '',
                         'actualEnd': old_end or '',
                         'actualDurationSec': dur,
-                        'wasLive': bool(s.get('broadcastIsLive')) or last_was_live,
+                        'wasLive': ever_live,
                         'recordedAt': now.isoformat(),
                     })
                     if s.get('countdownMode'):
@@ -702,6 +706,7 @@ def sps_listener():
                     last_event_id = None
                     last_video_source = None
                     last_was_live = False
+                    ever_live = False
 
                 # 핸드오프 근처뿐 아니라, 지금 화면에 보여주는 방송 자체의 시작/종료
                 # 앞뒤로도 촘촘하게 돈다 — 안 그러면 앞뒤가 몇 시간씩 비어 핸드오프
