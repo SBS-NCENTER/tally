@@ -823,6 +823,7 @@
   let lastCdSignature = '';
   let cdBoxScale = 1, cdTextScale = 1, cdLabelScale = 1;
   let swBoxScale = 1, swTextScale = 1;
+  let pCdScale = 1, pSwScale = 1;
 
   function getNow() {
     return new Date(Date.now() + timeOffsetSec * 1000);
@@ -895,6 +896,32 @@
     setClockFontSize(P_CLOCK_BASELINE * pClockScale);
     setTallyFontSize(P_TALLY_BASELINE * pTallyScale);
     setSchFontSize(P_SCH_BASELINE * pSchScale);
+  }
+
+  // 생방송·타이머 위젯은 가로 모드에선 항목별로 여러 슬라이더(박스 높이/글자
+  // 크기 등)로 나뉘어 있지만, 세로 모드는 다른 요소들과 마찬가지로 슬라이더
+  // 하나로 전체를 같이 조절한다 — 세로일 땐 세로 전용 값을, 가로일 땐 기존
+  // 개별 값들을 그대로 쓴다. isPortraitMode()를 그때그때 다시 확인하므로 방향
+  // 전환 직후에 호출해도 항상 맞는 값이 적용된다.
+  function applyCdSize() {
+    if (isPortraitMode()) {
+      countdownEl.style.setProperty('--cd-box-scale', pCdScale.toFixed(3));
+      countdownEl.style.setProperty('--cd-text-scale', pCdScale.toFixed(3));
+      countdownEl.style.setProperty('--cd-label-scale', pCdScale.toFixed(3));
+    } else {
+      countdownEl.style.setProperty('--cd-box-scale', cdBoxScale.toFixed(3));
+      countdownEl.style.setProperty('--cd-text-scale', cdTextScale.toFixed(3));
+      countdownEl.style.setProperty('--cd-label-scale', cdLabelScale.toFixed(3));
+    }
+  }
+  function applySwSize() {
+    if (isPortraitMode()) {
+      stopwatchEl.style.setProperty('--sw-box-scale', pSwScale.toFixed(3));
+      stopwatchEl.style.setProperty('--sw-text-scale', pSwScale.toFixed(3));
+    } else {
+      stopwatchEl.style.setProperty('--sw-box-scale', swBoxScale.toFixed(3));
+      stopwatchEl.style.setProperty('--sw-text-scale', swTextScale.toFixed(3));
+    }
   }
 
   /* ── 시계 & 날짜 ─────────────────────────────────────────────── */
@@ -1274,6 +1301,8 @@
     if (s.pClockScale !== undefined) pClockScale = parseFloat(s.pClockScale);
     if (s.pTallyScale !== undefined) pTallyScale = parseFloat(s.pTallyScale);
     if (s.pSchScale   !== undefined) pSchScale   = parseFloat(s.pSchScale);
+    if (s.pCdScale    !== undefined) pCdScale    = parseFloat(s.pCdScale);
+    if (s.pSwScale    !== undefined) pSwScale    = parseFloat(s.pSwScale);
 
     const portraitOn   = !!s.portrait;
     const portraitLeft = !!s.portraitLeft;
@@ -1298,17 +1327,19 @@
     broadcastScheduledEndTimeNextDay = !!s.broadcastScheduledEndTimeNextDay;
     broadcastIsLive = !!s.broadcastIsLive;
     broadcastStartConfirmed = s.broadcastStartConfirmed === undefined ? true : !!s.broadcastStartConfirmed;
-    if (s.cdBoxScale !== undefined) { cdBoxScale = parseFloat(s.cdBoxScale); countdownEl.style.setProperty('--cd-box-scale', cdBoxScale.toFixed(3)); }
-    if (s.cdTextScale !== undefined) { cdTextScale = parseFloat(s.cdTextScale); countdownEl.style.setProperty('--cd-text-scale', cdTextScale.toFixed(3)); }
-    if (s.cdLabelScale !== undefined) { cdLabelScale = parseFloat(s.cdLabelScale); countdownEl.style.setProperty('--cd-label-scale', cdLabelScale.toFixed(3)); }
+    if (s.cdBoxScale !== undefined) cdBoxScale = parseFloat(s.cdBoxScale);
+    if (s.cdTextScale !== undefined) cdTextScale = parseFloat(s.cdTextScale);
+    if (s.cdLabelScale !== undefined) cdLabelScale = parseFloat(s.cdLabelScale);
+    applyCdSize();
     // 시작/종료 시각·모드가 실제로 바뀌었을 때만 즉시 갱신 — 매 3초 폴링마다 무조건 다시 그리면
     // 매초 진행 중인 러너/채움바 트랜지션과 위상이 어긋나며 움직임이 불규칙해 보이는 원인이 된다.
     const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay + ':' + broadcastProgramName + ':' + broadcastScheduledEndTime + ':' + broadcastIsLive + ':' + broadcastStartConfirmed;
     if (countdownModeOn && cdSignature !== lastCdSignature) updateCountdown();
     lastCdSignature = cdSignature;
 
-    if (s.swBoxScale !== undefined) { swBoxScale = parseFloat(s.swBoxScale); stopwatchEl.style.setProperty('--sw-box-scale', swBoxScale.toFixed(3)); }
-    if (s.swTextScale !== undefined) { swTextScale = parseFloat(s.swTextScale); stopwatchEl.style.setProperty('--sw-text-scale', swTextScale.toFixed(3)); }
+    if (s.swBoxScale !== undefined) swBoxScale = parseFloat(s.swBoxScale);
+    if (s.swTextScale !== undefined) swTextScale = parseFloat(s.swTextScale);
+    applySwSize();
 
     if (s['cal-ts5']  !== undefined) calTs5On  = !!s['cal-ts5'];
     if (s['cal-ts5b'] !== undefined) calTs5bOn = !!s['cal-ts5b'];

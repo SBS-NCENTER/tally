@@ -100,6 +100,17 @@
     }
     .setting-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
     .setting-row:last-child { margin-bottom: 0; }
+    .size-group-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #666;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #262626;
+    }
+    .size-group-label:not(:first-child) { margin-top: 20px; }
     .setting-row-inline {
       display: flex;
       align-items: center;
@@ -463,20 +474,6 @@
           <input type="text" id="cal-custom-url" placeholder="구글 캘린더 URL 또는 ID 붙여넣기" style="flex:1" />
         </div>
       </div>
-      <button type="button" class="collapse-header" id="sch-size-toggle">
-        <span>크기 설정</span>
-        <span class="chevron">▾</span>
-      </button>
-      <div class="sub-panel" id="sch-size-sub">
-        <div class="setting-row">
-          <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="sch-box-size-val">1.0x</span></div>
-          <input type="range" id="sch-box-size" min="0.6" max="2" step="0.05" value="1" />
-        </div>
-        <div class="setting-row">
-          <div class="setting-row-inline"><span>글자 크기</span><span class="val" id="sch-size-val">1.00x</span></div>
-          <input type="range" id="sch-size" min="0.6" max="2.2" step="0.05" value="1" />
-        </div>
-      </div>
     </div>
 
     <div class="sub-panel" id="countdown-sub">
@@ -530,24 +527,6 @@
           <div class="setting-hint">자정을 넘겨서 끝나는 방송이면 N을 켜세요. 예: 시작 23:00 · 종료 N 01:00 → 다음날 새벽 1시에 끝난다는 뜻입니다.</div>
         </div>
       </div>
-      <button type="button" class="collapse-header" id="cd-size-toggle">
-        <span>크기 설정</span>
-        <span class="chevron">▾</span>
-      </button>
-      <div class="sub-panel" id="cd-size-sub">
-        <div class="setting-row">
-          <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="cd-box-size-val">1.0x</span></div>
-          <input type="range" id="cd-box-size" min="0.6" max="2" step="0.05" value="1" />
-        </div>
-        <div class="setting-row">
-          <div class="setting-row-inline"><span>타이머 글자 크기</span><span class="val" id="cd-text-size-val">1.0x</span></div>
-          <input type="range" id="cd-text-size" min="0.6" max="2.2" step="0.05" value="1" />
-        </div>
-        <div class="setting-row">
-          <div class="setting-row-inline"><span>시작/종료 글자 크기</span><span class="val" id="cd-label-size-val">1.0x</span></div>
-          <input type="range" id="cd-label-size" min="0.6" max="2.2" step="0.05" value="1" />
-        </div>
-      </div>
       <button type="button" class="collapse-header" id="sps-history-toggle">
         <span>지난 방송 기록</span>
         <span class="chevron">▾</span>
@@ -586,20 +565,6 @@
         </div>
       </div>
 
-      <button type="button" class="collapse-header" id="sw-size-toggle">
-        <span>크기 설정</span>
-        <span class="chevron">▾</span>
-      </button>
-      <div class="sub-panel" id="sw-size-sub">
-        <div class="setting-row">
-          <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="sw-box-size-val">1.0x</span></div>
-          <input type="range" id="sw-box-size" min="0.6" max="2" step="0.05" value="1" />
-        </div>
-        <div class="setting-row">
-          <div class="setting-row-inline"><span>글자 크기</span><span class="val" id="sw-text-size-val">1.0x</span></div>
-          <input type="range" id="sw-text-size" min="0.6" max="2.2" step="0.05" value="1" />
-        </div>
-      </div>
     </div>
   </div>
 
@@ -609,6 +574,7 @@
       <span class="chevron">▾</span>
     </button>
     <div class="sub-panel" id="size-sub">
+      <div class="size-group-label">공통 요소</div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>탈리 박스 높이</span><span class="val" id="tally-box-size-val">1.00x</span></div>
         <input type="range" id="tally-box-size" min="0.6" max="2" step="0.05" value="1" />
@@ -624,6 +590,62 @@
       <div class="setting-row">
         <div class="setting-row-inline"><span>시계 글자 크기</span><span class="val" id="clock-size-val">1.00x</span></div>
         <input type="range" id="clock-size" min="0.6" max="2.2" step="0.05" value="1" />
+      </div>
+
+      <div class="size-group-label">일반 모드 (일정)</div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="sch-box-size-val">1.0x</span></div>
+        <input type="range" id="sch-box-size" min="0.6" max="2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>글자 크기</span><span class="val" id="sch-size-val">1.00x</span></div>
+        <input type="range" id="sch-size" min="0.6" max="2.2" step="0.05" value="1" />
+      </div>
+
+      <div class="size-group-label">생방송 모드</div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="cd-box-size-val">1.0x</span></div>
+        <input type="range" id="cd-box-size" min="0.6" max="2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>타이머 글자 크기</span><span class="val" id="cd-text-size-val">1.0x</span></div>
+        <input type="range" id="cd-text-size" min="0.6" max="2.2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>시작/종료 글자 크기</span><span class="val" id="cd-label-size-val">1.0x</span></div>
+        <input type="range" id="cd-label-size" min="0.6" max="2.2" step="0.05" value="1" />
+      </div>
+
+      <div class="size-group-label">타이머 모드</div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="sw-box-size-val">1.0x</span></div>
+        <input type="range" id="sw-box-size" min="0.6" max="2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>글자 크기</span><span class="val" id="sw-text-size-val">1.0x</span></div>
+        <input type="range" id="sw-text-size" min="0.6" max="2.2" step="0.05" value="1" />
+      </div>
+
+      <div class="size-group-label">세로 모드 전용</div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>탈리 (세로)</span><span class="val" id="p-tally-size-val">1.00x</span></div>
+        <input type="range" id="p-tally-size" min="0.6" max="2.2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>시계 (세로)</span><span class="val" id="p-clock-size-val">1.00x</span></div>
+        <input type="range" id="p-clock-size" min="0.6" max="2.2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>일정 (세로)</span><span class="val" id="p-sch-size-val">1.00x</span></div>
+        <input type="range" id="p-sch-size" min="0.6" max="2.2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>생방송 (세로)</span><span class="val" id="p-cd-size-val">1.00x</span></div>
+        <input type="range" id="p-cd-size" min="0.6" max="2.2" step="0.05" value="1" />
+      </div>
+      <div class="setting-row">
+        <div class="setting-row-inline"><span>타이머 (세로)</span><span class="val" id="p-sw-size-val">1.00x</span></div>
+        <input type="range" id="p-sw-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
     </div>
   </div>
@@ -645,18 +667,7 @@
         <span class="toggle-label">{{ icon('arrow-left') }}왼쪽 회전</span>
         <label class="toggle"><input type="checkbox" id="portrait-left-toggle" /><span class="toggle-track"></span></label>
       </div>
-      <div class="setting-row">
-        <div class="setting-row-inline"><span>탈리 (세로)</span><span class="val" id="p-tally-size-val">1.00x</span></div>
-        <input type="range" id="p-tally-size" min="0.6" max="2.2" step="0.05" value="1" />
-      </div>
-      <div class="setting-row">
-        <div class="setting-row-inline"><span>시계 (세로)</span><span class="val" id="p-clock-size-val">1.00x</span></div>
-        <input type="range" id="p-clock-size" min="0.6" max="2.2" step="0.05" value="1" />
-      </div>
-      <div class="setting-row">
-        <div class="setting-row-inline"><span>일정 (세로)</span><span class="val" id="p-sch-size-val">1.00x</span></div>
-        <input type="range" id="p-sch-size" min="0.6" max="2.2" step="0.05" value="1" />
-      </div>
+      <div class="setting-hint">세로 모드 화면 크기는 위 "크기 설정" 카드의 "세로 모드 전용" 항목에서 조절합니다.</div>
     </div>
   </div>
 
@@ -733,6 +744,10 @@
   const pTallyVal    = document.getElementById('p-tally-size-val');
   const pSchSlider   = document.getElementById('p-sch-size');
   const pSchVal      = document.getElementById('p-sch-size-val');
+  const pCdSlider    = document.getElementById('p-cd-size');
+  const pCdVal       = document.getElementById('p-cd-size-val');
+  const pSwSlider    = document.getElementById('p-sw-size');
+  const pSwVal       = document.getElementById('p-sw-size-val');
 
   const segButtons    = Array.from(document.querySelectorAll('.seg-btn'));
   const scheduleSub   = document.getElementById('schedule-sub');
@@ -835,6 +850,8 @@
       pClockScale:  parseFloat(pClockSlider.value),
       pTallyScale:  parseFloat(pTallySlider.value),
       pSchScale:    parseFloat(pSchSlider.value),
+      pCdScale:     parseFloat(pCdSlider.value),
+      pSwScale:     parseFloat(pSwSlider.value),
       stopwatchRunning: swRunning,
       stopwatchStartedAt: swStartedAt,
       stopwatchElapsedMs: swElapsedMs,
@@ -878,6 +895,8 @@
   bindRange(pClockSlider, pClockVal, 'x');
   bindRange(pTallySlider, pTallyVal, 'x');
   bindRange(pSchSlider,   pSchVal,   'x');
+  bindRange(pCdSlider,    pCdVal,    'x');
+  bindRange(pSwSlider,    pSwVal,    'x');
   bindRange(cdBoxSizeSlider,  cdBoxSizeVal,  'x');
   bindRange(cdTextSizeSlider, cdTextSizeVal, 'x');
   bindRange(cdLabelSizeSlider, cdLabelSizeVal, 'x');
@@ -1112,9 +1131,6 @@
   }
   bindCollapse(advancedToggle, advancedSub);
   bindCollapse(document.getElementById('size-toggle'), document.getElementById('size-sub'));
-  bindCollapse(document.getElementById('sch-size-toggle'), document.getElementById('sch-size-sub'));
-  bindCollapse(document.getElementById('cd-size-toggle'), document.getElementById('cd-size-sub'));
-  bindCollapse(document.getElementById('sw-size-toggle'), document.getElementById('sw-size-sub'));
 
   dm7HostInput.addEventListener('change', saveSettings);
   gpioEnableToggle.addEventListener('change', () => {
@@ -1249,6 +1265,8 @@
       if (s.pClockScale !== undefined) pClockSlider.value = s.pClockScale;
       if (s.pTallyScale !== undefined) pTallySlider.value = s.pTallyScale;
       if (s.pSchScale   !== undefined) pSchSlider.value   = s.pSchScale;
+      if (s.pCdScale    !== undefined) pCdSlider.value    = s.pCdScale;
+      if (s.pSwScale    !== undefined) pSwSlider.value    = s.pSwScale;
       if (s.cdBoxScale  !== undefined) cdBoxSizeSlider.value  = s.cdBoxScale;
       if (s.cdTextScale !== undefined) cdTextSizeSlider.value = s.cdTextScale;
       if (s.cdLabelScale !== undefined) cdLabelSizeSlider.value = s.cdLabelScale;
@@ -1265,6 +1283,8 @@
       pClockVal.textContent = parseFloat(pClockSlider.value).toFixed(2) + 'x';
       pTallyVal.textContent = parseFloat(pTallySlider.value).toFixed(2) + 'x';
       pSchVal.textContent   = parseFloat(pSchSlider.value).toFixed(2)   + 'x';
+      pCdVal.textContent    = parseFloat(pCdSlider.value).toFixed(2)    + 'x';
+      pSwVal.textContent    = parseFloat(pSwSlider.value).toFixed(2)    + 'x';
       cdBoxSizeVal.textContent  = parseFloat(cdBoxSizeSlider.value).toFixed(2)  + 'x';
       cdTextSizeVal.textContent = parseFloat(cdTextSizeSlider.value).toFixed(2) + 'x';
       cdLabelSizeVal.textContent = parseFloat(cdLabelSizeSlider.value).toFixed(2) + 'x';
