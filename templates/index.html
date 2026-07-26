@@ -231,15 +231,7 @@
       );
       padding-bottom: clamp(12px, calc(var(--cd-text-scale, 1) * 1.8vh), 32px);
       gap: clamp(0px, 0.4vh, 4px);
-      transition: background 0.3s ease, box-shadow 0.3s ease, min-height 0.2s ease, padding-bottom 0.2s ease;
-    }
-    /* 예정/실제 종료 비교 줄(.cd-marker-actual)은 마커 라벨 안에서 position:absolute라
-       #countdown의 자연스러운 높이 계산에 안 잡힌다 — 그 줄이 뜬 만큼 아래쪽 여백을
-       미리 더 벌어주지 않으면, 화면 맨 아래(body가 overflow:hidden이라 잘림)에서
-       글자가 그냥 안 보이게 잘려나간다(실측: 1080px 화면에서 14px 정도 화면 밖으로
-       밀림). 이 클래스는 그 줄이 실제로 보일 때만 JS가 #countdown에 붙인다. */
-    #countdown.has-actual {
-      padding-bottom: clamp(48px, calc(var(--cd-text-scale, 1) * 6.5vh), 110px);
+      transition: background 0.3s ease, box-shadow 0.3s ease, min-height 0.2s ease;
     }
     #countdown.elapsed {
       background: #1f1400;
@@ -451,16 +443,21 @@
       text-shadow: 0 0 8px rgba(74,222,128,0.6);
       font-weight: 900;
     }
+    .cd-marker-time-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5em;
+    }
     .cd-marker-actual {
       display: none;
-      margin-top: 0.35em;
       font-size: 0.6em;
       font-weight: 700;
       letter-spacing: 0.01em;
       color: #8a8a8a;
       text-transform: none;
+      white-space: nowrap;
     }
-    .cd-marker-actual.show { display: block; }
+    .cd-marker-actual.show { display: inline; }
     .cd-marker-actual b { color: #dce8ff; font-weight: 800; }
     #cd-runner {
       position: absolute;
@@ -756,8 +753,10 @@
         <span class="cd-marker-dot"></span>
         <span class="cd-marker-label">
           <span class="cd-marker-program" id="cd-marker-end-program"></span>
-          <span id="cd-marker-end-label">종료</span>
-          <span class="cd-marker-actual" id="cd-marker-end-actual"></span>
+          <span class="cd-marker-time-row">
+            <span id="cd-marker-end-label">종료</span>
+            <span class="cd-marker-actual" id="cd-marker-end-actual"></span>
+          </span>
         </span>
       </div>
       <div id="cd-runner" class="walking">
@@ -1178,14 +1177,11 @@
         cdMarkerEndActual.innerHTML =
           `실제 ${hhmm(end)} (${sign}${formatDuration(Math.abs(diffSec))}) · 제작 ${formatDuration(actualDurationSec)}`;
         cdMarkerEndActual.classList.add('show');
-        countdownEl.classList.add('has-actual');
       } else {
         cdMarkerEndActual.classList.remove('show');
-        countdownEl.classList.remove('has-actual');
       }
     } else {
       cdMarkerEndActual.classList.remove('show');
-      countdownEl.classList.remove('has-actual');
     }
 
     const isBeforeStart = now < start;
