@@ -156,6 +156,8 @@
     .sps-row .sps-time { color: #ddd; font-weight: 700; font-variant-numeric: tabular-nums; }
     .sps-row .sps-name { color: #aaa; margin-top: 2px; font-size: 0.76rem; }
     .sps-row .sps-ts { color: #f0a030; font-weight: 700; font-size: 0.76rem; white-space: nowrap; }
+    .sps-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+    .sps-row .sps-actual { color: #dce8ff; font-weight: 700; font-size: 0.7rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .sps-empty { color: #666; font-size: 0.78rem; text-align: center; padding: 10px 0; }
     .sps-row .sps-diff { color: #888; font-size: 0.7rem; margin-top: 3px; }
     .sps-row .sps-diff b { color: #dce8ff; font-weight: 700; }
@@ -1011,7 +1013,10 @@
               <div class="sps-time">${it.start} ~ ${it.end}</div>
               <div class="sps-name">${it.programName}</div>
             </div>
-            <div class="sps-ts">${it.videoSource}</div>
+            <div class="sps-right">
+              <div class="sps-ts">${it.videoSource}</div>
+              ${it.wasLive ? `<div class="sps-actual">${it.actualStart} ~ ${it.actualEnd}${it.actualDurationSec != null ? ' (' + formatStopwatch(it.actualDurationSec * 1000) + ')' : ''}</div>` : ''}
+            </div>
           </div>`;
         }).join('');
       })

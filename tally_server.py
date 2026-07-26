@@ -359,6 +359,24 @@ def sps_append_history(record):
         f.write(json.dumps(record, ensure_ascii=False) + '\n')
 
 
+def sps_read_history(date_str):
+    """broadcast_history.jsonl에서 해당 날짜 기록을 eventId -> 레코드 딕셔너리로 읽어온다.
+    같은 eventId가 여러 줄이면(이론상 없어야 하지만) 마지막 줄을 우선한다."""
+    out = {}
+    try:
+        with open(SPS_HISTORY_FILE, encoding='utf-8') as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                except Exception:
+                    continue
+                if rec.get('date') == date_str and rec.get('eventId'):
+                    out[rec['eventId']] = rec
+    except Exception:
+        pass
+    return out
+
+
 def sps_fetch_repos(date_str, token):
     """해당 날짜(방송일) 운행표 전체(repos 배열)를 조회하고 캐시 파일도 갱신해서 반환."""
     repos = sps_api_get(f'/daily-schedule/repos?date={date_str}&uhd=false&band=true', token).get('repos', [])
@@ -786,7 +804,10 @@ def health():
 def sps_live_schedule():
     """오늘 운행표 캐시(data/sps_schedule_<date>.json)에서 생방송(liveOrVcr) 항목만
     (설정된 부조정실이 있으면 그 항목만) 골라 컨트롤 페이지에 보여줄 최소 정보로 반환.
-    API를 다시 호출하지 않고 캐시만 읽는다."""
+    API를 다시 호출하지 않고 캐시만 읽는다. 이미 끝난 항목은 broadcast_history.jsonl과
+    eventId로 대조해서 실제 시작/종료/제작시간도 같이 붙여준다 — 캐시의 startTime/
+    duration 자체는 시간이 지나며 실제값으로 계속 갱신되므로 "예정"과 "실제"를
+    나란히 비교하려면 LIVE 전환 시점에 스냅샷해둔 history 기록이 따로 필요하다."""
     if not session.get('control_authed'):
         return ('', 403)
     date_str = sps_broadcast_date(datetime.now(KST)).strftime('%Y-%m-%d')
@@ -796,6 +817,7 @@ def sps_live_schedule():
             repos = json.load(f).get('repos', [])
     except Exception:
         repos = []
+    history = sps_read_history(date_str)
 
     studio = get_sps_settings()['studio']
     items = []
@@ -806,13 +828,20 @@ def sps_live_schedule():
             continue
         start_dt = datetime.strptime(entry['startTime'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=KST)
         end_dt = start_dt + timedelta(seconds=entry['duration'])
-        items.append({
+        item = {
             'start': start_dt.strftime('%H:%M:%S'),
             'end': end_dt.strftime('%H:%M:%S'),
             'duration': entry['duration'],
             'videoSource': entry.get('videoSource', ''),
             'programName': entry.get('programName', ''),
-        })
+        }
+        rec = history.get(entry.get('eventId'))
+        if rec:
+            item['actualStart'] = rec.get('actualStart') or ''
+            item['actualEnd'] = rec.get('actualEnd') or ''
+            item['actualDurationSec'] = rec.get('actualDurationSec')
+            item['wasLive'] = bool(rec.get('wasLive'))
+        items.append(item)
     return jsonify(items)
 
 
