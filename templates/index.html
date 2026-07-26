@@ -439,6 +439,17 @@
       margin-bottom: 0.3em;
     }
     .cd-marker-program:empty { display: none; margin-bottom: 0; }
+    .cd-marker-actual {
+      display: none;
+      margin-top: 0.35em;
+      font-size: 0.6em;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #8a8a8a;
+      text-transform: none;
+    }
+    .cd-marker-actual.show { display: block; }
+    .cd-marker-actual b { color: #dce8ff; font-weight: 800; }
     #cd-runner {
       position: absolute;
       top: 30%;
@@ -476,6 +487,33 @@
       white-space: nowrap;
       box-shadow: 0 4px 16px rgba(0,0,0,0.5);
       transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+    .cd-live-badge {
+      display: none;
+      align-items: center;
+      gap: 0.35em;
+      color: #ff5252;
+      font-weight: 800;
+      font-size: clamp(0.62rem, calc(var(--cd-text-scale, 1) * 1vw), 1.3rem);
+      letter-spacing: 0.14em;
+      margin-bottom: 0.3em;
+      text-shadow: 0 0 10px rgba(255,82,82,0.5);
+    }
+    .cd-live-badge.show { display: flex; }
+    .cd-live-dot {
+      width: 0.55em;
+      height: 0.55em;
+      border-radius: 50%;
+      background: #ff5252;
+      box-shadow: 0 0 8px 2px rgba(255,82,82,0.7);
+      animation: cd-live-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes cd-live-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.8); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cd-live-dot { animation: none; }
     }
     .cd-tag-main {
       color: #ffedd5;
@@ -679,6 +717,7 @@
         <span class="cd-marker-label">
           <span class="cd-marker-program" id="cd-marker-end-program"></span>
           <span id="cd-marker-end-label">종료</span>
+          <span class="cd-marker-actual" id="cd-marker-end-actual"></span>
         </span>
       </div>
       <div id="cd-runner" class="walking">
@@ -687,6 +726,7 @@
         <span class="cd-runner-head"></span>
         <div class="cd-runner-tag" id="cd-runner-tag">
           <span class="cd-runner-tag-pill" id="cd-runner-tag-text">
+            <span class="cd-live-badge" id="cd-live-badge"><span class="cd-live-dot"></span>LIVE</span>
             <span class="cd-tag-main" id="cd-tag-main">--:--</span>
             <span class="cd-tag-sub" id="cd-tag-sub"></span>
           </span>
@@ -736,6 +776,8 @@
   const cdMarkerEndLabel   = document.getElementById('cd-marker-end-label');
   const cdMarkerStartProgram = document.getElementById('cd-marker-start-program');
   const cdMarkerEndProgram   = document.getElementById('cd-marker-end-program');
+  const cdMarkerEndActual    = document.getElementById('cd-marker-end-actual');
+  const cdLiveBadge          = document.getElementById('cd-live-badge');
   const stopwatchCol     = document.getElementById('stopwatch-col');
   const stopwatchLabel   = document.getElementById('stopwatch-label');
   const stopwatchTimerEl = document.getElementById('stopwatch-timer');
@@ -770,6 +812,8 @@
   let broadcastTime = '', broadcastEndTime = '';
   let broadcastTimeNextDay = false, broadcastEndTimeNextDay = false;
   let broadcastProgramName = '';
+  let broadcastScheduledEndTime = '', broadcastScheduledEndTimeNextDay = false;
+  let broadcastIsLive = false;
   let lastCdSignature = '';
   let cdBoxScale = 1, cdTextScale = 1, cdLabelScale = 1;
   let swBoxScale = 1, swTextScale = 1;
@@ -1003,6 +1047,8 @@
       return;
     }
 
+    cdLiveBadge.classList.toggle('show', broadcastIsLive);
+
     const { start, end } = anchorBroadcastWindow(now, startVal, broadcastTimeNextDay, endVal, broadcastEndTimeNextDay);
     const rawDiffMs = start - now;
 
@@ -1038,6 +1084,24 @@
   function renderBoundedTrack(now, start, end, durationSec) {
     cdMarkerEndLabel.textContent = (isDifferentDay(end, now) ? '종료 N ' : '종료 ') + hhmm(end);
     cdMarkerEndProgram.textContent = broadcastProgramName;
+
+    // 예정 종료(생방송이 실제로 시작되던 순간의 예상값, 서버에서 스냅샷 고정)와 지금의
+    // 최신값(=방송이 끝난 뒤엔 실제값)이 다르면 그 차이와 실제 제작시간을 같이 보여준다.
+    if (broadcastScheduledEndTime) {
+      const scheduledEnd = timeToday(start, broadcastScheduledEndTime, broadcastScheduledEndTimeNextDay);
+      const diffSec = Math.round((end - scheduledEnd) / 1000);
+      if (Math.abs(diffSec) >= 1) {
+        const sign = diffSec > 0 ? '+' : '-';
+        const actualDurationSec = Math.max(0, Math.round((end - start) / 1000));
+        cdMarkerEndActual.innerHTML =
+          `예정 ${hhmm(scheduledEnd)} · <b>실제 ${hhmm(end)}</b> (${sign}${formatDuration(Math.abs(diffSec))}) · 제작 ${formatDuration(actualDurationSec)}`;
+        cdMarkerEndActual.classList.add('show');
+      } else {
+        cdMarkerEndActual.classList.remove('show');
+      }
+    } else {
+      cdMarkerEndActual.classList.remove('show');
+    }
 
     const isBeforeStart = now < start;
 
@@ -1218,12 +1282,15 @@
     broadcastTimeNextDay = !!s.broadcastTimeNextDay;
     broadcastEndTimeNextDay = !!s.broadcastEndTimeNextDay;
     broadcastProgramName = s.broadcastProgramName || '';
+    broadcastScheduledEndTime = s.broadcastScheduledEndTime || '';
+    broadcastScheduledEndTimeNextDay = !!s.broadcastScheduledEndTimeNextDay;
+    broadcastIsLive = !!s.broadcastIsLive;
     if (s.cdBoxScale !== undefined) { cdBoxScale = parseFloat(s.cdBoxScale); countdownEl.style.setProperty('--cd-box-scale', cdBoxScale.toFixed(3)); }
     if (s.cdTextScale !== undefined) { cdTextScale = parseFloat(s.cdTextScale); countdownEl.style.setProperty('--cd-text-scale', cdTextScale.toFixed(3)); }
     if (s.cdLabelScale !== undefined) { cdLabelScale = parseFloat(s.cdLabelScale); countdownEl.style.setProperty('--cd-label-scale', cdLabelScale.toFixed(3)); }
     // 시작/종료 시각·모드가 실제로 바뀌었을 때만 즉시 갱신 — 매 3초 폴링마다 무조건 다시 그리면
     // 매초 진행 중인 러너/채움바 트랜지션과 위상이 어긋나며 움직임이 불규칙해 보이는 원인이 된다.
-    const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay + ':' + broadcastProgramName;
+    const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay + ':' + broadcastProgramName + ':' + broadcastScheduledEndTime + ':' + broadcastIsLive;
     if (countdownModeOn && cdSignature !== lastCdSignature) updateCountdown();
     lastCdSignature = cdSignature;
 

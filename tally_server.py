@@ -288,9 +288,12 @@ def dm7_listener():
 # 약 30일짜리라 서버는 헤드리스로 이 토큰을 읽어 쓰기만 한다.
 SPS_API_BASE = 'https://sps.sbs.co.kr:8123'
 SPS_TOKEN_FILE = os.path.join(os.path.dirname(__file__), 'sps_token.json')
-SPS_POLL_INTERVAL = 20  # 초 — 가벼운 JSON 호출이라 OCR보다 자주 확인 가능
 SPS_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
-SPS_LOOKAHEAD_DAYS = 3  # 오늘 남은 생방송이 없을 때 며칠 앞까지 다음 생방송을 찾아볼지
+SPS_LOOKAHEAD_DAYS = 3      # 오늘 남은 생방송이 없을 때 며칠 앞까지 다음 생방송을 찾아볼지
+SPS_SLOW_INTERVAL = 20      # 초 — 평상시 폴링 간격
+SPS_FAST_INTERVAL = 1       # 초 — 임박한 생방송 핸드오프 전후 폴링 간격
+SPS_FAST_WINDOW = timedelta(minutes=5)      # 핸드오프 경계 앞뒤로 촘촘하게 볼 범위
+SPS_HANDOFF_GAP = timedelta(minutes=10)     # 두 생방송 사이 이 안이면 "핸드오프"로 간주
 
 
 def get_sps_settings():
@@ -343,115 +346,216 @@ def save_sps_schedule(date_str, repos):
         json.dump({'date': date_str, 'updated_at': datetime.now(KST).isoformat(), 'repos': repos}, f, ensure_ascii=False)
 
 
-def sps_candidates_for_date(date_str, studio, token):
-    """해당 날짜(방송일) 운행표에서 생방송(liveOrVcr=true, studio 지정 시 그 부조정실만)
-    항목만 골라 (시작, 종료, 프로그램명) datetime 튜플 리스트로 반환. 캐시 파일도 갱신."""
-    repos = sps_api_get(f'/daily-schedule/repos?date={date_str}&uhd=false&band=true', token)
-    save_sps_schedule(date_str, repos.get('repos', []))
+def sps_fetch_repos(date_str, token):
+    """해당 날짜(방송일) 운행표 전체(repos 배열)를 조회하고 캐시 파일도 갱신해서 반환."""
+    repos = sps_api_get(f'/daily-schedule/repos?date={date_str}&uhd=false&band=true', token).get('repos', [])
+    save_sps_schedule(date_str, repos)
+    return repos
 
-    candidates = []
-    for entry in repos.get('repos', []):
+
+def sps_parse_live(repos, studio=''):
+    """레포 배열에서 생방송(liveOrVcr=true) 항목만 골라 딕셔너리 리스트로 반환.
+    studio를 주면 그 부조정실만, 빈 문자열이면 스튜디오 무관 전체(핸드오프 판단용).
+    eventId는 SPS가 부여하는 안 바뀌는 고유 ID — 종료시간이 사후에 갱신돼도 같은
+    방송을 계속 같은 항목으로 추적하기 위한 식별자로 쓴다."""
+    out = []
+    for entry in repos:
         if not entry.get('liveOrVcr'):
             continue
         if studio and entry.get('videoSource') != studio:
             continue
-        start_dt = datetime.strptime(entry['startTime'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=KST)
+        try:
+            start_dt = datetime.strptime(entry['startTime'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=KST)
+        except Exception:
+            continue
         end_dt = start_dt + timedelta(seconds=entry['duration'])
-        candidates.append((start_dt, end_dt, entry.get('programName', '')))
-    return candidates
+        out.append({
+            'start': start_dt,
+            'end': end_dt,
+            'programName': entry.get('programName', ''),
+            'videoSource': entry.get('videoSource', ''),
+            'eventId': entry.get('eventId'),
+        })
+    return out
 
 
-def sps_find_live_segment(now, studio='', gap_minutes=0):
-    """생방송(liveOrVcr=true, studio 지정 시 그 부조정실만) 항목 중
-    (1) 지금 진행 중인 것이 있으면 그것,
-    (2) 없고 방금 끝난 항목의 종료+gap_minutes가 아직 안 지났으면 그 방금 끝난 항목,
-    (3) 없고 오늘 중 남은 다음 항목이 있으면 그것,
-    (4) 오늘 남은 게 없으면 앞으로 SPS_LOOKAHEAD_DAYS일 안에서 가장 이른 다음 항목을
-    찾아 (시작 'HH:MM:SS', 종료 'HH:MM:SS', 종료가 시작일 기준 익일인지,
-    시작이 오늘(now) 기준 익일인지, 프로그램명) 반환. 그마저 없으면 None.
-    생방송 모드는 "다음 생방송까지 얼마나 남았는지"가 핵심이라, 오늘 마지막 방송이
-    끝나도 내일 이후 첫 생방송을 계속 찾아서 카운트다운을 이어간다 — 예정 시각이
-    오늘이 아니면 네 번째 값(시작 익일 여부)으로 화면에 N 표시를 할 수 있게 한다.
-    gap_minutes는 방송이 끝난 후 다음 방송 정보로 즉시 넘어가지 않고 얼마나
-    더 "방금 끝난 방송"을 보여줄지(0이면 즉시 전환) 설정.
-    /daily-schedule/onairdate가 주는 onAirIndex는 실측 결과 최대 한 항목(수십초)
-    지연될 수 있어 신뢰하지 않고, startTime+duration을 now와 직접 비교한다."""
-    token = get_sps_token()
-    if not token:
-        raise RuntimeError(
-            "sps_token.json 없음/만료 — 브라우저 있는 머신에서 "
-            "`uv run python setup/sps_authorize.py` 로 재발급 후 서버에 배치하세요."
-        )
-
-    today = sps_broadcast_date(now)
-    candidates = sps_candidates_for_date(today.strftime('%Y-%m-%d'), studio, token)
-
-    def to_result(c):
-        start_dt, end_dt, program_name = c
-        return (start_dt.strftime('%H:%M:%S'), end_dt.strftime('%H:%M:%S'),
-                end_dt.date() != start_dt.date(), start_dt.date() != now.date(), program_name)
-
-    for c in candidates:
-        if c[0] <= now < c[1]:
-            return to_result(c)
-
+def sps_pick_from_live(live, now, gap_minutes):
+    """이미 골라둔(studio 필터링된) 오늘의 생방송 목록 안에서
+    (1) 지금 진행 중인 것, (2) 없고 방금 끝난 항목의 종료+gap_minutes가 아직 안
+    지났으면 그것, (3) 없고 오늘 중 다음 항목이 있으면 그것을 골라 반환.
+    셋 다 없으면 None(이 경우 호출자가 다른 날짜로 lookahead)."""
+    for e in live:
+        if e['start'] <= now < e['end']:
+            return e
     if gap_minutes > 0:
-        ended = [c for c in candidates if c[1] <= now]
+        ended = [e for e in live if e['end'] <= now]
         if ended:
-            last_ended = max(ended, key=lambda c: c[1])
-            if now < last_ended[1] + timedelta(minutes=gap_minutes):
-                return to_result(last_ended)
-
-    upcoming = [c for c in candidates if c[0] > now]
+            last_ended = max(ended, key=lambda e: e['end'])
+            if now < last_ended['end'] + timedelta(minutes=gap_minutes):
+                return last_ended
+    upcoming = [e for e in live if e['start'] > now]
     if upcoming:
-        return to_result(min(upcoming, key=lambda c: c[0]))
-
-    for days_ahead in range(1, SPS_LOOKAHEAD_DAYS + 1):
-        next_date_str = (today + timedelta(days=days_ahead)).strftime('%Y-%m-%d')
-        next_candidates = sps_candidates_for_date(next_date_str, studio, token)
-        if next_candidates:
-            return to_result(min(next_candidates, key=lambda c: c[0]))
-
+        return min(upcoming, key=lambda e: e['start'])
     return None
+
+
+def sps_lookahead_pick(studio, today, token):
+    """오늘 남은 생방송이 없을 때 앞으로 SPS_LOOKAHEAD_DAYS일 안에서 가장 이른
+    다음 생방송을 찾는다. 그마저 없으면 None."""
+    for days_ahead in range(1, SPS_LOOKAHEAD_DAYS + 1):
+        date_str = (today + timedelta(days=days_ahead)).strftime('%Y-%m-%d')
+        live = sps_parse_live(sps_fetch_repos(date_str, token), studio)
+        if live:
+            return min(live, key=lambda e: e['start'])
+    return None
+
+
+def sps_to_result(picked, now):
+    """골라진 항목을 화면 반영용 형식으로 변환 — 시작이 now 기준 익일인지 계산해서
+    컨트롤 페이지의 기존 "N"(익일) 표기를 그대로 재사용할 수 있게 한다."""
+    start_dt, end_dt = picked['start'], picked['end']
+    return {
+        'eventId': picked['eventId'],
+        'programName': picked['programName'],
+        'start_str': start_dt.strftime('%H:%M:%S'),
+        'end_str': end_dt.strftime('%H:%M:%S'),
+        'end_next_day': end_dt.date() != start_dt.date(),
+        'start_next_day': start_dt.date() != now.date(),
+    }
+
+
+def sps_next_handoff_distance(all_live_today, now):
+    """오늘 전체(스튜디오 무관) 생방송 중, 한 항목이 끝나고 SPS_HANDOFF_GAP 안에
+    다음 항목이 바로 시작하는 "핸드오프" 경계들을 찾아서, now에서 가장 가까운
+    경계까지 남은 시간을 반환(그 경계 안에 있으면 0). 그런 핸드오프가 오늘 아예
+    없으면 None.
+    모닝와이드1→2→3부(각각 다른 부조정실), 뉴스헌터스→8뉴스처럼 부조정실은 서로
+    달라도 주조정실이 CM·ID로 몇 분 안에 바로 이어주는 구간을 촘촘하게 보기
+    위함 — 오늘 마지막 생방송처럼 뒤에 몇 시간 비는 항목은 대상에서 빠진다."""
+    ordered = sorted(all_live_today, key=lambda e: e['start'])
+    boundaries = []
+    for a, b in zip(ordered, ordered[1:]):
+        gap = b['start'] - a['end']
+        if timedelta(0) <= gap <= SPS_HANDOFF_GAP:
+            boundaries.append(a['end'])
+            boundaries.append(b['start'])
+    if not boundaries:
+        return None
+    return min(abs(b - now) for b in boundaries)
 
 
 def sps_listener():
     """SPS 운행표를 주기적으로 조회해서 생방송(liveOrVcr, 선택된 부조정실) 진행 항목을
     발견하면 생방송(카운트다운) 모드의 시작/종료 시각을 자동으로 채워준다. settings.json의
     spsAutoDetect를 false로 두면 즉시 끌 수 있다(스레드는 계속 돌되 아무것도 하지 않음).
-    같은 방송 구간(key)에 대해서는 딱 한 번만 countdownMode를 강제로 켠다 — 그 뒤 사용자가
-    컨트롤 페이지에서 수동으로 다른 모드로 바꾸면, 그 방송이 끝나고 다음 구간으로 넘어갈
-    때까지는 존중해서 다시 켜지 않는다(매 폴링마다 강제로 되돌리면 수동 전환이 안 먹힘).
-    생방송 모드는 "다음 생방송까지 얼마나 남았는지"가 핵심이라, 오늘 마지막 방송이 끝나도
-    sps_find_live_segment가 내일 이후 첫 생방송을 계속 찾아서 카운트다운을 이어간다(시작이
-    오늘이 아니면 broadcastTimeNextDay로 N 표시). sps_find_live_segment가 그마저도 None을
-    반환하는 건 SPS_LOOKAHEAD_DAYS 안에 예정된 생방송이 아예 없다는 뜻 — 이때만 마지막으로
-    추적하던 카운트다운이 화면에 영원히 멈춰 있지 않도록 일반(일정) 모드로 되돌린다."""
-    last_applied = None
+
+    항목 식별은 (시작,종료,이름) 조합이 아니라 SPS의 eventId로 한다 — 종료시간은
+    방송이 끝난 뒤 SPS가 실제값으로 사후 갱신해주는데(실측: 방송 종료 후 약 6~7초),
+    이때 eventId는 그대로라서 "같은 방송의 시간이 갱신된 것"과 "다른 방송으로
+    넘어간 것"을 구분할 수 있다. 같은 eventId를 추적하는 동안에도 시작/종료가 계속
+    바뀔 수 있는데(앞선 방송이 늦게 끝나서 뒤 방송들이 줄줄이 밀리는 캐스케이드가
+    하루 종일 일어남), broadcastTime/EndTime은 그때그때 최신값(=현재 SPS가 아는
+    가장 정확한 값)으로 계속 갱신한다.
+
+    onAirIndex(주조에서 실제로 내보내고 있는 항목의 인덱스, 실측 결과 진짜 스위칭과
+    거의 동시(1~2초)에 반영됨)가 지금 추적 중인 eventId를 가리키는 순간을 "진짜
+    라이브 전환"으로 보고 broadcastIsLive를 켠다. 이 전환이 처음 일어나는 그 순간의
+    broadcastEndTime을 broadcastScheduledEndTime에 그대로 스냅샷으로 고정해둔다 —
+    "방송 시작 전까지 계속 밀리던 예정이 실제로 시작하는 순간엔 이 값이었다"는
+    기준점이라, 방송이 끝난 뒤 최종적으로 갱신되는 실제값과 나란히 비교할 수 있다
+    (처음 발견한 시각에 고정하면 그 사이 캐스케이드로 여러 번 바뀐 몇 시간 전
+    값이 돼버려서 비교 기준으로 의미가 없다).
+
+    폴링 간격은 평상시엔 SPS_SLOW_INTERVAL이고, 오늘 생방송 중 서로 SPS_HANDOFF_GAP
+    이내로 바로 이어지는 항목(모닝와이드1→2→3부, 뉴스헌터스→8뉴스처럼 부조정실은
+    달라도 주조정실이 CM/ID로 몇 분 안에 이어주는 구간)의 경계 앞뒤 SPS_FAST_WINDOW
+    안이면 SPS_FAST_INTERVAL로 촘촘해진다 — 오늘 마지막 생방송처럼 뒤에 몇 시간
+    비는 항목의 종료는 굳이 그렇게까지 빨리 잡을 필요가 없어서 대상에서 빠진다.
+
+    생방송 모드는 "다음 생방송까지 얼마나 남았는지"가 핵심이라, 오늘 마지막 방송이
+    끝나도 내일 이후 첫 생방송을 계속 찾아서 카운트다운을 이어간다(시작이 오늘이
+    아니면 broadcastTimeNextDay로 N 표시). SPS_LOOKAHEAD_DAYS 안에도 예정된 생방송이
+    아예 없을 때만, 마지막으로 추적하던 카운트다운이 화면에 영원히 멈춰 있지 않도록
+    일반(일정) 모드로 되돌린다."""
+    last_event_id = None
+    last_was_live = False
     last_error = None
     while True:
+        interval = SPS_SLOW_INTERVAL
         try:
             cfg = get_sps_settings()
             if cfg['enabled']:
-                found = sps_find_live_segment(datetime.now(KST), cfg['studio'], cfg['gap_minutes'])
-                if found:
-                    start_str, end_str, end_next_day, start_next_day, program_name = found
-                    key = (start_str, end_str, program_name)
-                    if key != last_applied:
-                        with open(SETTINGS_FILE, encoding='utf-8') as f:
-                            s = json.load(f)
+                token = get_sps_token()
+                if not token:
+                    raise RuntimeError(
+                        "sps_token.json 없음/만료 — 브라우저 있는 머신에서 "
+                        "`uv run python setup/sps_authorize.py` 로 재발급 후 서버에 배치하세요."
+                    )
+                now = datetime.now(KST)
+                today = sps_broadcast_date(now)
+                date_str = today.strftime('%Y-%m-%d')
+                repos = sps_fetch_repos(date_str, token)
+
+                on_air_event_id = None
+                try:
+                    idx = sps_api_get(f'/daily-schedule/onairdate?date={date_str}', token).get('onAirIndex')
+                    if idx is not None and 0 <= idx < len(repos):
+                        on_air_event_id = repos[idx].get('eventId')
+                except Exception:
+                    pass
+
+                all_live_today = sps_parse_live(repos, '')
+                studio_live_today = [e for e in all_live_today if not cfg['studio'] or e['videoSource'] == cfg['studio']]
+
+                picked = sps_pick_from_live(studio_live_today, now, cfg['gap_minutes'])
+                if not picked:
+                    picked = sps_lookahead_pick(cfg['studio'], today, token)
+
+                if picked:
+                    result = sps_to_result(picked, now)
+                    is_live = on_air_event_id is not None and on_air_event_id == result['eventId']
+                    with open(SETTINGS_FILE, encoding='utf-8') as f:
+                        s = json.load(f)
+                    changed = False
+                    if result['eventId'] != last_event_id:
                         s['countdownMode'] = True
-                        s['broadcastTime'] = start_str
-                        s['broadcastEndTime'] = end_str
-                        s['broadcastTimeNextDay'] = start_next_day
-                        s['broadcastEndTimeNextDay'] = end_next_day
-                        s['broadcastProgramName'] = program_name
+                        s['broadcastEventId'] = result['eventId']
+                        s['broadcastTime'] = result['start_str']
+                        s['broadcastTimeNextDay'] = result['start_next_day']
+                        s['broadcastEndTime'] = result['end_str']
+                        s['broadcastEndTimeNextDay'] = result['end_next_day']
+                        s['broadcastScheduledEndTime'] = ''
+                        s['broadcastScheduledEndTimeNextDay'] = False
+                        s['broadcastProgramName'] = result['programName']
+                        last_event_id = result['eventId']
+                        last_was_live = False
+                        changed = True
+                        when = f"{'내일 이후 ' if result['start_next_day'] else ''}{result['programName']} {result['start_str']} ~ {result['end_str']}"
+                        print(f"[SPS] 생방송 감지 → {when} 자동 반영", flush=True)
+                    elif (s.get('broadcastTime') != result['start_str'] or s.get('broadcastEndTime') != result['end_str']
+                          or s.get('broadcastTimeNextDay') != result['start_next_day']
+                          or s.get('broadcastEndTimeNextDay') != result['end_next_day']):
+                        old_start, old_end = s.get('broadcastTime'), s.get('broadcastEndTime')
+                        s['broadcastTime'] = result['start_str']
+                        s['broadcastTimeNextDay'] = result['start_next_day']
+                        s['broadcastEndTime'] = result['end_str']
+                        s['broadcastEndTimeNextDay'] = result['end_next_day']
+                        changed = True
+                        print(f"[SPS] 시간 갱신(실제반영/캐스케이드) → {result['programName']} "
+                              f"{old_start}~{old_end} → {result['start_str']}~{result['end_str']}", flush=True)
+                    if is_live and not last_was_live:
+                        s['broadcastScheduledEndTime'] = s['broadcastEndTime']
+                        s['broadcastScheduledEndTimeNextDay'] = s['broadcastEndTimeNextDay']
+                        changed = True
+                        print(f"[SPS] LIVE 전환 → {result['programName']} 예정 종료 {s['broadcastEndTime']} 스냅샷 고정", flush=True)
+                    if s.get('broadcastIsLive') != is_live:
+                        s['broadcastIsLive'] = is_live
+                        changed = True
+                    last_was_live = is_live
+                    if changed:
                         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
                             json.dump(s, f)
-                        when = f"{'내일 이후 ' if start_next_day else ''}{program_name} {start_str} ~ {end_str}"
-                        print(f"[SPS] 생방송 감지 → {when} 자동 반영", flush=True)
-                        last_applied = key
-                elif last_applied is not None:
+                elif last_event_id is not None:
                     with open(SETTINGS_FILE, encoding='utf-8') as f:
                         s = json.load(f)
                     if s.get('countdownMode'):
@@ -459,17 +563,23 @@ def sps_listener():
                         s['broadcastTime'] = ''
                         s['broadcastEndTime'] = ''
                         s['broadcastProgramName'] = ''
+                        s['broadcastScheduledEndTime'] = ''
+                        s['broadcastIsLive'] = False
                         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
                             json.dump(s, f)
                         print(f"[SPS] 앞으로 {SPS_LOOKAHEAD_DAYS}일 안에 예정된 생방송 없음 → 일반 모드로 전환", flush=True)
-                    last_applied = None
+                    last_event_id = None
+                    last_was_live = False
+
+                dist = sps_next_handoff_distance(all_live_today, now)
+                interval = SPS_FAST_INTERVAL if (dist is not None and dist <= SPS_FAST_WINDOW) else SPS_SLOW_INTERVAL
             last_error = None
         except Exception as e:
             msg = str(e)
             if msg != last_error:
                 print(f"[SPS] 오류: {msg}", flush=True)
                 last_error = msg
-        time.sleep(SPS_POLL_INTERVAL)
+        time.sleep(interval)
 
 
 # ── GPIO 접점 탈리 입력 (라즈베리파이 전용, DM7 같은 네트워크 탈리가 없는 콘솔용) ──────────
@@ -652,15 +762,17 @@ def save_settings():
     try:
         new_settings = request.get_json(force=True)
         old_host = get_dm7_host()
-        # broadcastProgramName은 sps_listener만 채우는 서버 파생 필드 — 컨트롤 페이지는
-        # 수동 입력 경로가 없으므로, 오래된/캐시된 페이지가 이 필드를 모른 채 저장해도
-        # (또는 값이 비어 있어도) 덮어써지지 않도록 기존 값을 그대로 유지한다.
         try:
             with open(SETTINGS_FILE, encoding='utf-8') as f:
                 old_settings = json.load(f)
         except Exception:
             old_settings = {}
-        new_settings['broadcastProgramName'] = old_settings.get('broadcastProgramName', '')
+        # 이 필드들은 sps_listener만 채우는 서버 파생 필드다 — 컨트롤 페이지엔 이걸 위한
+        # 수동 입력 UI가 없으므로, 오래된/캐시된 페이지가 이 필드를 모른 채(또는 값이
+        # 비어 있는 채로) 저장해도 덮어써지지 않도록 항상 기존 값을 그대로 유지한다.
+        for key in ('broadcastProgramName', 'broadcastEventId', 'broadcastIsLive',
+                    'broadcastScheduledEndTime', 'broadcastScheduledEndTimeNextDay'):
+            new_settings[key] = old_settings.get(key)
         # SPS 자동모드가 켜진 상태에서는 sps_listener가 방송 시간의 유일한 소스여야 한다.
         # 컨트롤 페이지는 최초 로드 이후 이 필드들을 재폴링하지 않으므로, 페이지를 오래
         # 띄워두고 스튜디오 변경 등 다른 설정만 저장해도 오래된 시간값이 그대로 다시
