@@ -107,6 +107,30 @@
       gap: 10px;
     }
     .val { font-size: 0.8rem; font-weight: 700; color: #888; min-width: 44px; text-align: right; }
+    .live-badge-ctrl {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #ff5252;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-right: 6px;
+    }
+    .live-dot-ctrl {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ff5252;
+      box-shadow: 0 0 6px 1px rgba(255,82,82,0.7);
+      animation: live-pulse-ctrl 1.4s ease-in-out infinite;
+    }
+    @keyframes live-pulse-ctrl {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .live-dot-ctrl { animation: none; }
+    }
     .setting-hint {
       font-size: 0.74rem;
       font-weight: 500;
@@ -451,6 +475,13 @@
         <div class="setting-hint">켜면 방송 운행표를 확인해서 생방송 시작·종료 시각과 방송명을 자동으로 채워줍니다. 끄면 아래 칸에 직접 입력하세요.</div>
       </div>
 
+      <div id="sps-current-row" class="setting-row">
+        <div class="setting-row-inline">
+          <span>지금 추적 중</span>
+          <span class="val" id="sps-current-value" style="max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">—</span>
+        </div>
+      </div>
+
       <div id="sps-studio-row" class="setting-row">
         <span class="setting-label" style="margin-bottom:4px">부조정실 선택</span>
         <select id="sps-studio-select" class="sps-select">
@@ -704,6 +735,8 @@
   const spsGapSlider  = document.getElementById('sps-gap');
   const spsGapVal     = document.getElementById('sps-gap-val');
   const spsGapRow     = document.getElementById('sps-gap-row');
+  const spsCurrentRow   = document.getElementById('sps-current-row');
+  const spsCurrentValue = document.getElementById('sps-current-value');
   const cdBoxSizeSlider  = document.getElementById('cd-box-size');
   const cdBoxSizeVal     = document.getElementById('cd-box-size-val');
   const cdTextSizeSlider = document.getElementById('cd-text-size');
@@ -885,10 +918,30 @@
     spsManualBox.style.gap = '16px';
     spsStudioRow.style.display = spsAutoToggle.checked ? 'flex' : 'none';
     spsGapRow.style.display = spsAutoToggle.checked ? 'flex' : 'none';
+    spsCurrentRow.style.display = spsAutoToggle.checked ? 'flex' : 'none';
     spsLiveList.style.display = spsAutoToggle.checked ? 'flex' : 'none';
     spsLiveList.style.flexDirection = 'column';
-    if (spsAutoToggle.checked) pollSpsSchedule();
+    if (spsAutoToggle.checked) { pollSpsSchedule(); pollBroadcastStatus(); }
   }
+
+  // 방송 화면과 같은 spsAutoDetect 백그라운드 폴링(적응형 간격)이 settings.json을
+  // 갱신하지만, 컨트롤 페이지 자체는 최초 로드 후 /settings를 다시 안 불러오므로
+  // LIVE 여부·방송명은 별도로 가볍게(값 표시만, 저장 트리거 없음) 주기적으로 확인한다.
+  function pollBroadcastStatus() {
+    if (!spsAutoToggle.checked) return;
+    fetch('/settings')
+      .then(r => r.json())
+      .then(s => {
+        const name = s.broadcastProgramName || '';
+        if (!name) { spsCurrentValue.textContent = '대기 중'; return; }
+        const live = s.broadcastIsLive
+          ? '<span class="live-badge-ctrl"><span class="live-dot-ctrl"></span>LIVE</span>'
+          : '';
+        spsCurrentValue.innerHTML = live + name;
+      })
+      .catch(() => {});
+  }
+  setInterval(pollBroadcastStatus, 5000);
   spsAutoToggle.addEventListener('change', () => {
     applySpsAutoUI();
     saveSettings();
