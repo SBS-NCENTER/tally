@@ -543,6 +543,22 @@
       border-top: 1px solid rgba(255,255,255,0.2);
     }
     .cd-tag-sub.show { display: block; }
+    /* 예정종료시각을 넘겨 아직도 방송 중이면 '-00:00'에 멈춰있는 대신 얼마나
+       초과됐는지 세어 보여준다 — LIVE 중엔 말풍선이 이미 붉게 물들어 있어서
+       빨강 계열 대신 그 위에서 잘 튀는 노랑으로 구분한다. */
+    .cd-tag-sub.overrun {
+      color: #ffe066;
+      text-shadow: 0 0 10px rgba(255,224,102,0.55);
+    }
+    @keyframes tag-overrun-flash {
+      0%   { transform: scale(1); }
+      35%  { transform: scale(1.12); }
+      65%  { transform: scale(0.96); }
+      100% { transform: scale(1); }
+    }
+    .cd-runner-tag-pill.overrun-hit {
+      animation: tag-overrun-flash 0.5s ease-out;
+    }
     .cd-runner-tag-arrow {
       width: 0;
       height: 0;
@@ -819,6 +835,7 @@
   const cdMarkerEndProgram   = document.getElementById('cd-marker-end-program');
   const cdMarkerEndActual    = document.getElementById('cd-marker-end-actual');
   const cdRunnerTagEl        = document.getElementById('cd-runner-tag');
+  const cdRunnerTagPill      = document.getElementById('cd-runner-tag-text');
   const cdLiveDot            = document.getElementById('cd-live-dot');
   const stopwatchCol     = document.getElementById('stopwatch-col');
   const stopwatchLabel   = document.getElementById('stopwatch-label');
@@ -1048,12 +1065,19 @@
   /* ── 방송 시작 카운트다운 ───────────────────────────────────── */
   const CD_LEAD_SEC = 15 * 60;
   let cdWasBeforeStart = null;
+  let cdWasOverrun = false;
 
   function triggerStartHit() {
     const dotEl = cdMarkerStart.querySelector('.cd-marker-dot');
     dotEl.classList.remove('hit');
     void dotEl.offsetWidth;
     dotEl.classList.add('hit');
+  }
+
+  function triggerOverrunHit() {
+    cdRunnerTagPill.classList.remove('overrun-hit');
+    void cdRunnerTagPill.offsetWidth;
+    cdRunnerTagPill.classList.add('overrun-hit');
   }
 
   function formatDuration(totalSec) {
@@ -1219,11 +1243,23 @@
     cdRunner.style.transform = 'translateX(' + (pct / 100 * cdTrackWidthPx) + 'px)';
 
     if (!isBeforeStart) {
-      const remainSec = Math.max(0, Math.floor((end - now) / 1000));
-      cdTagSub.textContent = '-' + formatDuration(remainSec);
+      const isOverrun = broadcastIsLive && now > scheduledEnd;
+      if (isOverrun) {
+        const overrunSec = Math.floor((now - scheduledEnd) / 1000);
+        cdTagSub.textContent = '+' + formatDuration(overrunSec);
+        cdTagSub.classList.add('overrun');
+        if (!cdWasOverrun) triggerOverrunHit();
+      } else {
+        const remainSec = Math.max(0, Math.floor((end - now) / 1000));
+        cdTagSub.textContent = '-' + formatDuration(remainSec);
+        cdTagSub.classList.remove('overrun');
+      }
+      cdWasOverrun = isOverrun;
       cdTagSub.classList.add('show');
     } else {
       cdTagSub.classList.remove('show');
+      cdTagSub.classList.remove('overrun');
+      cdWasOverrun = false;
     }
 
     if (justCrossed) {
