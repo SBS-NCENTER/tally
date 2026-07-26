@@ -439,6 +439,11 @@
       margin-bottom: 0.3em;
     }
     .cd-marker-program:empty { display: none; margin-bottom: 0; }
+    .cd-confirmed-mark {
+      color: #4ade80;
+      text-shadow: 0 0 8px rgba(74,222,128,0.6);
+      font-weight: 900;
+    }
     .cd-marker-actual {
       display: none;
       margin-top: 0.35em;
@@ -814,6 +819,7 @@
   let broadcastProgramName = '';
   let broadcastScheduledEndTime = '', broadcastScheduledEndTimeNextDay = false;
   let broadcastIsLive = false;
+  let broadcastHasHandoffDependency = false, broadcastStartConfirmed = false;
   let lastCdSignature = '';
   let cdBoxScale = 1, cdTextScale = 1, cdLabelScale = 1;
   let swBoxScale = 1, swTextScale = 1;
@@ -1076,7 +1082,13 @@
     // 저장된 NextDay 플래그는 sps_listener가 감지한 시점 기준이라, 자정을 넘겨서도
     // (아직 같은 방송을 가리키는 동안엔) 갱신되지 않을 수 있다 — 라벨의 "N"은 항상
     // anchorBroadcastWindow가 실제로 앉힌 날짜를 now와 비교해 그때그때 판단한다.
-    cdMarkerStartLabel.textContent = (isDifferentDay(start, now) ? '시작 N ' : '시작 ') + hhmm(start);
+    // 앞 생방송과 몇 분 안으로 바로 이어지는 핸드오프 구간(모닝와이드1→2→3부,
+    // 뉴스헌터스→8뉴스 등)일 때만 의미가 있는 표시라, 그런 관계가 없으면 아예 표시
+    // 안 함 — 앞 방송이 실제로 끝나 이 시작 시각이 더는 캐스케이드로 안 바뀔 걸로
+    // 확인되면(서버가 onAirIndex로 판단) 체크 표시를 붙인다.
+    const confirmedMark = (broadcastHasHandoffDependency && broadcastStartConfirmed)
+      ? '<span class="cd-confirmed-mark" title="앞 방송이 끝나 더는 안 바뀔 것으로 확인됨">✓</span> ' : '';
+    cdMarkerStartLabel.innerHTML = confirmedMark + (isDifferentDay(start, now) ? '시작 N ' : '시작 ') + hhmm(start);
     cdMarkerStartProgram.textContent = broadcastProgramName;
     renderBoundedTrack(now, start, end, durationSec);
   }
@@ -1285,12 +1297,14 @@
     broadcastScheduledEndTime = s.broadcastScheduledEndTime || '';
     broadcastScheduledEndTimeNextDay = !!s.broadcastScheduledEndTimeNextDay;
     broadcastIsLive = !!s.broadcastIsLive;
+    broadcastHasHandoffDependency = !!s.broadcastHasHandoffDependency;
+    broadcastStartConfirmed = !!s.broadcastStartConfirmed;
     if (s.cdBoxScale !== undefined) { cdBoxScale = parseFloat(s.cdBoxScale); countdownEl.style.setProperty('--cd-box-scale', cdBoxScale.toFixed(3)); }
     if (s.cdTextScale !== undefined) { cdTextScale = parseFloat(s.cdTextScale); countdownEl.style.setProperty('--cd-text-scale', cdTextScale.toFixed(3)); }
     if (s.cdLabelScale !== undefined) { cdLabelScale = parseFloat(s.cdLabelScale); countdownEl.style.setProperty('--cd-label-scale', cdLabelScale.toFixed(3)); }
     // 시작/종료 시각·모드가 실제로 바뀌었을 때만 즉시 갱신 — 매 3초 폴링마다 무조건 다시 그리면
     // 매초 진행 중인 러너/채움바 트랜지션과 위상이 어긋나며 움직임이 불규칙해 보이는 원인이 된다.
-    const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay + ':' + broadcastProgramName + ':' + broadcastScheduledEndTime + ':' + broadcastIsLive;
+    const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay + ':' + broadcastProgramName + ':' + broadcastScheduledEndTime + ':' + broadcastIsLive + ':' + broadcastHasHandoffDependency + ':' + broadcastStartConfirmed;
     if (countdownModeOn && cdSignature !== lastCdSignature) updateCountdown();
     lastCdSignature = cdSignature;
 

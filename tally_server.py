@@ -476,6 +476,19 @@ def sps_next_handoff_distance(all_live_today, now):
     return min(abs(b - now) for b in boundaries)
 
 
+def sps_find_preceding_handoff(all_live_today, picked):
+    """picked 바로 앞에 SPS_HANDOFF_GAP 이내로 붙어있는 생방송(스튜디오 무관)이
+    있으면 그 항목을, 없으면 None을 반환. 모닝와이드1→2→3부, 뉴스헌터스→8뉴스처럼
+    앞 생방송이 실제로 끝나야 뒤 생방송 진입시간이 캐스케이드로 더 안 밀리고
+    확정되는 관계를 찾기 위함."""
+    candidates = [e for e in all_live_today if e['eventId'] != picked['eventId'] and e['end'] <= picked['start']]
+    if not candidates:
+        return None
+    nearest = max(candidates, key=lambda e: e['end'])
+    gap = picked['start'] - nearest['end']
+    return nearest if timedelta(0) <= gap <= SPS_HANDOFF_GAP else None
+
+
 def sps_listener():
     """SPS 운행표를 주기적으로 조회해서 생방송(liveOrVcr, 선택된 부조정실) 진행 항목을
     발견하면 생방송(카운트다운) 모드의 시작/종료 시각을 자동으로 채워준다. settings.json의
@@ -552,9 +565,32 @@ def sps_listener():
                 if picked:
                     result = sps_to_result(picked, now)
                     is_live = on_air_event_id is not None and on_air_event_id == result['eventId']
+
+                    # 앞 생방송이 실제로 끝나야(=onAirIndex가 더 이상 그걸 가리키지 않아야)
+                    # 캐스케이드가 멎고 이 방송의 시작 시각이 확정된다. 앞에 그런 핸드오프
+                    # 관계가 아예 없으면(오늘 첫 방송 등) 애초에 캐스케이드로 흔들릴 위험이
+                    # 없으니 "확정 표시" 자체가 필요 없다고 보고 has_dependency=False로 둔다.
+                    preceding = sps_find_preceding_handoff(all_live_today, picked)
+                    has_dependency = preceding is not None
+                    start_confirmed = False
+                    if has_dependency and on_air_event_id is not None:
+                        on_air_entry = next((e for e in repos if e.get('eventId') == on_air_event_id), None)
+                        if on_air_entry:
+                            try:
+                                on_air_start = datetime.strptime(on_air_entry['startTime'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=KST)
+                                start_confirmed = on_air_start >= preceding['end']
+                            except Exception:
+                                pass
+
                     with open(SETTINGS_FILE, encoding='utf-8') as f:
                         s = json.load(f)
                     changed = False
+                    if s.get('broadcastHasHandoffDependency') != has_dependency:
+                        s['broadcastHasHandoffDependency'] = has_dependency
+                        changed = True
+                    if s.get('broadcastStartConfirmed') != start_confirmed:
+                        s['broadcastStartConfirmed'] = start_confirmed
+                        changed = True
                     if result['eventId'] != last_event_id:
                         if last_event_id is not None:
                             old_start, old_end = s.get('broadcastTime'), s.get('broadcastEndTime')
@@ -651,6 +687,8 @@ def sps_listener():
                         s['broadcastProgramName'] = ''
                         s['broadcastScheduledEndTime'] = ''
                         s['broadcastIsLive'] = False
+                        s['broadcastHasHandoffDependency'] = False
+                        s['broadcastStartConfirmed'] = False
                         with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
                             json.dump(s, f)
                         print(f"[SPS] 앞으로 {SPS_LOOKAHEAD_DAYS}일 안에 예정된 생방송 없음 → 일반 모드로 전환", flush=True)
@@ -914,7 +952,8 @@ def save_settings():
         # 수동 입력 UI가 없으므로, 오래된/캐시된 페이지가 이 필드를 모른 채(또는 값이
         # 비어 있는 채로) 저장해도 덮어써지지 않도록 항상 기존 값을 그대로 유지한다.
         for key in ('broadcastProgramName', 'broadcastEventId', 'broadcastIsLive',
-                    'broadcastScheduledEndTime', 'broadcastScheduledEndTimeNextDay'):
+                    'broadcastScheduledEndTime', 'broadcastScheduledEndTimeNextDay',
+                    'broadcastHasHandoffDependency', 'broadcastStartConfirmed'):
             new_settings[key] = old_settings.get(key)
         # SPS 자동모드가 켜진 상태에서는 sps_listener가 방송 시간의 유일한 소스여야 한다.
         # 컨트롤 페이지는 최초 로드 이후 이 필드들을 재폴링하지 않으므로, 페이지를 오래
