@@ -546,6 +546,40 @@ def sps_listener():
     while True:
         interval = SPS_SLOW_INTERVAL
         try:
+            with open(SETTINGS_FILE, encoding='utf-8') as f:
+                s_test = json.load(f)
+            if s_test.get('testModeActive'):
+                # 테스트 모드 중엔 실제 SPS 조회를 건너뛰고, 저장된 시작 시각이
+                # 지났는지만 보고 broadcastIsLive를 흉내낸다. eventId 등 실추적
+                # 상태(last_event_id 등)는 건드리지 않아 테스트가 끝나면(또는
+                # testModeUntil 안전장치로 만료되면) 정상 SPS 추적이 그대로 이어진다.
+                now = datetime.now(KST)
+                changed = False
+                try:
+                    start_dt = datetime.strptime(s_test['broadcastTime'], '%H:%M:%S').replace(
+                        year=now.year, month=now.month, day=now.day, tzinfo=KST)
+                except Exception:
+                    start_dt = now
+                is_live_test = now >= start_dt
+                if s_test.get('broadcastIsLive') != is_live_test:
+                    s_test['broadcastIsLive'] = is_live_test
+                    changed = True
+                if is_live_test and not s_test.get('broadcastScheduledEndTime'):
+                    s_test['broadcastScheduledEndTime'] = s_test.get('broadcastEndTime')
+                    changed = True
+                try:
+                    expires = datetime.fromisoformat(s_test.get('testModeUntil'))
+                except Exception:
+                    expires = now
+                if now >= expires:
+                    s_test['testModeActive'] = False
+                    s_test['broadcastIsLive'] = False
+                    changed = True
+                if changed:
+                    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+                        json.dump(s_test, f)
+                time.sleep(1)
+                continue
             cfg = get_sps_settings()
             if cfg['enabled']:
                 token = get_sps_token()
@@ -1030,6 +1064,78 @@ def test_state(state):
     elif state == 'off':
         on_air = False
         broadcast('STANDBY')
+    return ('', 204)
+
+
+@app.route('/test/countdown/start', methods=['POST'])
+def test_countdown_start():
+    """방송 카운트다운 UI(대기→시작→LIVE→예정초과)를 실제 SPS 방송을 기다리지
+    않고 짧은 시간 안에 재현해보기 위한 테스트 모드. 실행 중엔 sps_listener가
+    실제 SPS 조회를 건너뛰고 이 값들만 시간에 따라 흉내낸다(history 기록은
+    남기지 않음)."""
+    if not session.get('control_authed'):
+        return ('', 403)
+    body = request.get_json(force=True) or {}
+    try:
+        start_in_sec = max(0, int(body.get('startInSec', 60)))
+        duration_sec = max(1, int(body.get('durationSec', 90)))
+    except (TypeError, ValueError):
+        return ('', 400)
+    now = datetime.now(KST)
+    start = now + timedelta(seconds=start_in_sec)
+    end = start + timedelta(seconds=duration_sec)
+    with open(SETTINGS_FILE, encoding='utf-8') as f:
+        s = json.load(f)
+    s['countdownMode'] = True
+    s['stopwatchMode'] = False
+    s['broadcastEventId'] = f'TEST-{int(now.timestamp())}'
+    s['broadcastProgramName'] = '[테스트] 방송'
+    s['broadcastTime'] = start.strftime('%H:%M:%S')
+    s['broadcastTimeNextDay'] = False
+    s['broadcastEndTime'] = end.strftime('%H:%M:%S')
+    s['broadcastEndTimeNextDay'] = False
+    s['broadcastScheduledEndTime'] = ''
+    s['broadcastScheduledEndTimeNextDay'] = False
+    s['broadcastIsLive'] = False
+    s['broadcastStartConfirmed'] = True
+    s['testModeActive'] = True
+    s['testModeUntil'] = (end + timedelta(minutes=10)).isoformat()
+    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(s, f)
+    return jsonify({'start': s['broadcastTime'], 'end': s['broadcastEndTime']})
+
+
+@app.route('/test/countdown/end', methods=['POST'])
+def test_countdown_end():
+    """지금 이 순간을 '실제 종료 시각'으로 확정 — 예정종료를 넘긴 채로 두면
+    실제/제작시간 비교 표시가 뜨는지까지 이어서 확인할 수 있다."""
+    if not session.get('control_authed'):
+        return ('', 403)
+    with open(SETTINGS_FILE, encoding='utf-8') as f:
+        s = json.load(f)
+    if not s.get('testModeActive'):
+        return ('', 409)
+    now = datetime.now(KST)
+    s['broadcastIsLive'] = False
+    s['broadcastEndTime'] = now.strftime('%H:%M:%S')
+    s['broadcastEndTimeNextDay'] = False
+    s['testModeActive'] = False
+    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(s, f)
+    return ('', 204)
+
+
+@app.route('/test/countdown/stop', methods=['POST'])
+def test_countdown_stop():
+    """테스트 중단 — 다음 폴링 때 sps_listener가 실제 SPS 상태로 되돌린다."""
+    if not session.get('control_authed'):
+        return ('', 403)
+    with open(SETTINGS_FILE, encoding='utf-8') as f:
+        s = json.load(f)
+    s['testModeActive'] = False
+    s['broadcastIsLive'] = False
+    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(s, f)
     return ('', 204)
 
 
