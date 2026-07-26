@@ -410,11 +410,21 @@ def sps_parse_live(repos, studio=''):
     return out
 
 
-def sps_pick_from_live(live, now, gap_minutes):
+def sps_pick_from_live(live, now, gap_minutes, on_air_event_id=None):
     """이미 골라둔(studio 필터링된) 오늘의 생방송 목록 안에서
-    (1) 지금 진행 중인 것, (2) 없고 방금 끝난 항목의 종료+gap_minutes가 아직 안
-    지났으면 그것, (3) 없고 오늘 중 다음 항목이 있으면 그것을 골라 반환.
-    셋 다 없으면 None(이 경우 호출자가 다른 날짜로 lookahead)."""
+    (0) onAirIndex가 실제로 이 목록의 한 항목을 가리키고 있으면 예정 시각과
+    무관하게 그것을 최우선으로, (1) 없으면 예정 시각상 지금 진행 중인 것,
+    (2) 없고 방금 끝난 항목의 종료+gap_minutes가 아직 안 지났으면 그것,
+    (3) 없고 오늘 중 다음 항목이 있으면 그것을 골라 반환.
+    셋 다 없으면 None(이 경우 호출자가 다른 날짜로 lookahead).
+    (0)이 필요한 이유: 예정 종료시간은 방송이 실제로 늘어지는 바로 그 순간엔
+    아직 옛날 값이라, 예정 시각만 보면 실제로는 아직 방송 중인데 이미 끝났다고
+    착각해서 gap_minutes=0(즉시 전환)일 때 다음 방송 대기로 너무 일찍 넘어가
+    버린다 — onAirIndex를 우선 신뢰하면 이 문제가 없다."""
+    if on_air_event_id is not None:
+        on_air_match = next((e for e in live if e['eventId'] == on_air_event_id), None)
+        if on_air_match is not None:
+            return on_air_match
     for e in live:
         if e['start'] <= now < e['end']:
             return e
@@ -558,7 +568,7 @@ def sps_listener():
                 all_live_today = sps_parse_live(repos, '')
                 studio_live_today = [e for e in all_live_today if not cfg['studio'] or e['videoSource'] == cfg['studio']]
 
-                picked = sps_pick_from_live(studio_live_today, now, cfg['gap_minutes'])
+                picked = sps_pick_from_live(studio_live_today, now, cfg['gap_minutes'], on_air_event_id)
                 if not picked:
                     picked = sps_lookahead_pick(cfg['studio'], today, token)
 
