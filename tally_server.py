@@ -542,6 +542,7 @@ def sps_listener():
     ever_live = False   # 지금 추적 중인 eventId가 한 번이라도 LIVE였는지(끝나면 다시 False로 안 꺼짐)
     last_video_source = None
     last_error = None
+    startup = True   # 재시작 직후, 이미 추적 중이던 방송을 이어받을지 딱 한 번만 확인
     while True:
         interval = SPS_SLOW_INTERVAL
         try:
@@ -597,6 +598,16 @@ def sps_listener():
                     with open(SETTINGS_FILE, encoding='utf-8') as f:
                         s = json.load(f)
                     changed = False
+                    if startup:
+                        startup = False
+                        if s.get('broadcastEventId') == result['eventId']:
+                            # 서버 재시작 전에 이미 추적 중이던 것과 같은 방송 — 방금 처음
+                            # 라이브로 전환된 걸로 착각해 예정종료시각을 재시작 시점 값으로
+                            # 다시 스냅샷 뜨지 않도록, 하던 상태를 그대로 이어받는다.
+                            last_event_id = result['eventId']
+                            last_was_live = bool(s.get('broadcastIsLive'))
+                            ever_live = last_was_live or bool(s.get('broadcastScheduledEndTime'))
+                            last_video_source = result['videoSource']
                     if s.get('broadcastStartConfirmed') != start_confirmed:
                         s['broadcastStartConfirmed'] = start_confirmed
                         changed = True
