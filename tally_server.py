@@ -703,7 +703,14 @@ def sps_listener():
                     last_video_source = None
                     last_was_live = False
 
+                # 핸드오프 근처뿐 아니라, 지금 화면에 보여주는 방송 자체의 시작/종료
+                # 앞뒤로도 촘촘하게 돈다 — 안 그러면 앞뒤가 몇 시간씩 비어 핸드오프
+                # 대상이 아닌 방송(예: 12시뉴스)은 평상시 간격(20초)만 적용돼서
+                # onAirIndex가 이미 넘어갔어도 LIVE 뱃지가 최대 20초까지 늦게 붙는다.
                 dist = sps_next_handoff_distance(all_live_today, now)
+                if picked is not None:
+                    own_dist = min(abs(picked['start'] - now), abs(picked['end'] - now))
+                    dist = own_dist if dist is None else min(dist, own_dist)
                 interval = SPS_FAST_INTERVAL if (dist is not None and dist <= SPS_FAST_WINDOW) else SPS_SLOW_INTERVAL
             last_error = None
         except Exception as e:
