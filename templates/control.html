@@ -1137,13 +1137,18 @@
       .then(r => r.json())
       .then(s => {
         const active = !!s.testModeActive;
+        const ended  = !!s.testModeEnded;
         testModeStartBtn.style.display = active ? 'none' : '';
-        testModeEndBtn.style.display   = active ? '' : 'none';
+        testModeEndBtn.style.display   = (active && !ended) ? '' : 'none';
         testModeStopBtn.style.display  = active ? '' : 'none';
         if (!active) { testModeStatus.textContent = ''; return; }
-        testModeStatus.textContent = s.broadcastIsLive
-          ? `LIVE 중 — 시작 ${s.broadcastTime}, 예정종료 ${s.broadcastScheduledEndTime || s.broadcastEndTime}`
-          : `대기 중 — ${s.broadcastTime}에 시작 예정`;
+        if (ended) {
+          testModeStatus.textContent = `종료 처리됨 — 실제 ${s.broadcastEndTime} (예정 ${s.broadcastScheduledEndTime}) 비교 표시 확인 후 곧 자동으로 닫힙니다`;
+        } else {
+          testModeStatus.textContent = s.broadcastIsLive
+            ? `LIVE 중 — 시작 ${s.broadcastTime}, 예정종료 ${s.broadcastScheduledEndTime || s.broadcastEndTime}`
+            : `대기 중 — ${s.broadcastTime}에 시작 예정`;
+        }
       })
       .catch(() => {});
   }

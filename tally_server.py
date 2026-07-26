@@ -550,29 +550,38 @@ def sps_listener():
                 s_test = json.load(f)
             if s_test.get('testModeActive'):
                 # 테스트 모드 중엔 실제 SPS 조회를 건너뛰고, 저장된 시작 시각이
-                # 지났는지만 보고 broadcastIsLive를 흉내낸다. eventId 등 실추적
-                # 상태(last_event_id 등)는 건드리지 않아 테스트가 끝나면(또는
-                # testModeUntil 안전장치로 만료되면) 정상 SPS 추적이 그대로 이어진다.
+                # 지났는지만 보고 broadcastIsLive를 흉내낸다. 테스트가 끝나는
+                # 순간 실제 추적이 "새 방송 감지"로 제대로 다시 시작되도록
+                # last_event_id 등을 계속 None으로 눌러둔다 — 그대로 두면(이전
+                # 실제 eventId가 안 바뀐 걸로 보여서) 시간만 갱신되고
+                # broadcastProgramName/EventId는 테스트 값에 그대로 물려 있는
+                # 버그가 있었다.
+                last_event_id = None
+                last_was_live = False
+                ever_live = False
+                last_video_source = None
                 now = datetime.now(KST)
                 changed = False
-                try:
-                    start_dt = datetime.strptime(s_test['broadcastTime'], '%H:%M:%S').replace(
-                        year=now.year, month=now.month, day=now.day, tzinfo=KST)
-                except Exception:
-                    start_dt = now
-                is_live_test = now >= start_dt
-                if s_test.get('broadcastIsLive') != is_live_test:
-                    s_test['broadcastIsLive'] = is_live_test
-                    changed = True
-                if is_live_test and not s_test.get('broadcastScheduledEndTime'):
-                    s_test['broadcastScheduledEndTime'] = s_test.get('broadcastEndTime')
-                    changed = True
+                if not s_test.get('testModeEnded'):
+                    try:
+                        start_dt = datetime.strptime(s_test['broadcastTime'], '%H:%M:%S').replace(
+                            year=now.year, month=now.month, day=now.day, tzinfo=KST)
+                    except Exception:
+                        start_dt = now
+                    is_live_test = now >= start_dt
+                    if s_test.get('broadcastIsLive') != is_live_test:
+                        s_test['broadcastIsLive'] = is_live_test
+                        changed = True
+                    if is_live_test and not s_test.get('broadcastScheduledEndTime'):
+                        s_test['broadcastScheduledEndTime'] = s_test.get('broadcastEndTime')
+                        changed = True
                 try:
                     expires = datetime.fromisoformat(s_test.get('testModeUntil'))
                 except Exception:
                     expires = now
                 if now >= expires:
                     s_test['testModeActive'] = False
+                    s_test['testModeEnded'] = False
                     s_test['broadcastIsLive'] = False
                     changed = True
                 if changed:
@@ -1099,6 +1108,7 @@ def test_countdown_start():
     s['broadcastIsLive'] = False
     s['broadcastStartConfirmed'] = True
     s['testModeActive'] = True
+    s['testModeEnded'] = False
     s['testModeUntil'] = (end + timedelta(minutes=10)).isoformat()
     with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
         json.dump(s, f)
@@ -1119,7 +1129,8 @@ def test_countdown_end():
     s['broadcastIsLive'] = False
     s['broadcastEndTime'] = now.strftime('%H:%M:%S')
     s['broadcastEndTimeNextDay'] = False
-    s['testModeActive'] = False
+    s['testModeEnded'] = True
+    s['testModeUntil'] = (now + timedelta(seconds=20)).isoformat()
     with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
         json.dump(s, f)
     return ('', 204)
@@ -1133,6 +1144,7 @@ def test_countdown_stop():
     with open(SETTINGS_FILE, encoding='utf-8') as f:
         s = json.load(f)
     s['testModeActive'] = False
+    s['testModeEnded'] = False
     s['broadcastIsLive'] = False
     with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
         json.dump(s, f)
