@@ -675,9 +675,33 @@
       font-size: min(var(--clock-fs, 8rem), 38vw) !important;
     }
 
+    /* 전체화면 토글 — 원격 데스크톱/터치 환경에서 F11을 못 누를 때를 위한 탭 버튼 */
+    #fs-toggle {
+      position: fixed;
+      right: 10px;
+      bottom: 10px;
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.35);
+      font-size: 1.1rem;
+      line-height: 40px;
+      text-align: center;
+      cursor: pointer;
+      z-index: 9999;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    #fs-toggle:hover, #fs-toggle:active {
+      background: rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.75);
+    }
   </style>
 </head>
 <body>
+
+  <button id="fs-toggle" type="button" title="전체화면 전환">⛶</button>
 
   <!-- 상태 박스 (아날로그 탈리 램프) -->
   <div id="status-box">
@@ -1391,6 +1415,18 @@
   pollSettings();
   setInterval(pollSettings, 3000);
   updateMainTally();
+
+  const fsToggleBtn = document.getElementById('fs-toggle');
+  fsToggleBtn.addEventListener('click', () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  });
+  document.addEventListener('fullscreenchange', () => {
+    fsToggleBtn.textContent = document.fullscreenElement ? '⤢' : '⛶';
+  });
 </script>
 </body>
 </html>
