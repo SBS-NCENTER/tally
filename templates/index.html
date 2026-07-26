@@ -429,7 +429,6 @@
       white-space: nowrap;
       letter-spacing: 0.03em;
     }
-    #cd-marker-end .cd-marker-label { color: #dce8ff; }
     .cd-marker-program {
       color: #f0a030;
       font-size: 0.8em;
@@ -1114,14 +1113,14 @@
     // 앞 방송이 실제로 끝나야(서버가 onAirIndex로 판단) 확정 — 그 전까지만
     // 잠깐 체크 표시가 빠진다(모닝와이드1→2→3부, 뉴스헌터스→8뉴스 등).
     const confirmedMark = broadcastStartConfirmed
-      ? '<span class="cd-confirmed-mark" title="더는 안 바뀔 것으로 확인된 시작 시각">✓</span> ' : '';
-    cdMarkerStartLabel.innerHTML = confirmedMark + (isDifferentDay(start, now) ? '시작 N ' : '시작 ') + hhmm(start);
+      ? ' <span class="cd-confirmed-mark" title="더는 안 바뀔 것으로 확인된 시작 시각">✓</span>' : '';
+    cdMarkerStartLabel.innerHTML = (isDifferentDay(start, now) ? 'N ' : '') + hhmm(start) + confirmedMark;
     cdMarkerStartProgram.textContent = broadcastProgramName;
     renderBoundedTrack(now, start, end, durationSec);
   }
 
   function renderBoundedTrack(now, start, end, durationSec) {
-    cdMarkerEndLabel.textContent = (isDifferentDay(end, now) ? '종료 N ' : '종료 ') + hhmm(end);
+    cdMarkerEndLabel.textContent = (isDifferentDay(end, now) ? 'N ' : '') + hhmm(end);
     cdMarkerEndProgram.textContent = broadcastProgramName;
 
     // 예정 종료(생방송이 실제로 시작되던 순간의 예상값, 서버에서 스냅샷 고정)와 지금의
