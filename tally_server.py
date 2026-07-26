@@ -889,6 +889,12 @@ def sps_live_schedule():
         }
         rec = history.get(entry.get('eventId'))
         if rec:
+            # 캐시의 end는 시간이 지나며 실제값으로 계속 갱신되므로, 이미 방송된 항목은
+            # 주 표시(item['end'])를 LIVE 전환 시점에 고정해 둔 예정값으로 되돌리고
+            # 실제값은 actualEnd에만 담는다 — 예정 자리 숫자가 실제로 바뀌어 보이지
+            # 않고, 실제값은 옆에 별도로 표시된다.
+            if rec.get('wasLive') and rec.get('scheduledEnd'):
+                item['end'] = rec['scheduledEnd']
             item['actualStart'] = rec.get('actualStart') or ''
             item['actualEnd'] = rec.get('actualEnd') or ''
             item['actualDurationSec'] = rec.get('actualDurationSec')
