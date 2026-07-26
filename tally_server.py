@@ -346,6 +346,19 @@ def save_sps_schedule(date_str, repos):
         json.dump({'date': date_str, 'updated_at': datetime.now(KST).isoformat(), 'repos': repos}, f, ensure_ascii=False)
 
 
+SPS_HISTORY_FILE = os.path.join(SPS_DATA_DIR, 'broadcast_history.jsonl')
+
+
+def sps_append_history(record):
+    """추적이 끝난 생방송 하나의 예정/실제 시작·종료·제작시간을 data/broadcast_history.jsonl에
+    한 줄씩 追加(append-only, SD카드 수명 고려해 통째로 재작성하지 않음). spsGapMinutes가
+    0(즉시 전환)이면 화면이 다음 방송 대기로 바로 넘어가서 방금 끝난 방송 정보가 사라지므로,
+    나중에 컨트롤 페이지에서 지난 방송들을 조회할 수 있게 남겨둔다."""
+    os.makedirs(SPS_DATA_DIR, exist_ok=True)
+    with open(SPS_HISTORY_FILE, 'a', encoding='utf-8') as f:
+        f.write(json.dumps(record, ensure_ascii=False) + '\n')
+
+
 def sps_fetch_repos(date_str, token):
     """해당 날짜(방송일) 운행표 전체(repos 배열)를 조회하고 캐시 파일도 갱신해서 반환."""
     repos = sps_api_get(f'/daily-schedule/repos?date={date_str}&uhd=false&band=true', token).get('repos', [])
@@ -417,6 +430,7 @@ def sps_to_result(picked, now):
     return {
         'eventId': picked['eventId'],
         'programName': picked['programName'],
+        'videoSource': picked['videoSource'],
         'start_str': start_dt.strftime('%H:%M:%S'),
         'end_str': end_dt.strftime('%H:%M:%S'),
         'end_next_day': end_dt.date() != start_dt.date(),
@@ -476,9 +490,15 @@ def sps_listener():
     끝나도 내일 이후 첫 생방송을 계속 찾아서 카운트다운을 이어간다(시작이 오늘이
     아니면 broadcastTimeNextDay로 N 표시). SPS_LOOKAHEAD_DAYS 안에도 예정된 생방송이
     아예 없을 때만, 마지막으로 추적하던 카운트다운이 화면에 영원히 멈춰 있지 않도록
-    일반(일정) 모드로 되돌린다."""
+    일반(일정) 모드로 되돌린다.
+
+    추적하던 eventId가 바뀌는(=그 방송이 끝난) 순간마다, 그때까지의 예정/실제
+    종료·제작시간을 broadcast_history.jsonl에 한 줄 남긴다. spsGapMinutes가
+    0(즉시 전환)이면 화면이 바로 다음 방송 대기로 넘어가 방금 끝난 방송 정보가
+    사라지므로, 컨트롤 페이지에서 지난 방송들을 나중에 조회할 수 있게 하기 위함."""
     last_event_id = None
     last_was_live = False
+    last_video_source = None
     last_error = None
     while True:
         interval = SPS_SLOW_INTERVAL
@@ -518,6 +538,30 @@ def sps_listener():
                         s = json.load(f)
                     changed = False
                     if result['eventId'] != last_event_id:
+                        if last_event_id is not None:
+                            old_start, old_end = s.get('broadcastTime'), s.get('broadcastEndTime')
+                            dur = None
+                            if old_start and old_end:
+                                try:
+                                    st = datetime.strptime(old_start, '%H:%M:%S')
+                                    en = datetime.strptime(old_end, '%H:%M:%S')
+                                    if s.get('broadcastEndTimeNextDay'):
+                                        en += timedelta(days=1)
+                                    dur = (en - st).total_seconds()
+                                except Exception:
+                                    dur = None
+                            sps_append_history({
+                                'date': today.strftime('%Y-%m-%d'),
+                                'eventId': last_event_id,
+                                'programName': s.get('broadcastProgramName') or '',
+                                'videoSource': last_video_source,
+                                'scheduledEnd': s.get('broadcastScheduledEndTime') or '',
+                                'actualStart': old_start or '',
+                                'actualEnd': old_end or '',
+                                'actualDurationSec': dur,
+                                'wasLive': bool(s.get('broadcastIsLive')) or last_was_live,
+                                'recordedAt': now.isoformat(),
+                            })
                         s['countdownMode'] = True
                         s['broadcastEventId'] = result['eventId']
                         s['broadcastTime'] = result['start_str']
@@ -528,6 +572,7 @@ def sps_listener():
                         s['broadcastScheduledEndTimeNextDay'] = False
                         s['broadcastProgramName'] = result['programName']
                         last_event_id = result['eventId']
+                        last_video_source = result['videoSource']
                         last_was_live = False
                         changed = True
                         when = f"{'내일 이후 ' if result['start_next_day'] else ''}{result['programName']} {result['start_str']} ~ {result['end_str']}"
@@ -558,6 +603,29 @@ def sps_listener():
                 elif last_event_id is not None:
                     with open(SETTINGS_FILE, encoding='utf-8') as f:
                         s = json.load(f)
+                    old_start, old_end = s.get('broadcastTime'), s.get('broadcastEndTime')
+                    dur = None
+                    if old_start and old_end:
+                        try:
+                            st = datetime.strptime(old_start, '%H:%M:%S')
+                            en = datetime.strptime(old_end, '%H:%M:%S')
+                            if s.get('broadcastEndTimeNextDay'):
+                                en += timedelta(days=1)
+                            dur = (en - st).total_seconds()
+                        except Exception:
+                            dur = None
+                    sps_append_history({
+                        'date': today.strftime('%Y-%m-%d'),
+                        'eventId': last_event_id,
+                        'programName': s.get('broadcastProgramName') or '',
+                        'videoSource': last_video_source,
+                        'scheduledEnd': s.get('broadcastScheduledEndTime') or '',
+                        'actualStart': old_start or '',
+                        'actualEnd': old_end or '',
+                        'actualDurationSec': dur,
+                        'wasLive': bool(s.get('broadcastIsLive')) or last_was_live,
+                        'recordedAt': now.isoformat(),
+                    })
                     if s.get('countdownMode'):
                         s['countdownMode'] = False
                         s['broadcastTime'] = ''
@@ -569,6 +637,7 @@ def sps_listener():
                             json.dump(s, f)
                         print(f"[SPS] 앞으로 {SPS_LOOKAHEAD_DAYS}일 안에 예정된 생방송 없음 → 일반 모드로 전환", flush=True)
                     last_event_id = None
+                    last_video_source = None
                     last_was_live = False
 
                 dist = sps_next_handoff_distance(all_live_today, now)
@@ -745,6 +814,51 @@ def sps_live_schedule():
             'programName': entry.get('programName', ''),
         })
     return jsonify(items)
+
+
+@app.route('/sps/studios')
+def sps_studios():
+    """오늘 운행표 캐시에 실제로 등장하는 생방송 스튜디오(videoSource) 목록을
+    중복 없이 정렬해서 반환 — TS-1~7뿐 아니라 RSW(상암/등촌 등 TS 외 부조정실)처럼
+    미리 알 수 없는 코드도 컨트롤 페이지 드롭다운에 하드코딩 없이 자동으로 뜨게
+    하기 위함. 코드값을 그대로 쓰므로 별도 사람이 읽기 좋은 이름은 붙이지 않는다."""
+    if not session.get('control_authed'):
+        return ('', 403)
+    date_str = sps_broadcast_date(datetime.now(KST)).strftime('%Y-%m-%d')
+    path = os.path.join(SPS_DATA_DIR, f'sps_schedule_{date_str}.json')
+    try:
+        with open(path, encoding='utf-8') as f:
+            repos = json.load(f).get('repos', [])
+    except Exception:
+        repos = []
+    sources = sorted({e.get('videoSource', '') for e in repos if e.get('liveOrVcr') and e.get('videoSource')})
+    return jsonify(sources)
+
+
+@app.route('/sps/history')
+def sps_history():
+    """지난 생방송들의 예정/실제 시작·종료·제작시간 기록(broadcast_history.jsonl)을
+    반환. spsGapMinutes가 0(즉시 전환)이면 방송 화면이 끝나자마자 바로 다음 방송
+    대기로 넘어가서 방금 끝난 방송 정보가 화면에서 사라지므로, 나중에 "그 방송이
+    언제 끝났고 제작시간이 얼마였는지" 확인할 수 있도록 컨트롤 페이지에서 조회."""
+    if not session.get('control_authed'):
+        return ('', 403)
+    date_str = request.args.get('date') or sps_broadcast_date(datetime.now(KST)).strftime('%Y-%m-%d')
+    path = os.path.join(SPS_DATA_DIR, 'broadcast_history.jsonl')
+    records = []
+    try:
+        with open(path, encoding='utf-8') as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                except Exception:
+                    continue
+                if rec.get('date') == date_str:
+                    records.append(rec)
+    except Exception:
+        pass
+    records.sort(key=lambda r: r.get('actualStart') or '', reverse=True)
+    return jsonify(records)
 
 
 @app.route('/settings', methods=['GET'])

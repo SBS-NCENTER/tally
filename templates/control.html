@@ -157,6 +157,17 @@
     .sps-row .sps-name { color: #aaa; margin-top: 2px; font-size: 0.76rem; }
     .sps-row .sps-ts { color: #f0a030; font-weight: 700; font-size: 0.76rem; white-space: nowrap; }
     .sps-empty { color: #666; font-size: 0.78rem; text-align: center; padding: 10px 0; }
+    .sps-row .sps-diff { color: #888; font-size: 0.7rem; margin-top: 3px; }
+    .sps-row .sps-diff b { color: #dce8ff; font-weight: 700; }
+    .sps-row .sps-live-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      color: #ff5252; font-weight: 800; font-size: 0.7rem; letter-spacing: 0.08em;
+      margin-bottom: 2px;
+    }
+    .sps-row .sps-live-tag::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: #ff5252; box-shadow: 0 0 5px 1px rgba(255,82,82,0.7);
+    }
 
     input[type=range] {
       -webkit-appearance: none;
@@ -485,16 +496,9 @@
       <div id="sps-studio-row" class="setting-row">
         <span class="setting-label" style="margin-bottom:4px">부조정실 선택</span>
         <select id="sps-studio-select" class="sps-select">
-          <option value="">전체 (TS-1~7)</option>
-          <option value="TS-1">TS-1 (1부조)</option>
-          <option value="TS-2">TS-2 (2부조)</option>
-          <option value="TS-3">TS-3 (3부조)</option>
-          <option value="TS-4">TS-4 (4부조)</option>
-          <option value="TS-5">TS-5 (5부조)</option>
-          <option value="TS-6">TS-6 (6부조)</option>
-          <option value="TS-7">TS-7 (7부조)</option>
+          <option value="">전체 (모든 스튜디오)</option>
         </select>
-        <div class="setting-hint">방송 화면에는 여기서 고른 부조정실의 생방송만 반영됩니다. "전체"를 고르면 어느 부조정실이든 생방송 중이면 반영됩니다.</div>
+        <div class="setting-hint">방송 화면에는 여기서 고른 스튜디오의 생방송만 반영됩니다. "전체"를 고르면 어느 스튜디오든 생방송 중이면 반영됩니다. 목록은 오늘 운행표에 실제로 등장하는 스튜디오(TS-1~7, RSW 등)를 자동으로 불러옵니다.</div>
       </div>
 
       <div id="sps-live-list" class="setting-row"></div>
@@ -541,6 +545,14 @@
           <div class="setting-row-inline"><span>시작/종료 글자 크기</span><span class="val" id="cd-label-size-val">1.0x</span></div>
           <input type="range" id="cd-label-size" min="0.6" max="2.2" step="0.05" value="1" />
         </div>
+      </div>
+      <button type="button" class="collapse-header" id="sps-history-toggle">
+        <span>지난 방송 기록</span>
+        <span class="chevron">▾</span>
+      </button>
+      <div class="sub-panel" id="sps-history-sub">
+        <div class="setting-hint" style="margin-bottom:8px">"다음 방송 전환 대기"가 짧을수록 방금 끝난 방송 정보가 화면에서 금방 사라지므로, 오늘 지나간 생방송들의 예정·실제 종료시간과 제작시간을 여기서 따로 확인할 수 있습니다.</div>
+        <div id="sps-history-list" class="setting-row"></div>
       </div>
     </div>
 
@@ -737,6 +749,8 @@
   const spsGapRow     = document.getElementById('sps-gap-row');
   const spsCurrentRow   = document.getElementById('sps-current-row');
   const spsCurrentValue = document.getElementById('sps-current-value');
+  const spsHistoryList  = document.getElementById('sps-history-list');
+  const spsHistorySub   = document.getElementById('sps-history-sub');
   const cdBoxSizeSlider  = document.getElementById('cd-box-size');
   const cdBoxSizeVal     = document.getElementById('cd-box-size-val');
   const cdTextSizeSlider = document.getElementById('cd-text-size');
@@ -950,6 +964,30 @@
     saveSettings().then(pollSpsSchedule).catch(pollSpsSchedule);
   });
 
+  // TS-1~7 뿐 아니라 RSW(상암/등촌 등 TS 외 스튜디오)처럼 미리 알 수 없는 코드도
+  // 하드코딩 없이 오늘 운행표에 실제로 등장하는 것만 자동으로 드롭다운에 채운다.
+  function populateStudioOptions(selectedValue) {
+    fetch('/sps/studios')
+      .then(r => r.json())
+      .then(studios => {
+        const current = selectedValue !== undefined ? selectedValue : spsStudioSelect.value;
+        spsStudioSelect.textContent = '';
+        const allOpt = document.createElement('option');
+        allOpt.value = '';
+        allOpt.textContent = '전체 (모든 스튜디오)';
+        spsStudioSelect.appendChild(allOpt);
+        studios.forEach(code => {
+          const opt = document.createElement('option');
+          opt.value = code;
+          opt.textContent = code;
+          spsStudioSelect.appendChild(opt);
+        });
+        spsStudioSelect.value = current;
+      })
+      .catch(() => {});
+  }
+  setInterval(() => { if (spsAutoToggle.checked) populateStudioOptions(); }, 60000);
+
   function pollSpsSchedule() {
     if (!spsAutoToggle.checked) return;
     fetch('/sps/live-schedule')
@@ -980,6 +1018,43 @@
       .catch(() => {});
   }
   setInterval(pollSpsSchedule, 15000);
+
+  // 지난 방송 기록 — "다음 방송 전환 대기"가 짧으면(즉시 전환 등) 방금 끝난 방송
+  // 정보가 화면에서 바로 사라지므로, 컨트롤 페이지에서 따로 조회할 수 있게 한다.
+  function pollSpsHistory() {
+    fetch('/sps/history')
+      .then(r => r.json())
+      .then(records => {
+        if (!records.length) {
+          spsHistoryList.innerHTML = '<div class="sps-empty">오늘 끝난 생방송이 아직 없습니다.</div>';
+          return;
+        }
+        spsHistoryList.innerHTML = records.map(r => {
+          const liveTag = r.wasLive ? '<div class="sps-live-tag">방송됨</div>' : '';
+          const diff = (r.scheduledEnd && r.actualEnd && r.scheduledEnd !== r.actualEnd)
+            ? `<div class="sps-diff">예정 ${r.scheduledEnd} → <b>실제 ${r.actualEnd}</b></div>` : '';
+          const dur = (r.actualDurationSec != null)
+            ? `<div class="sps-diff">제작 ${formatStopwatch(r.actualDurationSec * 1000)}</div>` : '';
+          return `<div class="sps-row">
+            <div>
+              ${liveTag}
+              <div class="sps-time">${r.actualStart || '—'} ~ ${r.actualEnd || '—'}</div>
+              <div class="sps-name">${r.programName}</div>
+              ${diff}
+              ${dur}
+            </div>
+            <div class="sps-ts">${r.videoSource || ''}</div>
+          </div>`;
+        }).join('');
+      })
+      .catch(() => {});
+  }
+  bindCollapse(document.getElementById('sps-history-toggle'), spsHistorySub);
+  document.getElementById('sps-history-toggle').addEventListener('click', () => {
+    if (spsHistorySub.classList.contains('open')) pollSpsHistory();
+  });
+  setInterval(() => { if (spsHistorySub.classList.contains('open')) pollSpsHistory(); }, 30000);
+  pollSpsHistory();
 
   /* 시간 입력칸 — 오전/오후 없는 24시간제 텍스트 입력 (브라우저/OS 로케일과 무관하게 동작) */
   function attachTimeMask(el) {
@@ -1212,7 +1287,7 @@
       broadcastTimeNdayBtn.classList.toggle('active', !!s.broadcastTimeNextDay);
       broadcastEndTimeNdayBtn.classList.toggle('active', !!s.broadcastEndTimeNextDay);
       spsAutoToggle.checked = s.spsAutoDetect === undefined ? true : !!s.spsAutoDetect;
-      spsStudioSelect.value = s.spsStudio || '';
+      populateStudioOptions(s.spsStudio || '');
       if (s.spsGapMinutes !== undefined) spsGapSlider.value = s.spsGapMinutes;
       refreshSpsGap();
       applySpsAutoUI();
