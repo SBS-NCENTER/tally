@@ -623,6 +623,11 @@
 
       <div class="size-group-label">세로 모드 전용</div>
       <div class="setting-row">
+        <div class="setting-row-inline"><span>박스 높이 (세로)</span><span class="val" id="p-box-size-val">1.00x</span></div>
+        <input type="range" id="p-box-size" min="0.6" max="2" step="0.05" value="1" />
+        <div class="setting-hint">위(탈리)·아래(일정 또는 생방송) 패널 높이를 항상 같은 비율로 같이 조절합니다 — 시계가 정중앙에 오는 구조를 유지하기 위함입니다.</div>
+      </div>
+      <div class="setting-row">
         <div class="setting-row-inline"><span>탈리 (세로)</span><span class="val" id="p-tally-size-val">1.00x</span></div>
         <input type="range" id="p-tally-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
@@ -735,6 +740,8 @@
   const portraitSub        = document.getElementById('portrait-sub');
   const pClockSlider = document.getElementById('p-clock-size');
   const pClockVal    = document.getElementById('p-clock-size-val');
+  const pBoxSlider   = document.getElementById('p-box-size');
+  const pBoxVal      = document.getElementById('p-box-size-val');
   const pTallySlider = document.getElementById('p-tally-size');
   const pTallyVal    = document.getElementById('p-tally-size-val');
   const pSchSlider   = document.getElementById('p-sch-size');
@@ -840,6 +847,7 @@
       stopwatchMode: bottomMode === 'stopwatch',
       portrait:     portraitToggle.checked,
       portraitLeft: portraitLeftToggle.checked,
+      pBoxScale:    parseFloat(pBoxSlider.value),
       pClockScale:  parseFloat(pClockSlider.value),
       pTallyScale:  parseFloat(pTallySlider.value),
       pSchScale:    parseFloat(pSchSlider.value),
@@ -885,6 +893,7 @@
   bindRange(tallyBoxSizeSlider, tallyBoxSizeVal, 'x');
   bindRange(schSizeSlider,   schSizeVal,   'x');
   bindRange(schBoxSizeSlider, schBoxSizeVal, 'x');
+  bindRange(pBoxSlider,   pBoxVal,   'x');
   bindRange(pClockSlider, pClockVal, 'x');
   bindRange(pTallySlider, pTallyVal, 'x');
   bindRange(pSchSlider,   pSchVal,   'x');
@@ -1316,6 +1325,7 @@
       if (s.tallyBoxScale !== undefined) tallyBoxSizeSlider.value = s.tallyBoxScale;
       if (s.schScale   !== undefined) schSizeSlider.value   = s.schScale;
       if (s.schBoxScale !== undefined) schBoxSizeSlider.value = s.schBoxScale;
+      if (s.pBoxScale   !== undefined) pBoxSlider.value   = s.pBoxScale;
       if (s.pClockScale !== undefined) pClockSlider.value = s.pClockScale;
       if (s.pTallyScale !== undefined) pTallySlider.value = s.pTallyScale;
       if (s.pSchScale   !== undefined) pSchSlider.value   = s.pSchScale;
@@ -1334,6 +1344,7 @@
       tallyBoxSizeVal.textContent = parseFloat(tallyBoxSizeSlider.value).toFixed(2) + 'x';
       schSizeVal.textContent   = parseFloat(schSizeSlider.value).toFixed(2)   + 'x';
       schBoxSizeVal.textContent = parseFloat(schBoxSizeSlider.value).toFixed(2) + 'x';
+      pBoxVal.textContent   = parseFloat(pBoxSlider.value).toFixed(2)   + 'x';
       pClockVal.textContent = parseFloat(pClockSlider.value).toFixed(2) + 'x';
       pTallyVal.textContent = parseFloat(pTallySlider.value).toFixed(2) + 'x';
       pSchVal.textContent   = parseFloat(pSchSlider.value).toFixed(2)   + 'x';

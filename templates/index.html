@@ -671,11 +671,13 @@
     body.portrait-right { transform: rotate(90deg); }
     body.portrait-left  { transform: rotate(-90deg); }
 
-    /* 세로 모드: 양쪽 패널 동일 높이 → 시계 정 중앙 */
+    /* 세로 모드: 양쪽 패널 동일 높이 → 시계 정 중앙. 컨트롤 페이지의 "박스 높이
+       (세로)" 슬라이더 하나가 --p-box-scale로 세 요소 모두에 같이 걸려서,
+       어떤 값을 넣어도 위아래 높이가 항상 같게 유지된다. */
     body.portrait-right #status-box,
     body.portrait-left  #status-box {
-      flex: 0 0 clamp(140px, 20vh, 220px);
-      padding: clamp(12px, 3vh, 30px) clamp(16px, 3vh, 40px);
+      flex: 0 0 clamp(90px, calc(var(--p-box-scale, 1) * 20vh), 320px);
+      padding: clamp(10px, calc(var(--p-box-scale, 1) * 3vh), 46px) clamp(16px, 3vh, 40px);
     }
     body.portrait-right #status-text,
     body.portrait-left  #status-text {
@@ -685,8 +687,9 @@
     body.portrait-left  #schedule,
     body.portrait-right #countdown,
     body.portrait-left  #countdown {
-      flex: 0 0 clamp(140px, 20vh, 220px);
+      flex: 0 0 clamp(90px, calc(var(--p-box-scale, 1) * 20vh), 320px);
       min-height: unset;
+      overflow: hidden;
     }
 
     /* 세로 모드 시계: CSS 레벨에서 크기 초과 원천 차단.
@@ -868,7 +871,7 @@
   let timeOffsetSec  = 0;
   let clockScale = 1, tallyScale = 1, schScale = 1, schBoxScale = 1;
   let tallyBoxScale = 1, clockBoxScale = 1;
-  let pClockScale = 1, pTallyScale = 1, pSchScale = 1;
+  let pClockScale = 1, pTallyScale = 1, pSchScale = 1, pBoxScale = 1;
   let calTs5On = true, calTs5bOn = true;
   let customCalUrl = '', customCalOn = false;
   let countdownModeOn = false, stopwatchModeOn = false;
@@ -889,6 +892,11 @@
   }
 
   /* ── 크기 실제 적용 (가로/세로 공용) ───────────────────────── */
+  // 슬라이더가 낸 값을 그대로 쓰되, 렌더링된 실제 너비가 화면 예산을 넘으면
+  // 그 실측값 기준으로만 줄인다 — 화면 높이의 N%라는 식의 사전 상한선은 두지
+  // 않는다(예: 예전엔 1080px 화면에서 시계 슬라이더 상단 60%가 사전 상한에
+  // 막혀 아무 효과가 없었다). 실측 후 보정이라 어떤 화면 크기에서도 슬라이더가
+  // 낼 수 있는 값까지는 항상 그대로 반영된다.
   function setClockFontSize(rem) {
     if (isPortraitMode()) {
       // 90도 회전 구조라 두 축이 뒤바뀐다:
@@ -896,8 +904,6 @@
       // - #center가 상태박스/일정과 나눠쓰는 '쌓임 축' 예산은 화면상 '가로' → innerWidth 기준 제한
       clockEl.style.transform = '';
       clockEl.style.removeProperty('font-size');
-      const stackCapRem = (window.innerWidth * 0.30) / 16;
-      rem = Math.min(rem, stackCapRem);
       clockEl.style.setProperty('--clock-fs', rem + 'rem');
       const maxPx = window.innerHeight - 120;
       const w = clockEl.offsetWidth;
@@ -907,8 +913,6 @@
     } else {
       clockEl.style.removeProperty('--clock-fs');
       clockEl.style.transform = '';
-      const capRem = (window.innerHeight * 0.25) / 16;
-      rem = Math.min(rem, capRem);
       clockEl.style.fontSize = rem + 'rem';
       const maxPx = window.innerWidth - 80;
       const w = clockEl.offsetWidth;
@@ -926,8 +930,6 @@
         statusText.style.fontSize = (rem * maxPx / w) + 'rem';
       }
     } else {
-      const capRem = (window.innerHeight * 0.19) / 16;
-      rem = Math.min(rem, capRem);
       statusText.style.fontSize = rem + 'rem';
       const maxPx = window.innerWidth - 80;
       const w = statusText.offsetWidth;
@@ -938,10 +940,13 @@
   }
   function setSchFontSize(rem) {
     scheduleEl.style.setProperty('--sch-scale', (rem / SCH_BASELINE).toFixed(3));
-    const capRem = (window.innerHeight * 0.045) / 16;
-    const nameRem = Math.min(rem, capRem);
-    document.querySelectorAll('.sch-name').forEach(el => el.style.fontSize = nameRem + 'rem');
-    document.querySelectorAll('.sch-timerange').forEach(el => el.style.fontSize = (nameRem * 0.75) + 'rem');
+    document.querySelectorAll('.sch-name').forEach(el => el.style.fontSize = rem + 'rem');
+    document.querySelectorAll('.sch-timerange').forEach(el => {
+      const tRem = rem * 0.75;
+      el.style.fontSize = tRem + 'rem';
+      const maxPx = el.parentElement.clientWidth;
+      if (el.scrollWidth > maxPx) el.style.fontSize = (tRem * maxPx / el.scrollWidth) + 'rem';
+    });
   }
 
   function applyLandscapeSizes() {
@@ -955,6 +960,13 @@
     setClockFontSize(P_CLOCK_BASELINE * pClockScale);
     setTallyFontSize(P_TALLY_BASELINE * pTallyScale);
     setSchFontSize(P_SCH_BASELINE * pSchScale);
+    // 위(탈리)·아래(일정 또는 생방송) 패널은 시계가 정중앙에 오도록 항상 같은
+    // 높이를 유지해야 해서, 세 요소 모두에 같은 배율을 건다(개별 배율을 쓰면
+    // 위아래 높이가 달라져 시계가 한쪽으로 치우친다).
+    const v = pBoxScale.toFixed(3);
+    box.style.setProperty('--p-box-scale', v);
+    scheduleEl.style.setProperty('--p-box-scale', v);
+    countdownEl.style.setProperty('--p-box-scale', v);
   }
 
   // 생방송·타이머 위젯은 가로 모드에선 항목별로 여러 슬라이더(박스 높이/글자
@@ -1404,6 +1416,7 @@
     if (s.clockBoxScale !== undefined) { clockBoxScale = parseFloat(s.clockBoxScale); clockEl.style.setProperty('--clock-box-scale', clockBoxScale.toFixed(3)); }
     if (s.schScale   !== undefined) schScale   = parseFloat(s.schScale);
     if (s.schBoxScale !== undefined) { schBoxScale = parseFloat(s.schBoxScale); scheduleEl.style.setProperty('--sch-box-scale', schBoxScale.toFixed(3)); }
+    if (s.pBoxScale   !== undefined) pBoxScale   = parseFloat(s.pBoxScale);
     if (s.pClockScale !== undefined) pClockScale = parseFloat(s.pClockScale);
     if (s.pTallyScale !== undefined) pTallyScale = parseFloat(s.pTallyScale);
     if (s.pSchScale   !== undefined) pSchScale   = parseFloat(s.pSchScale);
