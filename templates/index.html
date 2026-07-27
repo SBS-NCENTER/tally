@@ -443,6 +443,12 @@
       text-shadow: 0 0 8px rgba(74,222,128,0.6);
       font-weight: 900;
     }
+    .cd-marker-assigned {
+      font-size: 0.7em;
+      font-weight: 700;
+      color: #b8a88a;
+      margin: 0 0.05em;
+    }
     .cd-marker-time-row {
       display: flex;
       align-items: baseline;
@@ -1177,7 +1183,9 @@
     // 잠깐 체크 표시가 빠진다(모닝와이드1→2→3부, 뉴스헌터스→8뉴스 등).
     const confirmedMark = broadcastStartConfirmed
       ? ' <span class="cd-confirmed-mark" title="더는 안 바뀔 것으로 확인된 시작 시각">✓</span>' : '';
-    cdMarkerStartLabel.innerHTML = (isDifferentDay(start, now) ? 'N ' : '') + hhmm(start) + confirmedMark;
+    const durationMin = Math.round(durationSec / 60);
+    cdMarkerStartLabel.innerHTML = (isDifferentDay(start, now) ? 'N ' : '') + hhmm(start)
+      + `<span class="cd-marker-assigned">(${durationMin})</span>` + confirmedMark;
     cdMarkerStartProgram.textContent = broadcastProgramName;
     renderBoundedTrack(now, start, end, durationSec);
   }
