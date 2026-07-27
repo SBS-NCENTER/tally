@@ -449,22 +449,6 @@
       color: #b8a88a;
       margin: 0 0.05em;
     }
-    .cd-marker-time-row {
-      display: flex;
-      align-items: baseline;
-      gap: 0.5em;
-    }
-    .cd-marker-actual {
-      display: none;
-      font-size: 0.6em;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      color: #8a8a8a;
-      text-transform: none;
-      white-space: nowrap;
-    }
-    .cd-marker-actual.show { display: inline; }
-    .cd-marker-actual b { color: #dce8ff; font-weight: 800; }
     #cd-runner {
       position: absolute;
       top: 30%;
@@ -564,6 +548,25 @@
     }
     .cd-runner-tag-pill.overrun-hit {
       animation: tag-overrun-flash 0.5s ease-out;
+    }
+    /* 방송이 실제로 끝나면 말풍선이 경과/남음 대신 예정 대비 +/-를 한 줄로
+       보여준다. 늦게 끝남(+)은 초과 카운트와 같은 노랑, 일찍 끝남(-)은
+       확정 체크와 같은 초록으로 — 이미 쓰던 색 언어를 재사용해서 새로 안
+       외워도 되게 한다. */
+    .cd-tag-main.final-over {
+      color: #ffe066;
+      text-shadow: 0 0 10px rgba(255,224,102,0.55);
+    }
+    .cd-tag-main.final-under {
+      color: #4ade80;
+      text-shadow: 0 0 10px rgba(74,222,128,0.5);
+    }
+    @keyframes tag-final-blink {
+      0%, 49%   { opacity: 1; }
+      50%, 100% { opacity: 0.25; }
+    }
+    .cd-runner-tag-pill.final-blink {
+      animation: tag-final-blink 1s steps(1, end) infinite;
     }
     .cd-runner-tag-arrow {
       width: 0;
@@ -775,10 +778,7 @@
         <span class="cd-marker-dot"></span>
         <span class="cd-marker-label">
           <span class="cd-marker-program" id="cd-marker-end-program"></span>
-          <span class="cd-marker-time-row">
-            <span id="cd-marker-end-label">종료</span>
-            <span class="cd-marker-actual" id="cd-marker-end-actual"></span>
-          </span>
+          <span id="cd-marker-end-label">종료</span>
         </span>
       </div>
       <div id="cd-runner" class="walking">
@@ -839,7 +839,6 @@
   const cdMarkerEndLabel   = document.getElementById('cd-marker-end-label');
   const cdMarkerStartProgram = document.getElementById('cd-marker-start-program');
   const cdMarkerEndProgram   = document.getElementById('cd-marker-end-program');
-  const cdMarkerEndActual    = document.getElementById('cd-marker-end-actual');
   const cdRunnerTagEl        = document.getElementById('cd-runner-tag');
   const cdRunnerTagPill      = document.getElementById('cd-runner-tag-text');
   const cdLiveDot            = document.getElementById('cd-live-dot');
@@ -1072,6 +1071,8 @@
   const CD_LEAD_SEC = 15 * 60;
   let cdWasBeforeStart = null;
   let cdWasOverrun = false;
+  let cdWasFinalEnded = false;
+  let cdFinalBlinkTimer = null;
 
   function triggerStartHit() {
     const dotEl = cdMarkerStart.querySelector('.cd-marker-dot');
@@ -1199,21 +1200,16 @@
     cdMarkerEndLabel.textContent = (isDifferentDay(scheduledEnd, now) ? 'N ' : '') + hhmm(scheduledEnd);
     cdMarkerEndProgram.textContent = broadcastProgramName;
 
-    // 예정과 실제가 다르면(=방송이 끝나 실제값이 반영되면) 그 옆에 실제 시각·제작시간을
-    // 따로 보여준다. 위 주 라벨은 그대로 두고 여기서만 실제값을 드러낸다.
-    if (broadcastScheduledEndTime) {
+    // 방송이 실제로 끝났으면(=LIVE가 꺼지고 예정과 실제 종료가 달라지면) 그
+    // 사실을 우하단 텍스트가 아니라 말풍선 자체로 보여준다 — 끝난 뒤엔 말풍선의
+    // 경과/남음 표시가 더 이상 의미가 없어지는 자리이기 때문(아래 pill 렌더링 참고).
+    let isFinalEnded = false, finalDiffSec = 0;
+    if (broadcastScheduledEndTime && !broadcastIsLive) {
       const diffSec = Math.round((end - scheduledEnd) / 1000);
       if (Math.abs(diffSec) >= 1) {
-        const sign = diffSec > 0 ? '+' : '-';
-        const actualDurationSec = Math.max(0, Math.round((end - start) / 1000));
-        cdMarkerEndActual.innerHTML =
-          `실제 ${hhmm(end)} (${sign}${formatDuration(Math.abs(diffSec))}) · 제작 ${formatDuration(actualDurationSec)}`;
-        cdMarkerEndActual.classList.add('show');
-      } else {
-        cdMarkerEndActual.classList.remove('show');
+        isFinalEnded = true;
+        finalDiffSec = diffSec;
       }
-    } else {
-      cdMarkerEndActual.classList.remove('show');
     }
 
     const isBeforeStart = now < start;
@@ -1250,24 +1246,48 @@
     cdMarkerStart.style.left = startPct + '%';
     cdRunner.style.transform = 'translateX(' + (pct / 100 * cdTrackWidthPx) + 'px)';
 
-    if (!isBeforeStart) {
-      const isOverrun = broadcastIsLive && now > scheduledEnd;
-      if (isOverrun) {
-        const overrunSec = Math.floor((now - scheduledEnd) / 1000);
-        cdTagSub.textContent = '+' + formatDuration(overrunSec);
-        cdTagSub.classList.add('overrun');
-        if (!cdWasOverrun) triggerOverrunHit();
-      } else {
-        const remainSec = Math.max(0, Math.floor((end - now) / 1000));
-        cdTagSub.textContent = '-' + formatDuration(remainSec);
-        cdTagSub.classList.remove('overrun');
+    if (!isBeforeStart && isFinalEnded) {
+      // 끝난 뒤엔 경과/남음 두 줄 대신, 예정보다 얼마나 늦게(+)/일찍(-) 끝났는지
+      // 한 줄로 보여준다. 처음 이 상태가 된 순간만 10초간 반짝여서 알리고,
+      // 이후엔 계속 깜빡이지 않고 고정 표시(전환 대기 동안 계속 깜빡이면 방해가 됨).
+      const sign = finalDiffSec > 0 ? '+' : '-';
+      cdTagMain.textContent = sign + formatDuration(Math.abs(finalDiffSec));
+      cdTagMain.classList.toggle('final-over', finalDiffSec > 0);
+      cdTagMain.classList.toggle('final-under', finalDiffSec < 0);
+      cdTagSub.classList.remove('show', 'overrun');
+      cdLiveDot.classList.remove('show');
+      if (!cdWasFinalEnded) {
+        cdRunnerTagPill.classList.add('final-blink');
+        clearTimeout(cdFinalBlinkTimer);
+        cdFinalBlinkTimer = setTimeout(() => cdRunnerTagPill.classList.remove('final-blink'), 10000);
       }
-      cdWasOverrun = isOverrun;
-      cdTagSub.classList.add('show');
-    } else {
-      cdTagSub.classList.remove('show');
-      cdTagSub.classList.remove('overrun');
+      cdWasFinalEnded = true;
       cdWasOverrun = false;
+    } else {
+      if (cdWasFinalEnded) {
+        cdRunnerTagPill.classList.remove('final-blink');
+        clearTimeout(cdFinalBlinkTimer);
+      }
+      cdWasFinalEnded = false;
+      cdTagMain.classList.remove('final-over', 'final-under');
+      if (!isBeforeStart) {
+        const isOverrun = broadcastIsLive && now > scheduledEnd;
+        if (isOverrun) {
+          const overrunSec = Math.floor((now - scheduledEnd) / 1000);
+          cdTagSub.textContent = '+' + formatDuration(overrunSec);
+          cdTagSub.classList.add('overrun');
+          if (!cdWasOverrun) triggerOverrunHit();
+        } else {
+          const remainSec = Math.max(0, Math.floor((end - now) / 1000));
+          cdTagSub.textContent = '-' + formatDuration(remainSec);
+          cdTagSub.classList.remove('overrun');
+        }
+        cdWasOverrun = isOverrun;
+        cdTagSub.classList.add('show');
+      } else {
+        cdTagSub.classList.remove('show', 'overrun');
+        cdWasOverrun = false;
+      }
     }
 
     if (justCrossed) {
