@@ -940,6 +940,7 @@ def sps_live_schedule():
         start_dt = datetime.strptime(entry['startTime'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=KST)
         end_dt = start_dt + timedelta(seconds=entry['duration'])
         item = {
+            'eventId': entry.get('eventId'),
             'start': start_dt.strftime('%H:%M:%S'),
             'end': end_dt.strftime('%H:%M:%S'),
             'duration': entry['duration'],

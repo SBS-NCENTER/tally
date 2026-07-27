@@ -118,30 +118,6 @@
       gap: 10px;
     }
     .val { font-size: 0.8rem; font-weight: 700; color: #888; min-width: 44px; text-align: right; }
-    .live-badge-ctrl {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      color: #ff5252;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      margin-right: 6px;
-    }
-    .live-dot-ctrl {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #ff5252;
-      box-shadow: 0 0 6px 1px rgba(255,82,82,0.7);
-      animation: live-pulse-ctrl 1.4s ease-in-out infinite;
-    }
-    @keyframes live-pulse-ctrl {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.35; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .live-dot-ctrl { animation: none; }
-    }
     .setting-hint {
       font-size: 0.74rem;
       font-weight: 500;
@@ -163,7 +139,11 @@
     }
     .sps-row:last-child { margin-bottom: 0; }
     .sps-row.past { opacity: 0.4; }
-    .sps-row.current { background: #3a2a10; border: 1px solid #f0a030; }
+    /* 지금 탈리 화면에 실제로 뜨는 항목 표시 — 일정 시간대가 아니라 서버가
+       실제로 추적 중인 eventId 기준이라, 대기/전환대기(gap-hold) 상태도
+       정확히 반영된다. LIVE 여부에 따라 색을 구분한다. */
+    .sps-row.tracked { background: #3a2a10; border: 1px solid #f0a030; }
+    .sps-row.tracked-live { background: #2a1414; border: 1px solid #ff5252; }
     .sps-row .sps-time { color: #ddd; font-weight: 700; font-variant-numeric: tabular-nums; }
     .sps-row .sps-name { color: #aaa; margin-top: 2px; font-size: 0.76rem; }
     .sps-row .sps-ts { color: #f0a030; font-weight: 700; font-size: 0.76rem; white-space: nowrap; }
@@ -485,13 +465,6 @@
         <div class="setting-hint">켜면 SPS 운행표에서 생방송 시작·종료 시각과 방송명을 실시간으로 가져와 채웁니다. 끄면 아래에 직접 입력한 값을 사용합니다.</div>
       </div>
 
-      <div id="sps-current-row" class="setting-row">
-        <div class="setting-row-inline">
-          <span>지금 추적 중</span>
-          <span class="val" id="sps-current-value" style="max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">—</span>
-        </div>
-      </div>
-
       <div id="sps-studio-row" class="setting-row">
         <span class="setting-label" style="margin-bottom:4px">부조정실 선택</span>
         <select id="sps-studio-select" class="sps-select">
@@ -786,8 +759,6 @@
   const spsGapSlider  = document.getElementById('sps-gap');
   const spsGapVal     = document.getElementById('sps-gap-val');
   const spsGapRow     = document.getElementById('sps-gap-row');
-  const spsCurrentRow   = document.getElementById('sps-current-row');
-  const spsCurrentValue = document.getElementById('sps-current-value');
   const spsHistoryList  = document.getElementById('sps-history-list');
   const spsHistorySub   = document.getElementById('sps-history-sub');
   const cdBoxSizeSlider  = document.getElementById('cd-box-size');
@@ -975,7 +946,6 @@
     spsManualBox.style.gap = '16px';
     spsStudioRow.style.display = spsAutoToggle.checked ? 'flex' : 'none';
     spsGapRow.style.display = spsAutoToggle.checked ? 'flex' : 'none';
-    spsCurrentRow.style.display = spsAutoToggle.checked ? 'flex' : 'none';
     spsLiveList.style.display = spsAutoToggle.checked ? 'flex' : 'none';
     spsLiveList.style.flexDirection = 'column';
     if (spsAutoToggle.checked) { pollSpsSchedule(); pollBroadcastStatus(); }
@@ -989,12 +959,9 @@
     fetch('/settings')
       .then(r => r.json())
       .then(s => {
-        const name = s.broadcastProgramName || '';
-        if (!name) { spsCurrentValue.textContent = '대기 중'; return; }
-        const live = s.broadcastIsLive
-          ? '<span class="live-badge-ctrl"><span class="live-dot-ctrl"></span>LIVE</span>'
-          : '';
-        spsCurrentValue.innerHTML = live + name;
+        trackedEventId = s.broadcastEventId || null;
+        trackedIsLive = !!s.broadcastIsLive;
+        applyTrackedHighlight();
       })
       .catch(() => {});
   }
@@ -1031,6 +998,19 @@
   }
   setInterval(() => { if (spsAutoToggle.checked) populateStudioOptions(); }, 60000);
 
+  // 지금 탈리 화면이 실제로 추적 중인 방송을 별도 요약 줄 대신, 운행표 목록에서
+  // 그 항목 자체를 강조해서 보여준다 — 일정 시간대 기준(overnight 등)이 아니라
+  // 서버가 실제로 잡고 있는 eventId 기준이라 대기/전환대기(gap-hold)까지 정확하다.
+  let trackedEventId = null;
+  let trackedIsLive = false;
+  function applyTrackedHighlight() {
+    spsLiveList.querySelectorAll('.sps-row[data-event-id]').forEach(row => {
+      const isTracked = !!trackedEventId && row.dataset.eventId === trackedEventId;
+      row.classList.toggle('tracked', isTracked && !trackedIsLive);
+      row.classList.toggle('tracked-live', isTracked && trackedIsLive);
+    });
+  }
+
   function pollSpsSchedule() {
     if (!spsAutoToggle.checked) return;
     fetch('/sps/live-schedule')
@@ -1040,16 +1020,13 @@
           spsLiveList.innerHTML = '<div class="sps-empty">오늘 예정된 TS 생방송이 없습니다.</div>';
           return;
         }
-        const now = new Date();
-        const nowStr = now.toTimeString().slice(0, 8);
+        const nowStr = new Date().toTimeString().slice(0, 8);
         spsLiveList.innerHTML = items.map(it => {
           // start/end는 시각 문자열이라 자정을 넘기는 항목(end가 start보다 이름)은
-          // 일반 비교로 판정 못 함 — "지금이 start 이후이거나 end 이전"이면 진행 중.
+          // 일반 비교로 판정 못 함 — 그런 항목은 굳이 흐리게 처리하지 않는다.
           const overnight = it.end < it.start;
-          const state = overnight
-            ? ((nowStr >= it.start || nowStr < it.end) ? 'current' : '')
-            : (nowStr >= it.end ? 'past' : (nowStr >= it.start ? 'current' : ''));
-          return `<div class="sps-row ${state}">
+          const isPast = !overnight && nowStr >= it.end;
+          return `<div class="sps-row ${isPast ? 'past' : ''}" data-event-id="${it.eventId || ''}">
             <div>
               <div class="sps-time">${it.start} ~ ${it.end}</div>
               <div class="sps-name">${it.programName}</div>
@@ -1060,6 +1037,7 @@
             </div>
           </div>`;
         }).join('');
+        applyTrackedHighlight();
       })
       .catch(() => {});
   }
