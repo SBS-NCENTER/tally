@@ -50,7 +50,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: clamp(22px, calc(var(--tally-box-scale, 1) * 4vh), 68px) clamp(20px, 4vw, 60px) clamp(18px, calc(var(--tally-box-scale, 1) * 3vh), 52px);
+      padding: clamp(30px, calc(var(--tally-box-scale, 1) * 4vh), 92px) clamp(20px, 4vw, 60px) clamp(24px, calc(var(--tally-box-scale, 1) * 3vh), 70px);
       overflow: hidden;
       transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, padding 0.2s ease;
       background: linear-gradient(160deg, #170a0a 0%, #0c0505 55%, #060303 100%);
@@ -107,7 +107,7 @@
       line-height: 1;
       text-shadow: 0 0 40px rgba(255,255,255,0.08);
       transition: font-size 0.2s ease, padding 0.2s ease;
-      padding: clamp(6px, calc(var(--clock-box-scale, 1) * 1.4vh), 42px) 0;
+      padding: clamp(8px, calc(var(--clock-box-scale, 1) * 1.4vh), 56px) 0;
       width: 8ch;
       text-align: center;
       display: block;
@@ -153,7 +153,7 @@
       background: #0d0d0d;
       display: grid;
       grid-template-columns: 1fr 1.5fr 1fr;
-      min-height: clamp(100px, calc(var(--sch-box-scale, 1) * 17vh), 260px);
+      min-height: clamp(134px, calc(var(--sch-box-scale, 1) * 17vh), 347px);
       transition: min-height 0.2s ease;
     }
     .sch-slot {
@@ -174,7 +174,7 @@
     .sch-slot.next  { opacity: 0.70; }
 
     .sch-label {
-      font-size: clamp(1rem, calc(var(--sch-scale, 1) * 2vw), 2.4rem);
+      font-size: clamp(1.33rem, calc(var(--sch-scale, 1) * 2vw), 3.2rem);
       font-weight: 800;
       letter-spacing: 0.14em;
       color: #fff;
@@ -226,10 +226,10 @@
       align-items: center;
       justify-content: center;
       min-height: calc(
-        clamp(90px, calc(var(--cd-box-scale, 1) * 14vh), 190px) +
-        clamp(40px, calc(var(--cd-text-scale, 1) * 6vh), 80px)
+        clamp(120px, calc(var(--cd-box-scale, 1) * 14vh), 254px) +
+        clamp(54px, calc(var(--cd-text-scale, 1) * 6vh), 107px)
       );
-      padding-bottom: clamp(12px, calc(var(--cd-text-scale, 1) * 1.8vh), 32px);
+      padding-bottom: clamp(16px, calc(var(--cd-text-scale, 1) * 1.8vh), 43px);
       gap: clamp(0px, 0.4vh, 4px);
       transition: background 0.3s ease, box-shadow 0.3s ease, min-height 0.2s ease;
     }
@@ -247,7 +247,7 @@
       flex-direction: row;
       align-items: stretch;
       justify-content: center;
-      min-height: clamp(130px, calc(var(--sw-box-scale, 1) * 20vh), 270px);
+      min-height: clamp(174px, calc(var(--sw-box-scale, 1) * 20vh), 360px);
       position: relative;
       overflow: hidden;
       transition: background 0.3s ease, min-height 0.2s ease;
@@ -307,7 +307,7 @@
       50% { opacity: 0.35; transform: scale(0.7); }
     }
     .tm-label {
-      font-size: clamp(0.85rem, calc(var(--sw-text-scale, 1) * 1.7vw), 2.1rem);
+      font-size: clamp(1.13rem, calc(var(--sw-text-scale, 1) * 1.7vw), 2.8rem);
       font-weight: 800;
       letter-spacing: 0.14em;
       color: #777;
@@ -318,7 +318,7 @@
     .tm-value {
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
-      font-size: clamp(1.8rem, calc(var(--sw-text-scale, 1) * 4.6vw), 5.4rem);
+      font-size: clamp(2.4rem, calc(var(--sw-text-scale, 1) * 4.6vw), 7.2rem);
       font-weight: 900;
       letter-spacing: 0.02em;
       color: #fff;
@@ -334,15 +334,15 @@
       --s: var(--cd-box-scale, 1);
       position: relative;
       width: min(74%, 1180px);
-      height: clamp(50px, calc(var(--s) * 7vh), 110px);
-      margin-top: clamp(46px, calc(var(--cd-text-scale, 1) * 7.2vh), 100px);
+      height: clamp(67px, calc(var(--s) * 7vh), 147px);
+      margin-top: clamp(62px, calc(var(--cd-text-scale, 1) * 7.2vh), 134px);
       display: none;
     }
     #cd-track.show { display: block; }
     #cd-track-line {
       position: absolute;
       left: 0; right: 0; top: 30%;
-      height: clamp(5px, calc(var(--s) * 0.9vh), 16px);
+      height: clamp(7px, calc(var(--s) * 0.9vh), 21px);
       transform: translateY(-50%);
       background: #232323;
       border-radius: 5px;
@@ -350,7 +350,7 @@
     #cd-fill {
       position: absolute;
       left: 0; top: 30%;
-      height: clamp(5px, calc(var(--s) * 0.9vh), 16px);
+      height: clamp(7px, calc(var(--s) * 0.9vh), 21px);
       transform: translateY(-50%);
       background: #2ecc55;
       border-radius: 5px;
@@ -371,8 +371,8 @@
     #cd-marker-end { left: 100%; }
     .cd-marker-dot {
       display: block;
-      width: clamp(14px, calc(var(--s) * 2vh), 36px);
-      height: clamp(14px, calc(var(--s) * 2vh), 36px);
+      width: clamp(19px, calc(var(--s) * 2vh), 48px);
+      height: clamp(19px, calc(var(--s) * 2vh), 48px);
       border-radius: 50%;
       background: #555;
       border: 2px solid #0d0d0d;
@@ -417,13 +417,13 @@
     }
     .cd-marker-label {
       position: absolute;
-      top: clamp(18px, calc(var(--s) * 2.6vh), 46px);
+      top: clamp(24px, calc(var(--s) * 2.6vh), 61px);
       left: 50%;
       transform: translateX(-50%);
       display: flex;
       flex-direction: column;
       align-items: center;
-      font-size: clamp(0.85rem, calc(var(--cd-label-scale, 1) * 1.5vw), 2.1rem);
+      font-size: clamp(1.13rem, calc(var(--cd-label-scale, 1) * 1.5vw), 2.8rem);
       font-weight: 800;
       color: #ffedd5;
       white-space: nowrap;
@@ -464,7 +464,7 @@
       position: absolute;
       left: 0;
       bottom: 100%;
-      margin-bottom: clamp(6px, calc(var(--cd-text-scale, 1) * 1vh), 20px);
+      margin-bottom: clamp(8px, calc(var(--cd-text-scale, 1) * 1vh), 27px);
       transform: translateX(-50%);
       display: flex;
       flex-direction: column;
@@ -481,7 +481,7 @@
       color: #fff;
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
-      padding: clamp(3px, calc(var(--cd-text-scale, 1) * 0.5vh), 13px) clamp(8px, calc(var(--cd-text-scale, 1) * 1.3vw), 32px);
+      padding: clamp(4px, calc(var(--cd-text-scale, 1) * 0.5vh), 17px) clamp(11px, calc(var(--cd-text-scale, 1) * 1.3vw), 43px);
       border-radius: 9px;
       white-space: nowrap;
       box-shadow: 0 4px 16px rgba(0,0,0,0.5);
@@ -515,7 +515,7 @@
       text-shadow: 0 0 10px rgba(255,237,213,0.4);
       font-weight: 800;
       letter-spacing: 0.02em;
-      font-size: clamp(1rem, calc(var(--cd-text-scale, 1) * 2vw), 2.9rem);
+      font-size: clamp(1.33rem, calc(var(--cd-text-scale, 1) * 2vw), 3.87rem);
       line-height: 1.15;
     }
     .cd-tag-sub {
@@ -524,7 +524,7 @@
       text-shadow: 0 0 10px rgba(220,232,255,0.4);
       font-weight: 700;
       letter-spacing: 0.01em;
-      font-size: clamp(0.78rem, calc(var(--cd-text-scale, 1) * 1.4vw), 2.15rem);
+      font-size: clamp(1.04rem, calc(var(--cd-text-scale, 1) * 1.4vw), 2.87rem);
       line-height: 1.15;
       margin-top: 2px;
       padding-top: 3px;
@@ -594,8 +594,8 @@
       position: absolute;
       top: 50%;
       right: 100%;
-      width: clamp(60px, calc(var(--s) * 9vw), 200px);
-      height: clamp(4px, calc(var(--s) * 0.7vh), 12px);
+      width: clamp(80px, calc(var(--s) * 9vw), 267px);
+      height: clamp(5px, calc(var(--s) * 0.7vh), 16px);
       transform: translateY(-50%);
       background: linear-gradient(90deg, transparent, rgba(46,204,85,0.6));
       border-radius: 6px;
@@ -605,8 +605,8 @@
       position: absolute;
       top: 50%;
       left: 0;
-      width: clamp(9px, calc(var(--s) * 1.3vh), 24px);
-      height: clamp(9px, calc(var(--s) * 1.3vh), 24px);
+      width: clamp(12px, calc(var(--s) * 1.3vh), 32px);
+      height: clamp(12px, calc(var(--s) * 1.3vh), 32px);
       border-radius: 50%;
       transform: translate(-50%, -50%);
       border: 2px solid rgba(46,204,85,0.55);
@@ -622,8 +622,8 @@
       position: absolute;
       top: 50%;
       left: 0;
-      width: clamp(9px, calc(var(--s) * 1.3vh), 24px);
-      height: clamp(9px, calc(var(--s) * 1.3vh), 24px);
+      width: clamp(12px, calc(var(--s) * 1.3vh), 32px);
+      height: clamp(12px, calc(var(--s) * 1.3vh), 32px);
       border-radius: 50%;
       transform: translate(-50%, -50%);
       background: radial-gradient(circle at 35% 35%, #e0ffe8, #2ecc55 60%, #167a34);
@@ -634,7 +634,7 @@
     #cd-runner.running .cd-runner-head { animation: runner-glow 0.9s ease-in-out infinite; }
     #cd-runner.running .cd-runner-trail {
       background: linear-gradient(90deg, transparent, rgba(240,160,48,0.4));
-      width: clamp(20px, calc(var(--s) * 2.6vw), 70px);
+      width: clamp(27px, calc(var(--s) * 2.6vw), 93px);
     }
     #cd-runner.running .cd-runner-head {
       background: radial-gradient(circle at 35% 35%, #ffe9c2, #f0a030 55%, #a86a10);
