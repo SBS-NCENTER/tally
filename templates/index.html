@@ -1369,12 +1369,24 @@
   // 시계·카운트다운·스톱워치·타이머를 하나의 틱으로 묶어서 매초 같은 시점에 함께 갱신
   // (독립된 setInterval 여러 개는 서로 미세하게 위상이 어긋나 위 시계와 비교했을 때
   //  빨라지거나 느려지는 것처럼 보이는 원인이 됨)
-  setInterval(() => {
-    updateClock();
-    updateCountdown();
-    updateStopwatchDisplay();
-    updateTimerDisplay();
-  }, 1000);
+  //
+  // setInterval(fn, 1000)은 페이지가 로드된 순간을 기준으로 1초 간격을 도는 거라,
+  // 실제 정각 경계(예: xx시 xx분 xx.000초)랑 위상이 안 맞을 수 있다 — 로드 시점이
+  // .7초였다면 계속 .7초 지점마다 갱신되는 식이라 실제 초가 바뀐 뒤 최대 1초 가까이
+  // 늦게 화면 숫자가 바뀌어 보일 수 있음(체감상 "시계가 안 맞는다"의 흔한 원인).
+  // 매번 "다음 정각 초"까지 남은 ms를 다시 계산해서 setTimeout으로 거는 방식으로
+  // 바꾸면, 오차가 누적되지 않고 항상 실제 초 경계에 맞춰 갱신된다.
+  function scheduleTick() {
+    const delay = 1000 - (getNow().getTime() % 1000);
+    setTimeout(() => {
+      updateClock();
+      updateCountdown();
+      updateStopwatchDisplay();
+      updateTimerDisplay();
+      scheduleTick();
+    }, delay);
+  }
+  scheduleTick();
 
   /* ── 세로 모드 ─────────────────────────────────────────────── */
   function applyPortrait(on, left) {
