@@ -215,22 +215,45 @@
       background: var(--accent);
     }
 
+    /* 슬라이더를 움직인 만큼 왼쪽이 강조색으로 채워지게 — JS가 매 값마다
+       --range-pct(0~100%)를 인라인으로 계산해서 넣어준다(입력 초기 렌더·
+       change 이벤트 둘 다). 포인터(thumb)는 예전 20px가 커 보인다는
+       피드백으로 14px로 줄임. */
     input[type=range] {
       -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
       width: 100%;
       height: 4px;
       border-radius: 2px;
-      background: var(--oneui-surface-2);
+      background: linear-gradient(to right,
+        var(--accent) var(--range-pct, 0%),
+        var(--oneui-surface-2) var(--range-pct, 0%));
       outline: none;
       cursor: pointer;
     }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.35);
       cursor: pointer;
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: none;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.35);
+      cursor: pointer;
+    }
+    input[type=range]::-moz-range-track {
+      height: 4px;
+      border-radius: 2px;
+      background: transparent;
     }
     input[type=text] {
       background: var(--oneui-surface-2);
@@ -638,14 +661,6 @@
         <div class="setting-row-inline"><span>시계 글자 크기</span><span class="val" id="clock-size-val">1.00x</span></div>
         <input type="range" id="clock-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
-      <div class="setting-row">
-        <div class="toggle-row">
-          <span class="toggle-label">12시간제 (AM/PM)</span>
-          <label class="toggle"><input type="checkbox" id="clock-12h-toggle" checked /><span class="toggle-track"></span></label>
-        </div>
-        <div class="setting-hint">끄면 24시간제로 표시됩니다.</div>
-      </div>
-
       <div class="size-group-label">일반 모드 (일정)</div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="sch-box-size-val">1.0x</span></div>
@@ -737,6 +752,13 @@
     </button>
     <div class="sub-panel" id="advanced-sub">
       <div class="setting-row">
+        <div class="toggle-row">
+          <span class="toggle-label">12시간제 (AM/PM)</span>
+          <label class="toggle"><input type="checkbox" id="clock-12h-toggle" checked /><span class="toggle-track"></span></label>
+        </div>
+        <div class="setting-hint">끄면 24시간제로 표시됩니다.</div>
+      </div>
+      <div class="setting-row">
         <div class="setting-row-inline"><span>{{ icon('timer') }}시간 보정</span><span class="val" id="time-offset-val">0.0초</span></div>
         <input type="range" id="time-offset" min="-10" max="10" step="0.1" value="0" />
       </div>
@@ -778,6 +800,18 @@
 </div>
 
 <script>
+  // 슬라이더 트랙의 강조색 채움(--range-pct) — 값이 바뀌는 모든 경로(드래그,
+  // 방향키, 초기 로드 시 설정값 복원)를 다 잡기 위해 개별 슬라이더마다 따로
+  // 안 걸고 document 레벨에서 한 번에 위임 처리한다.
+  function refreshRangeFill(el) {
+    const min = parseFloat(el.min || 0), max = parseFloat(el.max || 100), v = parseFloat(el.value);
+    const pct = max > min ? ((v - min) / (max - min)) * 100 : 0;
+    el.style.setProperty('--range-pct', pct + '%');
+  }
+  document.addEventListener('input', e => {
+    if (e.target.matches && e.target.matches('input[type=range]')) refreshRangeFill(e.target);
+  });
+
   const clockSizeSlider = document.getElementById('clock-size');
   const clockSizeVal    = document.getElementById('clock-size-val');
   const clockBoxSizeSlider = document.getElementById('clock-box-size');
@@ -1529,6 +1563,7 @@
       timerStartedAt   = s.timerStartedAt ? parseFloat(s.timerStartedAt) : null;
       timerDurationInput.value = formatStopwatch(timerDurationSec * 1000);
       updateTimerDisplay();
+      document.querySelectorAll('input[type=range]').forEach(refreshRangeFill);
     })
     .catch(() => {});
 </script>
