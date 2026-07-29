@@ -514,6 +514,13 @@
     }
     /* 실제로 주조에서 이 부조로 컷팅된 상태(onAirIndex 기준 broadcastIsLive)일
        때만 프로그램명 옆에 뜨는 LIVE 뱃지 — 방송 예정/대기 중엔 안 보인다. */
+    /* .cd-marker-label이 flex-column이라 그 직계 자식은 전부 각자 한 줄씩
+       차지한다 — 프로그램명+LIVE뱃지를 한 줄에 나란히 두려면 이 둘을 묶는
+       가로 방향 flex 한 줄로 따로 감싸야 한다("나이트 라인(TS-4) LIVE"). */
+    .cd-marker-title-row {
+      display: flex;
+      align-items: baseline;
+    }
     .cd-live-badge {
       display: none;
       color: #ffffff;
@@ -524,7 +531,7 @@
       padding: 0.18em 0.5em 0.15em;
       border-radius: 999px;
       margin-left: 0.4em;
-      vertical-align: middle;
+      align-self: center;
     }
     .cd-live-badge.show { display: inline-block; }
     .cd-confirmed-mark {
@@ -872,7 +879,7 @@
       <div class="cd-marker" id="cd-marker-start">
         <span class="cd-marker-dot"></span>
         <span class="cd-marker-label">
-          <span class="cd-marker-program" id="cd-marker-start-program"></span><span class="cd-live-badge" id="cd-live-badge">LIVE</span>
+          <span class="cd-marker-title-row"><span class="cd-marker-program" id="cd-marker-start-program"></span><span class="cd-live-badge" id="cd-live-badge">LIVE</span></span>
           <span id="cd-marker-start-label">시작</span>
         </span>
       </div>
