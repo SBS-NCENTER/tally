@@ -688,6 +688,7 @@ def sps_listener():
                         s['broadcastScheduledEndTime'] = ''
                         s['broadcastScheduledEndTimeNextDay'] = False
                         s['broadcastProgramName'] = result['programName']
+                        s['broadcastVideoSource'] = result['videoSource']
                         last_event_id = result['eventId']
                         last_video_source = result['videoSource']
                         last_was_live = False
@@ -751,6 +752,7 @@ def sps_listener():
                         s['broadcastTime'] = ''
                         s['broadcastEndTime'] = ''
                         s['broadcastProgramName'] = ''
+                        s['broadcastVideoSource'] = ''
                         s['broadcastScheduledEndTime'] = ''
                         s['broadcastIsLive'] = False
                         s['broadcastStartConfirmed'] = True
@@ -1031,7 +1033,7 @@ def save_settings():
         # 이 필드들은 sps_listener만 채우는 서버 파생 필드다 — 컨트롤 페이지엔 이걸 위한
         # 수동 입력 UI가 없으므로, 오래된/캐시된 페이지가 이 필드를 모른 채(또는 값이
         # 비어 있는 채로) 저장해도 덮어써지지 않도록 항상 기존 값을 그대로 유지한다.
-        for key in ('broadcastProgramName', 'broadcastEventId', 'broadcastIsLive',
+        for key in ('broadcastProgramName', 'broadcastVideoSource', 'broadcastEventId', 'broadcastIsLive',
                     'broadcastScheduledEndTime', 'broadcastScheduledEndTimeNextDay',
                     'broadcastStartConfirmed'):
             new_settings[key] = old_settings.get(key)
@@ -1100,6 +1102,7 @@ def test_countdown_start():
     s['stopwatchMode'] = False
     s['broadcastEventId'] = f'TEST-{int(now.timestamp())}'
     s['broadcastProgramName'] = '[테스트] 방송'
+    s['broadcastVideoSource'] = 'TEST'
     s['broadcastTime'] = start.strftime('%H:%M:%S')
     s['broadcastTimeNextDay'] = False
     s['broadcastEndTime'] = end.strftime('%H:%M:%S')

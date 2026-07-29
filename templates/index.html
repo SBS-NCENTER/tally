@@ -879,6 +879,7 @@
   let broadcastTime = '', broadcastEndTime = '';
   let broadcastTimeNextDay = false, broadcastEndTimeNextDay = false;
   let broadcastProgramName = '';
+  let broadcastVideoSource = '';
   let broadcastScheduledEndTime = '', broadcastScheduledEndTimeNextDay = false;
   let broadcastIsLive = false;
   let broadcastStartConfirmed = true;
@@ -1109,6 +1110,9 @@
   }
   function pad2(v) { return String(v).padStart(2, '0'); }
   function hhmm(d) { return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
+  function programLabel() {
+    return broadcastProgramName + (broadcastVideoSource ? `(${broadcastVideoSource})` : '');
+  }
   function timeToday(now, hhmmStr, nextDay) {
     const [h, m, s] = hhmmStr.split(':').map(Number);
     const d = new Date(now);
@@ -1199,7 +1203,7 @@
     const durationMin = Math.round(durationSec / 60);
     cdMarkerStartLabel.innerHTML = (isDifferentDay(start, now) ? 'N ' : '') + hhmm(start)
       + `<span class="cd-marker-assigned">(${durationMin})</span>` + confirmedMark;
-    cdMarkerStartProgram.textContent = broadcastProgramName;
+    cdMarkerStartProgram.textContent = programLabel();
     renderBoundedTrack(now, start, end, durationSec);
   }
 
@@ -1210,7 +1214,7 @@
     const scheduledEnd = broadcastScheduledEndTime
       ? timeToday(start, broadcastScheduledEndTime, broadcastScheduledEndTimeNextDay) : end;
     cdMarkerEndLabel.textContent = (isDifferentDay(scheduledEnd, now) ? 'N ' : '') + hhmm(scheduledEnd);
-    cdMarkerEndProgram.textContent = broadcastProgramName;
+    cdMarkerEndProgram.textContent = programLabel();
 
     // 방송이 실제로 끝났으면(=LIVE가 꺼지고 예정과 실제 종료가 달라지면) 그
     // 사실을 우하단 텍스트가 아니라 말풍선 자체로 보여준다 — 끝난 뒤엔 말풍선의
@@ -1454,6 +1458,7 @@
     broadcastTimeNextDay = !!s.broadcastTimeNextDay;
     broadcastEndTimeNextDay = !!s.broadcastEndTimeNextDay;
     broadcastProgramName = s.broadcastProgramName || '';
+    broadcastVideoSource = s.broadcastVideoSource || '';
     broadcastScheduledEndTime = s.broadcastScheduledEndTime || '';
     broadcastScheduledEndTimeNextDay = !!s.broadcastScheduledEndTimeNextDay;
     broadcastIsLive = !!s.broadcastIsLive;
@@ -1464,7 +1469,7 @@
     applyCdSize();
     // 시작/종료 시각·모드가 실제로 바뀌었을 때만 즉시 갱신 — 매 3초 폴링마다 무조건 다시 그리면
     // 매초 진행 중인 러너/채움바 트랜지션과 위상이 어긋나며 움직임이 불규칙해 보이는 원인이 된다.
-    const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay + ':' + broadcastProgramName + ':' + broadcastScheduledEndTime + ':' + broadcastIsLive + ':' + broadcastStartConfirmed;
+    const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay + ':' + broadcastProgramName + ':' + broadcastVideoSource + ':' + broadcastScheduledEndTime + ':' + broadcastIsLive + ':' + broadcastStartConfirmed;
     if (countdownModeOn && cdSignature !== lastCdSignature) updateCountdown();
     lastCdSignature = cdSignature;
 
