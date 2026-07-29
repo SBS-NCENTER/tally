@@ -1099,10 +1099,16 @@ def save_settings():
         # 이 필드들은 sps_listener만 채우는 서버 파생 필드다 — 컨트롤 페이지엔 이걸 위한
         # 수동 입력 UI가 없으므로, 오래된/캐시된 페이지가 이 필드를 모른 채(또는 값이
         # 비어 있는 채로) 저장해도 덮어써지지 않도록 항상 기존 값을 그대로 유지한다.
-        for key in ('broadcastProgramName', 'broadcastVideoSource', 'broadcastEventId', 'broadcastIsLive',
-                    'broadcastScheduledEndTime', 'broadcastScheduledEndTimeNextDay',
-                    'broadcastStartConfirmed'):
-            new_settings[key] = old_settings.get(key)
+        # (실측으로 확인된 버그) old_settings.get(key)가 None을 반환하면(파일에
+        # 그 순간 값이 비어 있었던 경우) 그 None이 그대로 다시 저장되고, sps_listener가
+        # 다음 실제 방송 전환 전까지는 이 필드들을 다시 안 건드리므로 None이 계속
+        # 재저장되며 눌러앉는다(방송명이 사라진 채 굳어버림) — 문자열 필드는 빈
+        # 문자열로, 불리언 필드는 False로 떨어뜨려서 None이 저장되는 경로 자체를 막는다.
+        for key in ('broadcastProgramName', 'broadcastVideoSource', 'broadcastEventId',
+                    'broadcastScheduledEndTime'):
+            new_settings[key] = old_settings.get(key) or ''
+        for key in ('broadcastIsLive', 'broadcastScheduledEndTimeNextDay', 'broadcastStartConfirmed'):
+            new_settings[key] = bool(old_settings.get(key))
         # SPS 자동모드가 켜진 상태에서는 sps_listener가 방송 시간의 유일한 소스여야 한다.
         # 컨트롤 페이지는 최초 로드 이후 이 필드들을 재폴링하지 않으므로, 페이지를 오래
         # 띄워두고 스튜디오 변경 등 다른 설정만 저장해도 오래된 시간값이 그대로 다시
