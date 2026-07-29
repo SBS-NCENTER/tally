@@ -1087,6 +1087,37 @@
   let cdWasFinalEnded = false;
   let cdFinalBlinkTimer = null;
 
+  // 진단용: 카운트다운 숫자가 1초보다 크게 튀는 순간(예: -5 -4 -2 -1 처럼 하나
+  // 빠지는 현상)을 브라우저가 스스로 감지해 서버로 보고한다 — 추측 대신 실제
+  // 발생 순간의 정황(직전 틱과의 실제 간격, 폴링 직후였는지)을 증거로 남기기 위함.
+  let cdTickLastSec = null;
+  let cdTickLastWallMs = null;
+  function reportTickAnomaly(detail) {
+    try {
+      const blob = new Blob([JSON.stringify(detail)], { type: 'application/json' });
+      navigator.sendBeacon('/tick-anomaly', blob);
+    } catch (e) {}
+  }
+  function checkTickContinuity(curSec, fromPoll) {
+    const wallMs = Date.now();
+    if (cdTickLastSec !== null && cdTickLastWallMs !== null) {
+      const wallDeltaMs = wallMs - cdTickLastWallMs;
+      // 실제 경과 시간(wallDeltaMs)만큼 초 값도 같이 움직였어야 정상 —
+      // 그보다 훨씬 크게(500ms 이상 여유를 둬도) 뛰었으면 스킵이 의심된다.
+      const secDelta = Math.abs(curSec - cdTickLastSec);
+      const expectedMaxSteps = Math.ceil(wallDeltaMs / 1000) + 1;
+      if (wallDeltaMs < 2500 && secDelta > expectedMaxSteps) {
+        reportTickAnomaly({
+          prevSec: cdTickLastSec, curSec, secDelta,
+          wallDeltaMs, fromPoll: !!fromPoll,
+          timeOffsetSec, broadcastStartConfirmed,
+        });
+      }
+    }
+    cdTickLastSec = curSec;
+    cdTickLastWallMs = wallMs;
+  }
+
   function triggerStartHit() {
     const dotEl = cdMarkerStart.querySelector('.cd-marker-dot');
     dotEl.classList.remove('hit');
@@ -1150,7 +1181,7 @@
     return d.getFullYear() !== ref.getFullYear() || d.getMonth() !== ref.getMonth() || d.getDate() !== ref.getDate();
   }
 
-  function updateCountdown() {
+  function updateCountdown(fromPoll) {
     if (!countdownModeOn) return;
     const startVal = broadcastTime;
     const endVal   = broadcastEndTime;
@@ -1161,6 +1192,8 @@
       cdTagSub.classList.remove('show');
       countdownEl.classList.remove('elapsed');
       cdTrack.classList.remove('show');
+      cdTickLastSec = null;
+      cdTickLastWallMs = null;
       return;
     }
 
@@ -1169,6 +1202,7 @@
 
     const { start, end } = anchorBroadcastWindow(now, startVal, broadcastTimeNextDay, endVal, broadcastEndTimeNextDay);
     const rawDiffMs = start - now;
+    checkTickContinuity(Math.round(rawDiffMs / 1000), fromPoll);
 
     if (rawDiffMs > 0) {
       cdTagMain.textContent = '-' + formatDuration(Math.floor(rawDiffMs / 1000));
@@ -1470,7 +1504,7 @@
     // 시작/종료 시각·모드가 실제로 바뀌었을 때만 즉시 갱신 — 매 3초 폴링마다 무조건 다시 그리면
     // 매초 진행 중인 러너/채움바 트랜지션과 위상이 어긋나며 움직임이 불규칙해 보이는 원인이 된다.
     const cdSignature = countdownModeOn + ':' + broadcastTime + ':' + broadcastEndTime + ':' + broadcastTimeNextDay + ':' + broadcastEndTimeNextDay + ':' + broadcastProgramName + ':' + broadcastVideoSource + ':' + broadcastScheduledEndTime + ':' + broadcastIsLive + ':' + broadcastStartConfirmed;
-    if (countdownModeOn && cdSignature !== lastCdSignature) updateCountdown();
+    if (countdownModeOn && cdSignature !== lastCdSignature) updateCountdown(true);
     lastCdSignature = cdSignature;
 
     if (s.swBoxScale !== undefined) swBoxScale = parseFloat(s.swBoxScale);

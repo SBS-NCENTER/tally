@@ -294,6 +294,10 @@ SPS_SLOW_INTERVAL = 20      # 초 — 평상시 폴링 간격
 SPS_FAST_INTERVAL = 1       # 초 — 임박한 생방송 핸드오프 전후 폴링 간격
 SPS_FAST_WINDOW = timedelta(minutes=5)      # 핸드오프 경계 앞뒤로 촘촘하게 볼 범위
 SPS_HANDOFF_GAP = timedelta(minutes=10)     # 두 생방송 사이 이 안이면 "핸드오프"로 간주
+SPS_FINAL_HOLD_SEC = 15    # 방송이 실제로 꺼진 직후, 바로 다음 방송(핸드오프)이 이미
+                           # 시작했더라도 최소 이만큼은 방금 끝난 방송의 예정/실제
+                           # 종료 비교 결과를 먼저 보여준다(안 그러면 뉴스헌터스→8뉴스처럼
+                           # 붙어 있는 핸드오프에서는 결과 화면이 뜰 틈도 없이 넘어가버림).
 
 
 def get_sps_settings():
@@ -521,6 +525,17 @@ def sps_listener():
     (처음 발견한 시각에 고정하면 그 사이 캐스케이드로 여러 번 바뀐 몇 시간 전
     값이 돼버려서 비교 기준으로 의미가 없다).
 
+    "예정보다 얼마나 늦게/일찍 끝났는지"는 SPS가 사후 갱신해주는 duration 값을
+    기다리지 않고, onAirIndex가 이 eventId를 더 이상 안 가리키게 되는 바로 그
+    순간의 벽시계 시각을 actual_end_by_event에 못박아서 broadcastEndTime에 직접
+    반영한다(2026-07-29 변경 — 예전엔 SPS 갱신을 기다렸는데, 운행표가 사후
+    갱신 안 되는 방송이면 끝나도 차이가 영원히 0으로 계산돼 화면에 아무것도 안
+    뜨는 문제가 있었다). 또한 방금 꺼진 방송은 다음 핸드오프 방송이 이미
+    시작했더라도 SPS_FINAL_HOLD_SEC 동안은 force_show_entry로 강제로 계속
+    picked 상태를 유지해 그 결과 화면을 먼저 보여준다 — 안 그러면 뉴스헌터스→
+    8뉴스처럼 붙어있는 핸드오프에서는 결과가 뜰 새도 없이 다음 방송으로 바로
+    넘어가 버린다.
+
     폴링 간격은 평상시엔 SPS_SLOW_INTERVAL이고, 오늘 생방송 중 서로 SPS_HANDOFF_GAP
     이내로 바로 이어지는 항목(모닝와이드1→2→3부, 뉴스헌터스→8뉴스처럼 부조정실은
     달라도 주조정실이 CM/ID로 몇 분 안에 이어주는 구간)의 경계 앞뒤 SPS_FAST_WINDOW
@@ -543,6 +558,10 @@ def sps_listener():
     last_video_source = None
     last_error = None
     startup = True   # 재시작 직후, 이미 추적 중이던 방송을 이어받을지 딱 한 번만 확인
+    last_on_air_event_id = None   # onAirIndex가 실제로 가리키던 eventId(방송이 "진짜" 꺼지는 순간 감지용)
+    actual_end_by_event = {}      # eventId -> 실제 온에어가 꺼진 순간의 datetime (SPS 표기 종료시각 대신 씀)
+    force_show_entry = None       # 방금 꺼진 방송을 최소 SPS_FINAL_HOLD_SEC 동안 강제로 계속 picked로 유지
+    force_show_until = None
     while True:
         interval = SPS_SLOW_INTERVAL
         try:
@@ -560,6 +579,9 @@ def sps_listener():
                 last_was_live = False
                 ever_live = False
                 last_video_source = None
+                last_on_air_event_id = None
+                force_show_entry = None
+                force_show_until = None
                 now = datetime.now(KST)
                 changed = False
                 if not s_test.get('testModeEnded'):
@@ -613,12 +635,40 @@ def sps_listener():
                 all_live_today = sps_parse_live(repos, '')
                 studio_live_today = [e for e in all_live_today if not cfg['studio'] or e['videoSource'] == cfg['studio']]
 
+                # 실제로 온에어가 꺼지는 순간(=onAirIndex가 이 eventId를 더 이상 안
+                # 가리키게 되는 순간)의 벽시계 시각을 못박아 둔다 — 운행표(SPS)의
+                # duration 기준 종료시각이 사후 갱신 안 되거나 늦게 갱신돼도, "예정
+                # 대비 얼마나 늦게/일찍 끝났는지"는 항상 실측값으로 정확히 계산하기 위함.
+                if last_on_air_event_id is not None and on_air_event_id != last_on_air_event_id:
+                    actual_end_by_event[last_on_air_event_id] = now
+                    ended_entry = next((e for e in studio_live_today if e['eventId'] == last_on_air_event_id), None)
+                    if ended_entry is not None:
+                        force_show_entry = ended_entry
+                        force_show_until = now + timedelta(seconds=SPS_FINAL_HOLD_SEC)
+                last_on_air_event_id = on_air_event_id
+                for eid in list(actual_end_by_event):
+                    if now - actual_end_by_event[eid] > timedelta(hours=2):
+                        del actual_end_by_event[eid]
+
                 picked = sps_pick_from_live(studio_live_today, now, cfg['gap_minutes'], on_air_event_id)
                 if not picked:
                     picked = sps_lookahead_pick(cfg['studio'], today, token)
+                # 방금 실제로 꺼진 방송은, 바로 이어지는 핸드오프 방송이 이미 시작했더라도
+                # 최소 SPS_FINAL_HOLD_SEC 동안은 그 결과 화면을 먼저 보여준다 — 안 그러면
+                # 뉴스헌터스→8뉴스처럼 붙어 있는 핸드오프에서 결과가 뜰 틈도 없이 다음
+                # 방송 화면으로 바로 넘어가버린다.
+                if force_show_entry is not None:
+                    if now < force_show_until:
+                        picked = force_show_entry
+                    else:
+                        force_show_entry = None
 
                 if picked:
                     result = sps_to_result(picked, now)
+                    if picked['eventId'] in actual_end_by_event:
+                        actual_end_dt = actual_end_by_event[picked['eventId']]
+                        result['end_str'] = actual_end_dt.strftime('%H:%M:%S')
+                        result['end_next_day'] = actual_end_dt.date() != picked['start'].date()
                     is_live = on_air_event_id is not None and on_air_event_id == result['eventId']
 
                     # 앞에 SPS_HANDOFF_GAP 이내로 바로 붙는 생방송이 없으면(오늘 첫 방송
@@ -911,6 +961,23 @@ def control_login():
 @app.route('/health')
 def health():
     return jsonify(status='ok')
+
+
+TICK_ANOMALY_LOG = os.path.join(os.path.dirname(__file__), 'tick_anomaly.jsonl')
+
+@app.route('/tick-anomaly', methods=['POST'])
+def tick_anomaly():
+    """화면 카운트다운 숫자가 1초보다 크게 튄 순간을 브라우저가 스스로 감지해
+    보고하는 진단용 엔드포인트 — 실제로 재현됐을 때 그 순간의 정황(직전 틱과의
+    간격, 폴링 직후였는지 등)을 남겨서 원인을 추측이 아니라 증거로 잡기 위함."""
+    try:
+        entry = request.get_json(force=True, silent=True) or {}
+        entry['recordedAt'] = datetime.now(KST).isoformat()
+        with open(TICK_ANOMALY_LOG, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    except Exception:
+        pass
+    return ('', 204)
 
 
 @app.route('/sps/live-schedule')
