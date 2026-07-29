@@ -532,7 +532,11 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: var(--oneui-surface);
+      /* 카드 배경(--oneui-surface)과 완전히 같은 색이면 알약 모양 자체가 안
+         보여서(방송전/종료 상태에서 확인됨) 한 단계 밝은 회색을 써서 카드
+         위에 뜬 알약으로 보이게 한다 — 참조 시안도 tag-idle-bg가 module-bg
+         보다 살짝 밝다. */
+      background: var(--oneui-surface-2);
       color: var(--text-secondary);
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
