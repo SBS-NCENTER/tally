@@ -242,6 +242,13 @@
       border-top: none;
       background: var(--oneui-surface);
       border-radius: clamp(24px, 3vw, 44px);
+      /* 러너 뒤 트레일(.cd-runner-trail)은 러너 기준 왼쪽으로 최대 267px*배율
+         만큼 뻗어나가는 장식 요소라, 러너가 트랙 맨 앞(0%)에 있을 때 카드
+         padding을 훨씬 넘어 카드 밖으로 삐져나감(실제 화면에서 확인됨) —
+         트랙 폭 계산으로 여백을 아무리 늘려도 트레일 자체 길이가 더 크면
+         또 넘친다. 카드 자체에서 확실하게 잘라내는 게 유일하게 항상 맞는
+         방법이라 overflow:hidden으로 카드 경계를 진짜 경계로 만든다. */
+      overflow: hidden;
       display: none;
       flex-direction: column;
       align-items: center;
