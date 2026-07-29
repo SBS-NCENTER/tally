@@ -755,6 +755,29 @@
       0%, 100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
       50%      { transform: translate(-50%, -50%) scale(1.07); filter: brightness(1.15); }
     }
+    /* 다음 방송이 한참 남아 러너가 트랙 맨 앞에 멈춰있는 동안, 트레일을
+       없앴더니(비대칭 착시 해결) 이번엔 러너가 아예 안 움직이는 것처럼
+       보였다(사용자 피드백) — 진행 중이라는 착각은 주지 않으면서(위치는
+       그대로 고정) "대기 중, 시스템은 살아있다"는 걸 눈에 띄게 알려주는
+       숨쉬기 펄스로 대체(기존 walking 글로우/핑보다 더 뚜렷하게). */
+    #cd-runner.walking.parked .cd-runner-head {
+      animation: runner-parked-pulse 2.6s ease-in-out infinite;
+    }
+    #cd-runner.walking.parked .cd-runner-ring {
+      animation: runner-parked-ring 2.6s ease-in-out infinite;
+    }
+    @keyframes runner-parked-pulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50%      { transform: translate(-50%, -50%) scale(1.4); }
+    }
+    @keyframes runner-parked-ring {
+      0%        { transform: translate(-50%, -50%) scale(0.9); opacity: 0.55; }
+      70%, 100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #cd-runner.walking.parked .cd-runner-head,
+      #cd-runner.walking.parked .cd-runner-ring { animation: none; }
+    }
 
     /* ── 세로 모드 (전체 화면 90도 회전) ───────────────────────── */
     body.portrait-right, body.portrait-left {
