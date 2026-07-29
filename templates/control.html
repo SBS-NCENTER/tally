@@ -215,6 +215,30 @@
       background: var(--accent);
     }
 
+    /* 지난 방송 기록 전용 — "오늘 운행표"(.sps-row 원래 용도)랑 안 겹치게
+       새 클래스로 분리. 프로그램명을 제일 크게(위계 1순위), 시간대는
+       보조로, 예정 대비 차이는 계산해서 색 있는 뱃지로. */
+    .sps-hist-row { display: block; }
+    .sps-hist-main { display: flex; flex-direction: column; gap: 3px; }
+    .sps-hist-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .sps-hist-name { color: var(--text-primary); font-weight: 800; font-size: 0.92rem; }
+    .sps-hist-status {
+      flex-shrink: 0; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.02em;
+      padding: 2px 7px; border-radius: 999px; white-space: nowrap;
+    }
+    .sps-hist-status.live { color: var(--accent); background: var(--accent-tint); }
+    .sps-hist-status.skipped { color: var(--text-tertiary); background: var(--oneui-surface); }
+    .sps-hist-time {
+      color: var(--text-secondary); font-size: 0.76rem; font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .sps-hist-ts { color: var(--text-tertiary); font-weight: 700; }
+    .sps-hist-meta { display: flex; align-items: center; gap: 8px; margin-top: 1px; }
+    .sps-delta { font-size: 0.72rem; font-weight: 800; padding: 1px 7px; border-radius: 999px; }
+    .sps-delta.over { color: var(--warning); background: var(--warning-tint); }
+    .sps-delta.under { color: var(--success); background: rgba(48,209,88,0.14); }
+    .sps-hist-dur { color: var(--text-tertiary); font-size: 0.72rem; }
+
     /* 슬라이더를 움직인 만큼 왼쪽이 강조색으로 채워지게 — JS가 매 값마다
        --range-pct(0~100%)를 인라인으로 계산해서 넣어준다(입력 초기 렌더·
        change 이벤트 둘 다). 포인터(thumb)는 예전 20px가 커 보인다는
@@ -1210,6 +1234,24 @@
 
   // 지난 방송 기록 — "다음 방송 전환 대기"가 짧으면(즉시 전환 등) 방금 끝난 방송
   // 정보가 화면에서 바로 사라지므로, 컨트롤 페이지에서 따로 조회할 수 있게 한다.
+  // 예정 종료와 실제 종료 차이를 "+1:11 초과"/"-0:43 조기종료"처럼 계산해서
+  // 색깔 있는 뱃지로 보여준다 — 예전엔 "예정 X → 실제 Y" 텍스트만 있어서
+  // 머릿속으로 빼기를 해야 했다(사용자 피드백).
+  function parseHMSToSec(s) {
+    const [h, m, sec] = s.split(':').map(Number);
+    return h * 3600 + m * 60 + (sec || 0);
+  }
+  function spsDeltaBadge(scheduledEnd, actualEnd) {
+    if (!scheduledEnd || !actualEnd || scheduledEnd === actualEnd) return '';
+    let diff = parseHMSToSec(actualEnd) - parseHMSToSec(scheduledEnd);
+    if (diff > 12 * 3600) diff -= 24 * 3600;   // 자정 넘김 보정
+    if (diff < -12 * 3600) diff += 24 * 3600;
+    const over = diff > 0;
+    const abs = Math.abs(diff);
+    const label = (over ? '+' : '-') + Math.floor(abs / 60) + ':' + String(abs % 60).padStart(2, '0')
+      + (over ? ' 초과' : ' 조기종료');
+    return `<span class="sps-delta ${over ? 'over' : 'under'}">${label}</span>`;
+  }
   function pollSpsHistory() {
     fetch('/sps/history')
       .then(r => r.json())
@@ -1219,20 +1261,18 @@
           return;
         }
         spsHistoryList.innerHTML = records.map(r => {
-          const liveTag = r.wasLive ? '<div class="sps-live-tag">방송됨</div>' : '';
-          const diff = (r.scheduledEnd && r.actualEnd && r.scheduledEnd !== r.actualEnd)
-            ? `<div class="sps-diff">예정 ${r.scheduledEnd} → <b>실제 ${r.actualEnd}</b></div>` : '';
+          const delta = spsDeltaBadge(r.scheduledEnd, r.actualEnd);
           const dur = (r.actualDurationSec != null)
-            ? `<div class="sps-diff">제작 ${formatStopwatch(r.actualDurationSec * 1000)}</div>` : '';
-          return `<div class="sps-row">
-            <div>
-              ${liveTag}
-              <div class="sps-time">${r.actualStart || '—'} ~ ${r.actualEnd || '—'}</div>
-              <div class="sps-name">${r.programName}</div>
-              ${diff}
-              ${dur}
+            ? `<span class="sps-hist-dur">제작 ${formatStopwatch(r.actualDurationSec * 1000)}</span>` : '';
+          return `<div class="sps-row sps-hist-row">
+            <div class="sps-hist-main">
+              <div class="sps-hist-top">
+                <span class="sps-hist-name">${r.programName}</span>
+                <span class="sps-hist-status ${r.wasLive ? 'live' : 'skipped'}">${r.wasLive ? '방송됨' : '방송 안 됨'}</span>
+              </div>
+              <div class="sps-hist-time">${r.actualStart || '—'} ~ ${r.actualEnd || '—'} <span class="sps-hist-ts">${r.videoSource || ''}</span></div>
+              <div class="sps-hist-meta">${delta}${dur}</div>
             </div>
-            <div class="sps-ts">${r.videoSource || ''}</div>
           </div>`;
         }).join('');
       })
