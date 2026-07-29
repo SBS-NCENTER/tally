@@ -492,16 +492,26 @@
       display: none;
     }
     /* 프로그램명·뱃지·체크는 이제 부모(.cd-marker-label) em이 아니라 독립
-       크기 — 실측 스크린샷 기준으로 맞춘 값(위 .cd-marker-label 주석 참고). */
+       크기 — 실측 스크린샷 기준으로 맞춘 값(위 .cd-marker-label 주석 참고).
+       참조 시안(Direction 3)의 .bc-title처럼 진하고 촘촘하게(letter-spacing
+       타이트) — 예전의 넓은 자간+대문자 변환은 "라벨" 취급이라 시작/종료
+       시각이랑 구분이 잘 안 됐다. */
     .cd-marker-program {
       color: var(--text-primary);
-      font-size: clamp(0.75rem, calc(var(--cd-label-scale, 1) * 1.2rem), 2.6rem);
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      font-size: clamp(0.85rem, calc(var(--cd-label-scale, 1) * 1.35rem), 2.9rem);
+      font-weight: 900;
+      letter-spacing: -0.005em;
       margin-bottom: 0.25em;
     }
     .cd-marker-program:empty { display: none; margin-bottom: 0; }
+    /* 스튜디오 태그("(TS-4)")는 참조 시안의 .bc-studio처럼 연한 회색·중간
+       굵기로 — 프로그램명이랑 색을 나눠서 "제목 vs 부가정보" 위계를 준다. */
+    .cd-marker-studio {
+      color: var(--text-secondary);
+      font-weight: 600;
+      letter-spacing: 0;
+      margin-left: 0.2em;
+    }
     .cd-confirmed-mark {
       color: var(--accent);
       font-weight: 900;
@@ -1227,8 +1237,16 @@
   }
   function pad2(v) { return String(v).padStart(2, '0'); }
   function hhmm(d) { return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  // 참조 시안(Direction 3)처럼 프로그램명(진하게)과 스튜디오 태그(연한 회색,
+  // 얇게)를 색으로 구분한다 — 예전엔 한 텍스트로 합쳐서 스타일을 따로
+  // 못 줬었다.
   function programLabel() {
-    return broadcastProgramName + (broadcastVideoSource ? `(${broadcastVideoSource})` : '');
+    const studio = broadcastVideoSource
+      ? `<span class="cd-marker-studio">(${escapeHtml(broadcastVideoSource)})</span>` : '';
+    return escapeHtml(broadcastProgramName) + studio;
   }
   function timeToday(now, hhmmStr, nextDay) {
     const [h, m, s] = hhmmStr.split(':').map(Number);
@@ -1323,7 +1341,7 @@
     const durationMin = Math.round(durationSec / 60);
     cdMarkerStartLabel.innerHTML = (isDifferentDay(start, now) ? 'N ' : '') + hhmm(start)
       + `<span class="cd-marker-assigned">(${durationMin})</span>` + confirmedMark;
-    cdMarkerStartProgram.textContent = programLabel();
+    cdMarkerStartProgram.innerHTML = programLabel();
     renderBoundedTrack(now, start, end, durationSec);
   }
 
@@ -1334,7 +1352,7 @@
     const scheduledEnd = broadcastScheduledEndTime
       ? timeToday(start, broadcastScheduledEndTime, broadcastScheduledEndTimeNextDay) : end;
     cdMarkerEndLabel.textContent = (isDifferentDay(scheduledEnd, now) ? 'N ' : '') + hhmm(scheduledEnd);
-    cdMarkerEndProgram.textContent = programLabel();
+    cdMarkerEndProgram.innerHTML = programLabel();
 
     // 방송이 실제로 끝났으면(=LIVE가 꺼지고 예정과 실제 종료가 달라지면) 그
     // 사실을 우하단 텍스트가 아니라 말풍선 자체로 보여준다 — 끝난 뒤엔 말풍선의
