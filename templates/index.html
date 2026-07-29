@@ -358,13 +358,13 @@
       /* 위: 프로그램명/시작·종료 시각 라벨이 트랙 위로 뜨는 공간.
          아래: 러너를 따라다니는 카운트다운 알약이 트랙 아래로 뜨는 공간
          (참조 시안처럼 러너 위 말풍선 대신 트랙 아래 알약으로 옮기면서 추가). */
-      /* 위쪽 여백은 이제 프로그램명+시작/종료 시각 라벨(.cd-marker-label,
-         --cd-label-scale로 4vw까지 커짐)이 필요한 공간이라 --cd-text-scale이
-         아니라 --cd-label-scale을 따라야 한다 — vh 기준이면 라벨이 vw로
-         커져도 위 여백은 그대로라 위 카드(#schedule)와 겹친다.
+      /* 위쪽 여백은 프로그램명+시작/종료 시각 라벨(.cd-marker-label, 아래
+         참조) 전체 높이만큼 필요 — 라벨을 vw가 아니라 실제 시계(13rem) 기준
+         rem으로 다시 잡았으므로(아래 .cd-marker-label 주석 참고) 이 여백도
+         같은 rem 기준(제목+시각 두 줄 높이 실측 근사치)으로 맞춘다.
          아래쪽 여백은 여전히 트랙 아래 알약(.cd-runner-tag-pill,
          --cd-text-scale)을 위한 공간이라 그대로 둔다. */
-      margin-top: clamp(90px, calc(var(--cd-label-scale, 1) * 9vw), 300px);
+      margin-top: clamp(100px, calc(var(--cd-label-scale, 1) * 6.8rem), 280px);
       margin-bottom: clamp(62px, calc(var(--cd-text-scale, 1) * 7.2vh), 134px);
       display: none;
     }
@@ -450,17 +450,20 @@
       position: absolute;
       bottom: 100%;
       /* 참조 시안(Direction 3)의 .bc-start-time/.bc-end-time(4cqw, 시계
-         16cqw의 약 25%)에 맞춰 시작/종료 시각 자체를 크게 키웠다 — 여백도
-         --cd-box-scale(--s)가 아니라 이 텍스트를 실제로 키우는
-         --cd-label-scale(컨트롤 페이지 "시작/종료 글자 크기" 슬라이더)를
-         따라야 슬라이더를 올렸을 때도 위 카드/일정표와 안 겹친다. */
-      margin-bottom: clamp(14px, calc(var(--cd-label-scale, 1) * 1vw), 34px);
+         16cqw의 약 25%) 비율을 맞추려던 첫 시도가 vw 기준이었는데, 이 실제
+         화면의 시계(#clock)는 목업처럼 뷰포트의 16%로 안 크고 CLOCK_BASELINE
+         (13rem)에서 출발해 가로 여백에 맞을 때만 줄어드는 구조라, 보통은
+         13rem(≈뷰포트의 8%대)에 머문다 — 그래서 4vw를 그대로 쓰면 실제
+         시계보다 훨씬 큰 비율로 튀어나와 보였다. 뷰포트가 아니라 그 실제
+         시계 기준(13rem)의 25%인 3.25rem을 기준값으로 삼아야 참조 시안과
+         "화면에서 보이는" 비율이 맞는다. */
+      margin-bottom: clamp(14px, calc(var(--cd-label-scale, 1) * 0.9rem), 34px);
       left: 50%;
       transform: translateX(-50%);
       display: flex;
       flex-direction: column;
       align-items: center;
-      font-size: clamp(1.6rem, calc(var(--cd-label-scale, 1) * 4vw), 7.5rem);
+      font-size: clamp(1.6rem, calc(var(--cd-label-scale, 1) * 3.25rem), 7.2rem);
       font-weight: 800;
       color: var(--text-primary);
       white-space: nowrap;
@@ -482,13 +485,13 @@
     #cd-marker-end .cd-marker-program {
       display: none;
     }
-    /* 프로그램명은 이제 부모(.cd-marker-label, 4vw로 커짐)의 0.8em이 아니라
+    /* 프로그램명은 부모(.cd-marker-label)의 em이 아니라 독립 크기 —
        참조 시안의 .bc-title(2.35cqw, 시작 시각 4cqw 대비 약 0.59배) 비율을
-       그대로 따르는 독립 크기 — em으로 묶어두면 시작 시각을 키울 때마다
-       프로그램명도 같이 부풀어 참조 시안보다 커져버린다. */
+       실제 시계 기준(13rem)의 2.35/16 = 1.91rem으로 환산해서 적용
+       (위 .cd-marker-label과 같은 이유로 vw 대신 rem 기준). */
     .cd-marker-program {
       color: var(--text-primary);
-      font-size: clamp(1rem, calc(var(--cd-label-scale, 1) * 2.35vw), 4.5rem);
+      font-size: clamp(1rem, calc(var(--cd-label-scale, 1) * 1.91rem), 4.3rem);
       font-weight: 800;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -496,16 +499,15 @@
     }
     .cd-marker-program:empty { display: none; margin-bottom: 0; }
     /* 길이 뱃지(.cd-marker-assigned)와 체크 표시 둘 다 참조 시안의
-       .bc-start-dur/.bc-check(각 1.8cqw)에 맞춘 독립 크기 — 이전엔 체크는
-       부모 폰트를 그대로 상속하고 뱃지는 0.7em이라, 부모(시작 시각)가 커지면
-       같이 걷잡을 수 없이 커졌다. */
+       .bc-start-dur/.bc-check(각 1.8cqw) 비율을 실제 시계 기준(13rem)의
+       1.8/16 = 1.46rem으로 환산해서 적용(위와 같은 이유로 vw 대신 rem). */
     .cd-confirmed-mark {
       color: var(--accent);
       font-weight: 900;
-      font-size: clamp(0.9rem, calc(var(--cd-label-scale, 1) * 1.8vw), 3.5rem);
+      font-size: clamp(0.8rem, calc(var(--cd-label-scale, 1) * 1.46rem), 3.3rem);
     }
     .cd-marker-assigned {
-      font-size: clamp(0.9rem, calc(var(--cd-label-scale, 1) * 1.8vw), 3.5rem);
+      font-size: clamp(0.8rem, calc(var(--cd-label-scale, 1) * 1.46rem), 3.3rem);
       font-weight: 700;
       color: var(--text-secondary);
       margin: 0 0.05em;
