@@ -604,26 +604,15 @@
     .cd-runner-tag-pill.overrun-hit {
       animation: tag-overrun-flash 0.5s ease-out;
     }
-    /* 방송이 실제로 끝나면 말풍선이 경과/남음 대신 예정 대비 +/-를 한 줄로
-       보여준다. 늦게 끝남(+)은 초과 카운트와 같은 warning, 일찍 끝남(-)은
-       확정 체크와 같은 success로 — 이미 쓰던 색 언어를 재사용해서 새로 안
-       외워도 되게 한다. */
-    .cd-tag-main.final-over {
-      color: var(--warning);
-    }
-    .cd-tag-main.final-under {
-      color: var(--success);
-    }
+    /* 참조 시안(Direction 3)은 종료 상태 알약에 별도 색을 안 입히고 방송전과
+       같은 중립 회색 그대로 둔다(문구만 +34:00/제작 01:04:00으로 바뀜) —
+       늦게/일찍 끝남을 warning/success로 물들이던 건 참조와 다른 색이라 뺐다. */
     @keyframes tag-final-blink {
       0%, 49%   { opacity: 1; }
       50%, 100% { opacity: 0.25; }
     }
     .cd-runner-tag-pill.final-blink {
       animation: tag-final-blink 1s steps(1, end) infinite;
-    }
-    #countdown.elapsed .cd-runner-tag-pill {
-      background: var(--accent-tint);
-      color: var(--text-primary);
     }
     /* LIVE 확정되면(onAirIndex 기준) 알약을 참조 시안(Direction 3)의 One UI
        라이브 처리 그대로 흰 배경+검정 글자로 뒤집는다 — 화면 전체가 어두운
