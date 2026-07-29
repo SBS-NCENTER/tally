@@ -221,19 +221,26 @@
     }
 
     /* ── 방송 시작 카운트다운 ───────────────────────────────────── */
+    /* One UI 참조 시안(Direction 3)처럼 화면 하단에 딱 붙는 바가 아니라, 상태
+       박스(#status-box)와 같은 방식의 "떠 있는" 단일 다크 카드로 감싼다 —
+       프로그램명/시작·종료 시각/트랙이 모두 이 카드 하나 안에 들어간다. */
     #countdown {
-      width: 100%;
-      border-top: 1px solid var(--oneui-hairline);
-      background: var(--oneui-bg);
+      width: auto;
+      align-self: stretch;
+      margin: 0 clamp(14px, 2vw, 28px) clamp(16px, 2.2vh, 32px);
+      border-top: none;
+      background: var(--oneui-surface);
+      border-radius: clamp(24px, 3vw, 44px);
       display: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: calc(
         clamp(120px, calc(var(--cd-box-scale, 1) * 14vh), 254px) +
-        clamp(54px, calc(var(--cd-text-scale, 1) * 6vh), 107px)
+        clamp(54px, calc(var(--cd-text-scale, 1) * 6vh), 107px) +
+        clamp(62px, calc(var(--cd-text-scale, 1) * 7.2vh), 134px)
       );
-      padding-bottom: clamp(16px, calc(var(--cd-text-scale, 1) * 1.8vh), 43px);
+      padding: clamp(16px, calc(var(--cd-text-scale, 1) * 1.8vh), 43px) clamp(20px, 4vw, 40px);
       gap: clamp(0px, 0.4vh, 4px);
       transition: background 0.2s ease, min-height 0.2s ease;
     }
@@ -335,7 +342,11 @@
       position: relative;
       width: min(74%, 1180px);
       height: clamp(67px, calc(var(--s) * 7vh), 147px);
+      /* 위: 프로그램명/시작·종료 시각 라벨이 트랙 위로 뜨는 공간.
+         아래: 러너를 따라다니는 카운트다운 알약이 트랙 아래로 뜨는 공간
+         (참조 시안처럼 러너 위 말풍선 대신 트랙 아래 알약으로 옮기면서 추가). */
       margin-top: clamp(62px, calc(var(--cd-text-scale, 1) * 7.2vh), 134px);
+      margin-bottom: clamp(62px, calc(var(--cd-text-scale, 1) * 7.2vh), 134px);
       display: none;
     }
     #cd-track.show { display: block; }
@@ -414,9 +425,13 @@
       0%   { transform: scale(0.7); opacity: 0.95; }
       100% { transform: scale(3); opacity: 0; }
     }
+    /* One UI 참조 시안의 "프로그램명 좌상단 / 시작 시각+길이+체크 좌측 / 종료
+       시각 우측, 그 아래 트랙" 배치를 따르기 위해 라벨을 트랙 위쪽으로 올리고
+       (예전엔 점 아래였음), 시작 라벨은 좌측, 종료 라벨은 우측에 붙인다. */
     .cd-marker-label {
       position: absolute;
-      top: clamp(24px, calc(var(--s) * 2.6vh), 61px);
+      bottom: 100%;
+      margin-bottom: clamp(10px, calc(var(--s) * 1.2vh), 26px);
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -427,6 +442,22 @@
       color: var(--text-primary);
       white-space: nowrap;
       letter-spacing: 0.03em;
+    }
+    #cd-marker-start .cd-marker-label {
+      left: 0;
+      transform: none;
+      align-items: flex-start;
+    }
+    #cd-marker-end .cd-marker-label {
+      left: auto;
+      right: 0;
+      transform: none;
+      align-items: flex-end;
+    }
+    /* 종료 지점엔 프로그램명이 중복 표시되지 않게 — 참조 시안처럼 프로그램명은
+       좌상단 한 곳에만, 우측은 종료 시각만 보이게 한다. */
+    #cd-marker-end .cd-marker-program {
+      display: none;
     }
     .cd-marker-program {
       color: var(--warning);
@@ -458,31 +489,36 @@
       z-index: 2;
     }
     #cd-runner.cross-anim { transition: transform 0.8s cubic-bezier(0.4,0,0.2,1); }
+    /* 참조 시안(Direction 3)처럼 러너 위 말풍선(화살표 포함)이 아니라, 트랙
+       아래에 러너를 따라 이동하는 납작한 알약으로. #cd-runner의 1px짜리 박스
+       기준 transform:translateX(-50%) 중앙정렬은 러너가 트랙 양끝 근처에 있을
+       때 알약이 트랙 밖으로 넘치는 문제가 있어, #cd-track의 직계 자식으로 옮겨
+       (러너와 형제 관계) JS가 매 틱 clamp된 절대 left 픽셀값을 직접 넣어준다
+       (아래 renderBoundedTrack() 안 추가 코드 참고). */
     .cd-runner-tag {
       position: absolute;
+      top: calc(30% + clamp(14px, calc(var(--s) * 1.6vh), 38px));
       left: 0;
-      bottom: 100%;
-      margin-bottom: clamp(8px, calc(var(--cd-text-scale, 1) * 1vh), 27px);
-      transform: translateX(-50%);
       display: flex;
       flex-direction: column;
       align-items: center;
       pointer-events: none;
+      z-index: 4;
+      transition: left 1.05s linear;
     }
-    #cd-runner.cross-anim .cd-runner-tag { transition: transform 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .cd-runner-tag.cross-anim { transition: left 0.8s cubic-bezier(0.4,0,0.2,1); }
     .cd-runner-tag-pill {
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: var(--oneui-surface-2);
-      border: 2px solid transparent;
-      color: var(--text-primary);
+      background: var(--oneui-surface);
+      color: var(--text-secondary);
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
-      padding: clamp(4px, calc(var(--cd-text-scale, 1) * 0.5vh), 17px) clamp(11px, calc(var(--cd-text-scale, 1) * 1.3vw), 43px);
-      border-radius: clamp(10px, 1vw, 16px);
+      padding: clamp(6px, calc(var(--cd-text-scale, 1) * 0.7vh), 20px) clamp(14px, calc(var(--cd-text-scale, 1) * 1.6vw), 48px);
+      border-radius: clamp(14px, 1.4vw, 22px);
       white-space: nowrap;
-      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      transition: background 0.2s ease, color 0.2s ease;
     }
     .cd-tag-main-row {
       display: flex;
@@ -507,7 +543,7 @@
       .cd-live-dot { animation: none; }
     }
     .cd-tag-main {
-      color: var(--text-primary);
+      color: inherit;
       font-weight: 800;
       letter-spacing: 0.02em;
       font-size: clamp(1.33rem, calc(var(--cd-text-scale, 1) * 2vw), 3.87rem);
@@ -515,16 +551,15 @@
     }
     .cd-tag-sub {
       display: none;
-      color: var(--text-secondary);
+      color: inherit;
+      opacity: 0.8;
       font-weight: 700;
       letter-spacing: 0.01em;
       font-size: clamp(1.04rem, calc(var(--cd-text-scale, 1) * 1.4vw), 2.87rem);
       line-height: 1.15;
       margin-top: 2px;
-      padding-top: 3px;
       width: 100%;
       text-align: center;
-      border-top: 1px solid var(--oneui-hairline);
     }
     .cd-tag-sub.show { display: block; }
     /* 예정종료시각을 넘겨 아직도 방송 중이면 '-00:00'에 멈춰있는 대신 얼마나
@@ -559,26 +594,18 @@
     .cd-runner-tag-pill.final-blink {
       animation: tag-final-blink 1s steps(1, end) infinite;
     }
-    .cd-runner-tag-arrow {
-      width: 0;
-      height: 0;
-      border-left: 7px solid transparent;
-      border-right: 7px solid transparent;
-      border-top: 8px solid var(--oneui-surface-2);
-      transition: border-top-color 0.2s ease;
-    }
     #countdown.elapsed .cd-runner-tag-pill {
       background: var(--accent-tint);
-      border-color: var(--accent);
+      color: var(--text-primary);
     }
-    #countdown.elapsed .cd-runner-tag-arrow { border-top-color: var(--accent-tint); }
-    /* LIVE 확정되면(onAirIndex 기준) 말풍선 자체를 붉게 — ON AIR와 같은 단일
-       accent를 재사용해서 별도 뱃지 없이도 "지금 진짜 방송 중"이 한눈에 들어오게 한다. */
+    /* LIVE 확정되면(onAirIndex 기준) 알약을 참조 시안(Direction 3)의 One UI
+       라이브 처리 그대로 흰 배경+검정 글자로 뒤집는다 — 화면 전체가 어두운
+       상태에서 이 반전 자체가 "지금 진짜 방송 중"을 별도 뱃지 없이 강하게
+       알려준다(참조 파일의 --tag-live-bg:#fff / --tag-live-fg:#000 그대로). */
     #cd-runner-tag.is-live .cd-runner-tag-pill {
-      background: var(--accent);
-      border-color: var(--accent);
+      background: #ffffff;
+      color: #000000;
     }
-    #cd-runner-tag.is-live .cd-runner-tag-arrow { border-top-color: var(--accent); }
     .cd-runner-trail {
       position: absolute;
       top: 50%;
@@ -778,16 +805,18 @@
         <span class="cd-runner-trail"></span>
         <span class="cd-runner-ring"></span>
         <span class="cd-runner-head"></span>
-        <div class="cd-runner-tag" id="cd-runner-tag">
-          <span class="cd-runner-tag-pill" id="cd-runner-tag-text">
-            <span class="cd-tag-main-row">
-              <span class="cd-live-dot" id="cd-live-dot"></span>
-              <span class="cd-tag-main" id="cd-tag-main">--:--</span>
-            </span>
-            <span class="cd-tag-sub" id="cd-tag-sub"></span>
+      </div>
+      <!-- 참조 시안(Direction 3)처럼 러너 위 말풍선이 아니라 트랙 아래 알약 —
+           #cd-runner의 형제로 두고 #cd-track 기준 absolute left(px)를 JS가
+           매 틱 갱신한다(트랙 폭 안으로 clamp, renderBoundedTrack() 참고). -->
+      <div class="cd-runner-tag" id="cd-runner-tag">
+        <span class="cd-runner-tag-pill" id="cd-runner-tag-text">
+          <span class="cd-tag-main-row">
+            <span class="cd-live-dot" id="cd-live-dot"></span>
+            <span class="cd-tag-main" id="cd-tag-main">--:--</span>
           </span>
-          <span class="cd-runner-tag-arrow"></span>
-        </div>
+          <span class="cd-tag-sub" id="cd-tag-sub"></span>
+        </span>
       </div>
     </div>
   </div>
@@ -1285,6 +1314,20 @@
 
     cdMarkerStart.style.left = startPct + '%';
     cdRunner.style.transform = 'translateX(' + (pct / 100 * cdTrackWidthPx) + 'px)';
+
+    // [ADDED] .cd-runner-tag는 이제 #cd-runner 안이 아니라 #cd-track의 형제로
+    // 옮겨져 있어(참조 시안처럼 러너 위 말풍선 대신 트랙 아래 알약), 러너의
+    // 0px짜리 박스에 기대는 CSS transform:translateX(-50%) 중앙정렬 대신 여기서
+    // 직접 트랙 폭 안으로 clamp된 절대 left 픽셀을 넣어준다 — 러너가 트랙
+    // 양끝 근처에 있을 때 알약이 트랙 밖으로 넘치던 문제의 실제 해결책.
+    const runnerXPx = pct / 100 * cdTrackWidthPx;
+    const tagWidthPx = cdRunnerTagEl.offsetWidth;
+    const tagXPx = Math.max(0, Math.min(cdTrackWidthPx - tagWidthPx, runnerXPx - tagWidthPx / 2));
+    cdRunnerTagEl.style.left = tagXPx + 'px';
+    // 시작점 진입 순간의 cross-anim(빠른 easing)도 러너와 같은 타이밍으로 —
+    // 위에서 이미 cdRunner에 붙여둔 클래스 상태를 그대로 옮겨 반영할 뿐, 그
+    // 클래스를 붙이고 떼는 원래 로직(justCrossed 블록)은 건드리지 않는다.
+    cdRunnerTagEl.classList.toggle('cross-anim', cdRunner.classList.contains('cross-anim'));
 
     if (!isBeforeStart && isFinalEnded) {
       // 끝난 뒤엔 경과/남음 두 줄 대신, 예정보다 얼마나 늦게(+)/일찍(-) 끝났는지
