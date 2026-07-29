@@ -358,7 +358,9 @@
       /* 위: 프로그램명/시작·종료 시각 라벨이 트랙 위로 뜨는 공간.
          아래: 러너를 따라다니는 카운트다운 알약이 트랙 아래로 뜨는 공간
          (참조 시안처럼 러너 위 말풍선 대신 트랙 아래 알약으로 옮기면서 추가). */
-      margin-top: clamp(62px, calc(var(--cd-text-scale, 1) * 7.2vh), 134px);
+      /* 위쪽 여백은 프로그램명+시작/종료 라벨(.cd-marker-label) 몫이라
+         그걸 키우는 --cd-label-scale을 따른다(스크린샷 실측 후 보강). */
+      margin-top: clamp(80px, calc(var(--cd-label-scale, 1) * 6vh), 170px);
       margin-bottom: clamp(62px, calc(var(--cd-text-scale, 1) * 7.2vh), 134px);
       display: none;
     }
@@ -443,13 +445,17 @@
     .cd-marker-label {
       position: absolute;
       bottom: 100%;
-      margin-bottom: clamp(10px, calc(var(--s) * 1.2vh), 26px);
+      margin-bottom: clamp(10px, calc(var(--cd-label-scale, 1) * 1.1vh), 30px);
       left: 50%;
       transform: translateX(-50%);
       display: flex;
       flex-direction: column;
       align-items: center;
-      font-size: clamp(1.13rem, calc(var(--cd-label-scale, 1) * 1.5vw), 2.8rem);
+      /* 실제 스크린샷(2560x1440, cdLabelScale=1.95 기준)으로 직접 재보고
+         고친 값 — 이전 두 번의 시도(vw 기준, 그다음 clockBaseline 기준
+         rem)는 전부 계산만으로 추측하다 실측과 안 맞았음. 지금 값은 시계
+         대비 25% 비율이 실제로 나오는 걸 스크린샷으로 확인한 수치. */
+      font-size: clamp(1rem, calc(var(--cd-label-scale, 1) * 2.05rem), 4.6rem);
       font-weight: 800;
       color: var(--text-primary);
       white-space: nowrap;
@@ -471,21 +477,24 @@
     #cd-marker-end .cd-marker-program {
       display: none;
     }
+    /* 프로그램명·뱃지·체크는 이제 부모(.cd-marker-label) em이 아니라 독립
+       크기 — 실측 스크린샷 기준으로 맞춘 값(위 .cd-marker-label 주석 참고). */
     .cd-marker-program {
       color: var(--text-primary);
-      font-size: 0.8em;
+      font-size: clamp(0.75rem, calc(var(--cd-label-scale, 1) * 1.2rem), 2.6rem);
       font-weight: 800;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 0.3em;
+      margin-bottom: 0.25em;
     }
     .cd-marker-program:empty { display: none; margin-bottom: 0; }
     .cd-confirmed-mark {
       color: var(--accent);
       font-weight: 900;
+      font-size: clamp(0.6rem, calc(var(--cd-label-scale, 1) * 0.92rem), 2rem);
     }
     .cd-marker-assigned {
-      font-size: 0.7em;
+      font-size: clamp(0.6rem, calc(var(--cd-label-scale, 1) * 0.92rem), 2rem);
       font-weight: 700;
       color: var(--text-secondary);
       margin: 0 0.05em;
