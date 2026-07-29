@@ -244,9 +244,9 @@
       gap: clamp(0px, 0.4vh, 4px);
       transition: background 0.2s ease, min-height 0.2s ease;
     }
-    #countdown.elapsed {
-      background: var(--accent-tint);
-    }
+    /* 참조 시안(Direction 3)의 카드 배경은 방송 전/중/후 상태와 무관하게 항상
+       동일한 중립 회색(--oneui-surface) — 여기서도 상태별로 카드 배경 자체를
+       물들이지 않고 그대로 맞춘다(상태 표시는 알약/트랙 색으로 이미 충분히 됨). */
 
     /* ── 타이머 + 스톱워치 (좌: 타이머 / 우: 스톱워치) ─────────────── */
     #stopwatch {
@@ -460,7 +460,7 @@
       display: none;
     }
     .cd-marker-program {
-      color: var(--warning);
+      color: var(--text-primary);
       font-size: 0.8em;
       font-weight: 800;
       letter-spacing: 0.1em;
@@ -469,7 +469,7 @@
     }
     .cd-marker-program:empty { display: none; margin-bottom: 0; }
     .cd-confirmed-mark {
-      color: var(--success);
+      color: var(--accent);
       font-weight: 900;
     }
     .cd-marker-assigned {
@@ -534,7 +534,9 @@
       flex-shrink: 0;
       animation: cd-live-pulse 1.4s ease-in-out infinite;
     }
-    .cd-live-dot.show { display: inline-block; }
+    /* 참조 시안(Direction 3)의 알약엔 점 기호가 없음 — 숫자만 깔끔하게 보여준다는
+       원칙(버전3 피드백)과 같은 이유로 여기서도 뺀다. */
+    .cd-live-dot.show { display: none; }
     @keyframes cd-live-pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.35; transform: scale(0.8); }
