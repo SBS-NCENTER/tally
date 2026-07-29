@@ -173,7 +173,7 @@
     .sch-slot.prev  { border-right: 1px solid var(--oneui-hairline); opacity: 0.55; }
     .sch-slot.current {
       border-right: 1px solid var(--oneui-hairline);
-      background: var(--warning-tint);
+      background: var(--accent-tint);
     }
     .sch-slot.next  { opacity: 0.55; }
 
@@ -187,8 +187,8 @@
       border-radius: 20px;
     }
     .sch-slot.current .sch-label {
-      color: #1a0f00;
-      background: var(--warning);
+      color: #000000;
+      background: var(--accent);
     }
 
     .sch-timerange {
@@ -199,7 +199,7 @@
       letter-spacing: 0.06em;
       white-space: nowrap;
     }
-    .sch-slot.current .sch-timerange { color: var(--warning); }
+    .sch-slot.current .sch-timerange { color: var(--accent); }
 
     .sch-name {
       font-size: clamp(1rem, 2.2vw, 1.7rem);
@@ -283,9 +283,8 @@
       transition: opacity 0.2s ease;
     }
     .tm-col.running::before, .tm-col.finished::before { opacity: 1; }
-    #timer-col   { --tm-accent: #0a84ff; }
-    #stopwatch-col { --tm-accent: #64d2ff; }
-    #timer-col.finished { --tm-accent: var(--accent); }
+    #timer-col   { --tm-accent: var(--accent); }
+    #stopwatch-col { --tm-accent: var(--accent); }
 
     .tm-divider {
       width: 1px;
@@ -334,7 +333,10 @@
       line-height: 1;
       transition: color 0.2s ease;
     }
-    .tm-col.finished .tm-value { color: var(--tm-accent); }
+    /* 참조 시안처럼 타이머(카운트다운) 숫자는 항상 강조색, 스톱워치는 항상
+       중립 흰색 — 진행 중 여부와 무관하게 고정(둘 다 진행 중임을 보여주는
+       점은 위의 --tm-accent 펄스로 이미 충분히 표현됨). */
+    #timer-col .tm-value { color: var(--accent); }
 
     /* ── 카운트다운 타임라인 (말 트랙) ───────────────────────────── */
     #cd-track {
@@ -363,13 +365,12 @@
       left: 0; top: 30%;
       height: clamp(7px, calc(var(--s) * 0.9vh), 21px);
       transform: translateY(-50%);
-      background: var(--success);
+      background: var(--accent);
       border-radius: 5px;
       width: 0%;
       transition: width 1.05s linear, background 0.3s ease;
     }
     #cd-fill.cross-anim { transition: width 0.8s cubic-bezier(0.4,0,0.2,1), background 0.3s ease, left 0.8s cubic-bezier(0.4,0,0.2,1); }
-    #countdown.elapsed #cd-fill { background: var(--accent); }
 
     .cd-marker {
       position: absolute;
@@ -615,7 +616,7 @@
       width: clamp(80px, calc(var(--s) * 9vw), 267px);
       height: clamp(5px, calc(var(--s) * 0.7vh), 16px);
       transform: translateY(-50%);
-      background: var(--success);
+      background: var(--accent);
       opacity: 0.35;
       border-radius: 6px;
       transition: background 0.2s ease, width 0.2s ease, opacity 0.2s ease;
@@ -628,7 +629,7 @@
       height: clamp(12px, calc(var(--s) * 1.3vh), 32px);
       border-radius: 50%;
       transform: translate(-50%, -50%);
-      border: 2px solid var(--success);
+      border: 2px solid var(--accent);
       opacity: 0.55;
       pointer-events: none;
     }
@@ -646,7 +647,7 @@
       height: clamp(12px, calc(var(--s) * 1.3vh), 32px);
       border-radius: 50%;
       transform: translate(-50%, -50%);
-      background: var(--success);
+      background: var(--accent);
       transition: background 0.2s ease;
     }
     #cd-runner.walking .cd-runner-head { animation: runner-glow 2.4s ease-in-out infinite; }
@@ -660,11 +661,11 @@
       background: var(--accent);
     }
     #cd-runner.finished .cd-runner-head {
-      background: var(--warning);
+      background: var(--accent);
       animation: none;
     }
     #cd-runner.finished .cd-runner-trail {
-      background: var(--warning);
+      background: var(--accent);
       opacity: 0.5;
     }
 
@@ -1339,7 +1340,12 @@
       cdTagMain.textContent = sign + formatDuration(Math.abs(finalDiffSec));
       cdTagMain.classList.toggle('final-over', finalDiffSec > 0);
       cdTagMain.classList.toggle('final-under', finalDiffSec < 0);
-      cdTagSub.classList.remove('show', 'overrun');
+      // 참조 시안(Direction 3)의 종료 상태 알약처럼 아랫줄엔 총 제작(실제
+      // 방송) 시간을 보여준다 — end는 방송이 실제로 꺼진 순간의 실제값이라
+      // (end - start)가 곧 실제 방송 길이다.
+      cdTagSub.textContent = '제작 ' + formatDuration(Math.max(0, Math.round((end - start) / 1000)));
+      cdTagSub.classList.add('show');
+      cdTagSub.classList.remove('overrun');
       cdLiveDot.classList.remove('show');
       if (!cdWasFinalEnded) {
         cdRunnerTagPill.classList.add('final-blink');

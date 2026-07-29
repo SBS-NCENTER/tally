@@ -101,6 +101,46 @@
       margin-bottom: 16px;
     }
 
+    /* 참조 시안(Direction 3)의 상단 방송 상태 요약 카드 — LIVE일 땐 강조색
+       꽉 채운 배경, 아닐 땐 중립 카드로 가라앉는다. */
+    .ctrl-live-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      background: var(--oneui-surface);
+      color: var(--text-secondary);
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .ctrl-live-card.is-live {
+      background: var(--accent);
+      color: #ffffff;
+    }
+    .ctrl-live-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.4;
+      flex-shrink: 0;
+    }
+    .ctrl-live-card.is-live .ctrl-live-dot {
+      opacity: 1;
+      animation: ctrl-live-pulse 1.7s ease-in-out infinite;
+    }
+    @keyframes ctrl-live-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.75); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ctrl-live-card.is-live .ctrl-live-dot { animation: none; }
+    }
+    .ctrl-live-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .ctrl-live-title { font-weight: 800; font-size: 0.95rem; }
+    .ctrl-live-sub { font-weight: 600; font-size: 0.8rem; opacity: 0.85; font-variant-numeric: tabular-nums; }
+
     .setting-label {
       font-size: 0.78rem;
       font-weight: 700;
@@ -340,19 +380,11 @@
       cursor: pointer;
       transition: background 0.2s ease, color 0.2s ease;
     }
-    /* 일반(일정) 모드는 "지금 방송 중"이 아니므로 accent(red)를 쓰지 않고
-       중립 톤으로 — amber(생방송)·cyan(타이머)만 각 모드 정체성 색을 유지한다. */
+    /* 참조 시안(Direction 3)의 세그먼트는 어떤 모드든 활성 버튼은 항상 같은
+       단일 강조색 — 모드별로 다른 색(amber/cyan)을 쓰지 않는다. */
     .seg-btn.active {
-      background: var(--oneui-surface-2);
-      color: var(--text-primary);
-    }
-    .seg-btn.seg-amber.active {
-      background: var(--warning-tint);
-      color: var(--warning);
-    }
-    .seg-btn.seg-cyan.active {
-      background: rgba(100,210,255,0.14);
-      color: #64d2ff;
+      background: var(--accent);
+      color: #ffffff;
     }
 
     /* ── 고급 설정 접기/펼치기 ───────────────────────────────────── */
@@ -429,6 +461,16 @@
     </span>
     <span id="save-flash">저장됨</span>
   </h1>
+
+  <!-- 참조 시안(Direction 3)의 상단 방송 상태 요약 카드 — 지금 추적 중인
+       방송명/스튜디오와 경과·남은 시간을 컨트롤 페이지에서도 한눈에. -->
+  <div class="ctrl-live-card" id="ctrl-live-card" hidden>
+    <span class="ctrl-live-dot" id="ctrl-live-dot"></span>
+    <div class="ctrl-live-text">
+      <span class="ctrl-live-title" id="ctrl-live-title"></span>
+      <span class="ctrl-live-sub" id="ctrl-live-sub"></span>
+    </div>
+  </div>
 
   <div class="card card-bottom">
     <span class="setting-label">{{ icon('timer') }}모드 선택</span>
@@ -984,6 +1026,54 @@
   // 방송 화면과 같은 spsAutoDetect 백그라운드 폴링(적응형 간격)이 settings.json을
   // 갱신하지만, 컨트롤 페이지 자체는 최초 로드 후 /settings를 다시 안 불러오므로
   // LIVE 여부·방송명은 별도로 가볍게(값 표시만, 저장 트리거 없음) 주기적으로 확인한다.
+  // 참조 시안 상단 요약 카드 — 정밀한 초 단위 갱신은 키오스크(index.html) 몫이고,
+  // 여기선 5초 폴링 주기로 갱신되는 대략적인 경과/남은 시간이면 충분하다(날짜
+  // 자정 캐스케이드 같은 예외 케이스는 일부러 단순화함 — 컨트롤 페이지 보조 표시용).
+  const ctrlLiveCard  = document.getElementById('ctrl-live-card');
+  const ctrlLiveTitle = document.getElementById('ctrl-live-title');
+  const ctrlLiveSub   = document.getElementById('ctrl-live-sub');
+
+  function hmsToDate(hms, base, nextDay) {
+    const parts = (hms || '').split(':').map(Number);
+    if (parts.length < 2 || parts.some(isNaN)) return null;
+    const d = new Date(base);
+    d.setHours(parts[0], parts[1], parts[2] || 0, 0);
+    if (nextDay) d.setDate(d.getDate() + 1);
+    return d;
+  }
+  function fmtDur(totalSec) {
+    const sign = totalSec < 0 ? '-' : '+';
+    totalSec = Math.abs(Math.round(totalSec));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const sec = totalSec % 60;
+    const mm = String(m).padStart(2, '0'), ss = String(sec).padStart(2, '0');
+    return sign + (h > 0 ? h + ':' + mm + ':' + ss : mm + ':' + ss);
+  }
+  function updateCtrlLiveCard(s) {
+    if (!s.countdownMode || !s.broadcastTime) {
+      ctrlLiveCard.hidden = true;
+      return;
+    }
+    const now = new Date();
+    const start = hmsToDate(s.broadcastTime, now, !!s.broadcastTimeNextDay);
+    const end = s.broadcastEndTime ? hmsToDate(s.broadcastEndTime, now, !!s.broadcastEndTimeNextDay) : null;
+    if (!start) { ctrlLiveCard.hidden = true; return; }
+    ctrlLiveCard.hidden = false;
+    const isLive = !!s.broadcastIsLive;
+    ctrlLiveCard.classList.toggle('is-live', isLive);
+    const name = s.broadcastProgramName || '(프로그램명 없음)';
+    const studio = s.broadcastVideoSource ? ' (' + s.broadcastVideoSource + ')' : '';
+    ctrlLiveTitle.textContent = name + studio + (isLive ? ' · LIVE' : '');
+    if (isLive && end) {
+      ctrlLiveSub.textContent = '경과 ' + fmtDur((now - start) / 1000);
+    } else if (!isLive && now < start) {
+      ctrlLiveSub.textContent = '시작까지 ' + fmtDur((start - now) / 1000);
+    } else {
+      ctrlLiveSub.textContent = '';
+    }
+  }
+
   function pollBroadcastStatus() {
     if (!spsAutoToggle.checked) return;
     fetch('/settings')
@@ -992,6 +1082,7 @@
         trackedEventId = s.broadcastEventId || null;
         trackedIsLive = !!s.broadcastIsLive;
         applyTrackedHighlight();
+        updateCtrlLiveCard(s);
       })
       .catch(() => {});
   }
