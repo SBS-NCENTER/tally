@@ -939,8 +939,7 @@ def index():
 
 @app.route('/control')
 def control():
-    if not session.get('control_authed'):
-        return redirect(url_for('control_login'))
+    session['control_authed'] = True  # PIN 요구 제거 — 그냥 바로 통과
     return render_template('control.html')
 
 
