@@ -1475,8 +1475,12 @@
     cdMarkerStart.classList.toggle('crossed', !isBeforeStart);
 
     if (now < start) {
-      cdFill.style.left = startPct + '%';
-      cdFill.style.width = '0%';
+      // 예전엔 방송 시작 전(대기)엔 채움을 아예 0으로 뒀는데, 러너 자체는
+      // 이미 강조색이라 "러너는 주황인데 지나온 트랙은 계속 회색"인 게
+      // 어색해 보였다(사용자 피드백) — 러너가 실제로 지나온 만큼(트랙
+      // 맨 앞부터 현재 위치까지)은 대기 중에도 채워지게 한다.
+      cdFill.style.left = '0%';
+      cdFill.style.width = pct + '%';
       cdRunner.classList.remove('running', 'finished');
       cdRunner.classList.add('walking');
     } else if (now < end) {
