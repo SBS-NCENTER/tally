@@ -748,13 +748,6 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="toggle-row">
-      <span class="toggle-label">{{ icon('calendar') }}날짜/날씨 표시</span>
-      <label class="toggle"><input type="checkbox" id="date-weather-toggle" checked /><span class="toggle-track"></span></label>
-    </div>
-  </div>
-
   <div class="card card-orient">
     <div class="toggle-row">
       <span class="setting-label" style="margin-bottom:0">{{ icon('rotate') }}세로 모드</span>
@@ -781,6 +774,12 @@
           <label class="toggle"><input type="checkbox" id="clock-12h-toggle" checked /><span class="toggle-track"></span></label>
         </div>
         <div class="setting-hint">끄면 24시간제로 표시됩니다.</div>
+      </div>
+      <div class="setting-row">
+        <div class="toggle-row">
+          <span class="toggle-label">{{ icon('calendar') }}날짜/날씨 표시</span>
+          <label class="toggle"><input type="checkbox" id="date-weather-toggle" checked /><span class="toggle-track"></span></label>
+        </div>
       </div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>{{ icon('timer') }}시간 보정</span><span class="val" id="time-offset-val">0.0초</span></div>
