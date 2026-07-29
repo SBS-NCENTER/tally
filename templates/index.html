@@ -533,7 +533,17 @@
       margin-left: 0.4em;
       align-self: center;
     }
-    .cd-live-badge.show { display: inline-block; }
+    /* 뱃지가 뙇 나타나지 않고 살짝 튀어오르듯 등장 — LIVE 전환처럼 자주
+       안 일어나는 상태 변화에만 쓰는 one-shot 모션이라(매초 반복 X)
+       24시간 화면에서도 거슬리지 않는다. */
+    .cd-live-badge.show {
+      display: inline-block;
+      animation: cd-live-badge-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes cd-live-badge-in {
+      0%   { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
     .cd-confirmed-mark {
       color: var(--accent);
       font-weight: 900;
@@ -618,6 +628,7 @@
     }
     @media (prefers-reduced-motion: reduce) {
       .cd-live-dot { animation: none; }
+      .cd-live-badge.show { animation: none; }
     }
     .cd-tag-main {
       color: inherit;
