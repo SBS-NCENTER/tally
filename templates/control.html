@@ -638,6 +638,13 @@
         <div class="setting-row-inline"><span>시계 글자 크기</span><span class="val" id="clock-size-val">1.00x</span></div>
         <input type="range" id="clock-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
+      <div class="setting-row">
+        <div class="toggle-row">
+          <span class="toggle-label">12시간제 (AM/PM)</span>
+          <label class="toggle"><input type="checkbox" id="clock-12h-toggle" checked /><span class="toggle-track"></span></label>
+        </div>
+        <div class="setting-hint">끄면 24시간제로 표시됩니다.</div>
+      </div>
 
       <div class="size-group-label">일반 모드 (일정)</div>
       <div class="setting-row">
@@ -786,6 +793,7 @@
   const timeOffsetSlider = document.getElementById('time-offset');
   const timeOffsetVal    = document.getElementById('time-offset-val');
   const dateWeatherToggle = document.getElementById('date-weather-toggle');
+  const clock12hToggle = document.getElementById('clock-12h-toggle');
 
   const portraitToggle     = document.getElementById('portrait-toggle');
   const portraitLeftToggle = document.getElementById('portrait-left-toggle');
@@ -874,6 +882,7 @@
       schBoxScale:  parseFloat(schBoxSizeSlider.value),
       timeOffset:   parseFloat(timeOffsetSlider.value),
       showDateWeather: dateWeatherToggle.checked,
+      clock12Hour: clock12hToggle.checked,
       scheduleVisible: scheduleVisibleToggle.checked,
       'cal-ts5':    calTs5.checked,
       'cal-ts5b':   calTs5b.checked,
@@ -964,6 +973,7 @@
   });
 
   dateWeatherToggle.addEventListener('change', saveSettings);
+  clock12hToggle.addEventListener('change', saveSettings);
 
   function refreshLiveRevert() {
     const v = parseFloat(liveRevertSlider.value);
@@ -1474,6 +1484,7 @@
         timeOffsetVal.textContent = (v >= 0 ? '+' : '') + v.toFixed(1) + '초';
       }
       dateWeatherToggle.checked = s.showDateWeather !== undefined ? !!s.showDateWeather : true;
+      clock12hToggle.checked = s.clock12Hour === undefined ? true : !!s.clock12Hour;
       scheduleVisibleToggle.checked = s.scheduleVisible !== undefined ? !!s.scheduleVisible : true;
 
       if (s.liveAutoRevertMinutes !== undefined) liveRevertSlider.value = s.liveAutoRevertMinutes;
