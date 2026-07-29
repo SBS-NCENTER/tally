@@ -289,7 +289,12 @@ def dm7_listener():
 SPS_API_BASE = 'https://sps.sbs.co.kr:8123'
 SPS_TOKEN_FILE = os.path.join(os.path.dirname(__file__), 'sps_token.json')
 SPS_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
-SPS_LOOKAHEAD_DAYS = 3      # 오늘 남은 생방송이 없을 때 며칠 앞까지 다음 생방송을 찾아볼지
+SPS_LOOKAHEAD_DAYS = 30     # 오늘 남은 생방송이 없을 때 며칠 앞까지 다음 생방송을 찾아볼지 —
+                            # 예전엔 3일이라 그 안에 아무것도 없으면 일정 모드로 돌아가버렸는데,
+                            # 운행표에 있는 한 아무리 멀어도 항상 다음 생방송을 추적하고
+                            # 있는 게 낫다는 피드백으로 넉넉하게 늘림(그래도 완전히 무한은
+                            # 아니고, 운행표 자체가 몇 주씩 통째로 비어있는 진짜 예외
+                            # 상황에서는 여전히 일정 모드로 안전하게 빠진다).
 SPS_SLOW_INTERVAL = 20      # 초 — 평상시 폴링 간격
 SPS_FAST_INTERVAL = 1       # 초 — 임박한 생방송 핸드오프 전후 폴링 간격
 SPS_FAST_WINDOW = timedelta(minutes=5)      # 핸드오프 경계 앞뒤로 촘촘하게 볼 범위
