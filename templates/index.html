@@ -31,12 +31,30 @@
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      /* One UI 6 — true black + one confident accent (tally-lamp red).
+         Warning(amber)/success(green) are reused, pre-existing semantic
+         colors (over/under, confirmed) — not competing "accents". */
+      --oneui-bg: #000000;
+      --oneui-surface: #1c1c1e;
+      --oneui-surface-2: #2c2c2e;
+      --oneui-hairline: rgba(255,255,255,0.08);
+      --accent: #ff453a;
+      --accent-tint: rgba(255,69,58,0.14);
+      --success: #30d158;
+      --warning: #ff9f0a;
+      --warning-tint: rgba(255,159,10,0.14);
+      --text-primary: #ffffff;
+      --text-secondary: rgba(235,235,245,0.6);
+      --text-tertiary: rgba(235,235,245,0.3);
+    }
+
     body {
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: #0a0a0a;
+      background: var(--oneui-bg);
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       user-select: none;
       overflow: hidden;
@@ -46,46 +64,34 @@
     /* ── 상태 박스 (아날로그 탈리 램프) ───────────────────────────── */
     #status-box {
       position: relative;
-      width: 100%;
+      align-self: stretch; /* body는 align-items:center라 stretch를 명시해야 폭 전체를 채움 */
       display: flex;
       align-items: center;
       justify-content: center;
+      margin: clamp(14px, 2vh, 28px) clamp(14px, 2vw, 28px) clamp(16px, 2.2vh, 32px);
       padding: clamp(30px, calc(var(--tally-box-scale, 1) * 4vh), 92px) clamp(20px, 4vw, 60px) clamp(24px, calc(var(--tally-box-scale, 1) * 3vh), 70px);
+      border-radius: clamp(24px, 3vw, 44px);
       overflow: hidden;
-      transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, padding 0.2s ease;
-      background: linear-gradient(160deg, #170a0a 0%, #0c0505 55%, #060303 100%);
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.05),
-        inset 0 -24px 40px rgba(0,0,0,0.4);
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.2s ease, padding 0.2s ease;
+      background: var(--oneui-surface);
     }
     #status-box.on-air {
-      background: linear-gradient(160deg, #ff4040 0%, #e11c1c 45%, #a80f0f 100%);
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.28),
-        inset 0 -24px 50px rgba(0,0,0,0.22),
-        0 6px 70px 10px rgba(255,20,20,0.45);
-      border-bottom-color: rgba(255,255,255,0.18);
+      background: var(--accent);
     }
 
     #status-text {
       font-size: clamp(3rem, 8vw, 7rem);
-      font-weight: 800;
+      font-weight: 900;
       letter-spacing: 0.06em;
-      color: rgba(140,50,50,0.45);
+      color: var(--text-tertiary);
       text-transform: uppercase;
-      transition: color 0.3s ease, text-shadow 0.3s ease;
+      transition: color 0.2s ease;
       position: relative;
       z-index: 3;
-      text-shadow: none;
       white-space: nowrap;
     }
     #status-box.on-air #status-text {
-      color: #fff;
-      text-shadow:
-        0 1px 3px rgba(0,0,0,0.25),
-        0 0 26px rgba(255,255,255,0.55),
-        0 0 60px rgba(255,50,50,0.4);
+      color: var(--text-primary);
     }
 
     /* ── 시계 영역 ──────────────────────────────────────────────── */
@@ -101,11 +107,10 @@
     #clock {
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
-      font-weight: 800;
-      color: #ffffff;
+      font-weight: 900;
+      color: var(--text-primary);
       letter-spacing: 0.02em;
       line-height: 1;
-      text-shadow: 0 0 40px rgba(255,255,255,0.08);
       transition: font-size 0.2s ease, padding 0.2s ease;
       padding: clamp(8px, calc(var(--clock-box-scale, 1) * 1.4vh), 56px) 0;
       width: 8ch;
@@ -118,20 +123,19 @@
       align-items: center;
       gap: clamp(16px, 3vw, 36px);
       padding: clamp(8px, 1.5vh, 16px) clamp(20px, 4vw, 48px);
-      border: 1px solid #1e1e1e;
-      border-radius: 12px;
-      background: #111;
+      border-radius: clamp(14px, 1.6vw, 22px);
+      background: var(--oneui-surface);
     }
     #date {
       font-size: clamp(1.1rem, 2.8vw, 2rem);
       font-weight: 700;
-      color: #c8c8c8;
+      color: var(--text-secondary);
       letter-spacing: 0.12em;
     }
     .divider {
       width: 1px;
       height: clamp(18px, 3vh, 28px);
-      background: #2e2e2e;
+      background: var(--oneui-hairline);
       flex-shrink: 0;
     }
     #weather {
@@ -140,7 +144,7 @@
       gap: 10px;
       font-size: clamp(1.1rem, 2.8vw, 2rem);
       font-weight: 700;
-      color: #c8c8c8;
+      color: var(--text-secondary);
       letter-spacing: 0.08em;
       min-height: 2rem;
     }
@@ -149,8 +153,8 @@
     /* ── 캘린더 하단 타임라인 ───────────────────────────────────── */
     #schedule {
       width: 100%;
-      border-top: 2px solid #2a2a2a;
-      background: #0d0d0d;
+      border-top: 1px solid var(--oneui-hairline);
+      background: var(--oneui-bg);
       display: grid;
       grid-template-columns: 1fr 1.5fr 1fr;
       min-height: clamp(134px, calc(var(--sch-box-scale, 1) * 17vh), 347px);
@@ -165,62 +169,61 @@
       gap: 6px;
       position: relative;
     }
-    .sch-slot.prev  { border-right: 1px solid #252525; opacity: 0.70; }
+    .sch-slot.prev  { border-right: 1px solid var(--oneui-hairline); opacity: 0.55; }
     .sch-slot.current {
-      border-right: 1px solid #3a2800;
-      background: #1c1200;
-      box-shadow: inset 0 0 60px rgba(200,120,0,0.18);
+      border-right: 1px solid var(--oneui-hairline);
+      background: var(--warning-tint);
     }
-    .sch-slot.next  { opacity: 0.70; }
+    .sch-slot.next  { opacity: 0.55; }
 
     .sch-label {
       font-size: clamp(1.33rem, calc(var(--sch-scale, 1) * 2vw), 3.2rem);
       font-weight: 800;
       letter-spacing: 0.14em;
-      color: #fff;
-      background: #252525;
+      color: var(--text-primary);
+      background: var(--oneui-surface-2);
       padding: 2px 12px;
       border-radius: 20px;
     }
     .sch-slot.current .sch-label {
-      color: #1a0a00;
-      background: #f0a030;
+      color: #1a0f00;
+      background: var(--warning);
     }
 
     .sch-timerange {
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-size: clamp(1.2rem, 2.2vw, 1.8rem);
       font-weight: 700;
-      color: #5a82b8;
+      color: var(--text-secondary);
       letter-spacing: 0.06em;
       white-space: nowrap;
     }
-    .sch-slot.current .sch-timerange { color: #f0a030; }
+    .sch-slot.current .sch-timerange { color: var(--warning); }
 
     .sch-name {
       font-size: clamp(1rem, 2.2vw, 1.7rem);
       font-weight: 700;
-      color: #888;
+      color: var(--text-tertiary);
       letter-spacing: 0.02em;
       text-align: center;
       line-height: 1.2;
     }
     .sch-slot.current .sch-name {
       font-size: clamp(1.3rem, 2.8vw, 2.2rem);
-      color: #ffd580;
+      color: var(--text-primary);
     }
 
     .sch-none {
       font-size: clamp(0.8rem, 1.4vw, 1rem);
-      color: #333;
+      color: rgba(235,235,245,0.18);
       letter-spacing: 0.08em;
     }
 
     /* ── 방송 시작 카운트다운 ───────────────────────────────────── */
     #countdown {
       width: 100%;
-      border-top: 2px solid #2a2a2a;
-      background: #0d0d0d;
+      border-top: 1px solid var(--oneui-hairline);
+      background: var(--oneui-bg);
       display: none;
       flex-direction: column;
       align-items: center;
@@ -231,18 +234,17 @@
       );
       padding-bottom: clamp(16px, calc(var(--cd-text-scale, 1) * 1.8vh), 43px);
       gap: clamp(0px, 0.4vh, 4px);
-      transition: background 0.3s ease, box-shadow 0.3s ease, min-height 0.2s ease;
+      transition: background 0.2s ease, min-height 0.2s ease;
     }
     #countdown.elapsed {
-      background: #1f1400;
-      box-shadow: inset 0 0 60px rgba(240,160,48,0.22);
+      background: var(--accent-tint);
     }
 
     /* ── 타이머 + 스톱워치 (좌: 타이머 / 우: 스톱워치) ─────────────── */
     #stopwatch {
       width: 100%;
-      border-top: 2px solid #2a2a2a;
-      background: radial-gradient(ellipse 90% 100% at 50% 100%, #0d1420 0%, #0a0a0a 70%);
+      border-top: 1px solid var(--oneui-hairline);
+      background: var(--oneui-bg);
       display: none;
       flex-direction: row;
       align-items: stretch;
@@ -250,7 +252,7 @@
       min-height: clamp(174px, calc(var(--sw-box-scale, 1) * 20vh), 360px);
       position: relative;
       overflow: hidden;
-      transition: background 0.3s ease, min-height 0.2s ease;
+      transition: min-height 0.2s ease;
     }
     #stopwatch.show { display: flex; }
     .tm-col {
@@ -267,21 +269,21 @@
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--tm-accent, #444) 50%, transparent);
-      opacity: 0.3;
-      transition: opacity 0.4s ease, box-shadow 0.4s ease;
+      height: 3px;
+      background: var(--tm-accent, #3a3a3c);
+      opacity: 0.35;
+      transition: opacity 0.2s ease;
     }
-    .tm-col.running::before, .tm-col.finished::before { opacity: 1; box-shadow: 0 0 16px 2px var(--tm-accent-glow, transparent); }
-    #timer-col   { --tm-accent: #7086ff; --tm-accent-glow: rgba(112,134,255,0.6); }
-    #stopwatch-col { --tm-accent: #00d4ff; --tm-accent-glow: rgba(0,212,255,0.6); }
-    #timer-col.finished { --tm-accent: #ff5050; --tm-accent-glow: rgba(255,80,80,0.6); }
+    .tm-col.running::before, .tm-col.finished::before { opacity: 1; }
+    #timer-col   { --tm-accent: #0a84ff; }
+    #stopwatch-col { --tm-accent: #64d2ff; }
+    #timer-col.finished { --tm-accent: var(--accent); }
 
     .tm-divider {
       width: 1px;
       align-self: center;
       height: 60%;
-      background: linear-gradient(180deg, transparent, rgba(255,255,255,0.14), transparent);
+      background: var(--oneui-hairline);
       flex-shrink: 0;
     }
     .tm-label-row {
@@ -293,13 +295,12 @@
       width: 0.55em;
       height: 0.55em;
       border-radius: 50%;
-      background: #333;
+      background: #3a3a3c;
       flex-shrink: 0;
-      transition: background 0.3s ease, box-shadow 0.3s ease;
+      transition: background 0.2s ease;
     }
     .tm-col.running .tm-dot, .tm-col.finished .tm-dot {
       background: var(--tm-accent);
-      box-shadow: 0 0 10px 2px var(--tm-accent-glow);
       animation: sw-dot-pulse 1.4s ease-in-out infinite;
     }
     @keyframes sw-dot-pulse {
@@ -310,9 +311,9 @@
       font-size: clamp(1.13rem, calc(var(--sw-text-scale, 1) * 1.7vw), 2.8rem);
       font-weight: 800;
       letter-spacing: 0.14em;
-      color: #777;
+      color: var(--text-tertiary);
       text-transform: uppercase;
-      transition: color 0.3s ease;
+      transition: color 0.2s ease;
     }
     .tm-col.running .tm-label, .tm-col.finished .tm-label { color: var(--tm-accent); }
     .tm-value {
@@ -321,12 +322,10 @@
       font-size: clamp(2.4rem, calc(var(--sw-text-scale, 1) * 4.6vw), 7.2rem);
       font-weight: 900;
       letter-spacing: 0.02em;
-      color: #fff;
+      color: var(--text-primary);
       line-height: 1;
-      text-shadow: 0 0 16px color-mix(in srgb, var(--tm-accent) 30%, transparent);
-      transition: text-shadow 0.3s ease, color 0.3s ease;
+      transition: color 0.2s ease;
     }
-    .tm-col.running .tm-value, .tm-col.finished .tm-value { text-shadow: 0 0 28px color-mix(in srgb, var(--tm-accent) 65%, transparent); }
     .tm-col.finished .tm-value { color: var(--tm-accent); }
 
     /* ── 카운트다운 타임라인 (말 트랙) ───────────────────────────── */
@@ -344,7 +343,7 @@
       left: 0; right: 0; top: 30%;
       height: clamp(7px, calc(var(--s) * 0.9vh), 21px);
       transform: translateY(-50%);
-      background: #232323;
+      background: var(--oneui-surface-2);
       border-radius: 5px;
     }
     #cd-fill {
@@ -352,13 +351,13 @@
       left: 0; top: 30%;
       height: clamp(7px, calc(var(--s) * 0.9vh), 21px);
       transform: translateY(-50%);
-      background: #2ecc55;
+      background: var(--success);
       border-radius: 5px;
       width: 0%;
-      transition: width 1.05s linear, background 0.4s ease;
+      transition: width 1.05s linear, background 0.3s ease;
     }
-    #cd-fill.cross-anim { transition: width 0.8s cubic-bezier(0.4,0,0.2,1), background 0.4s ease, left 0.8s cubic-bezier(0.4,0,0.2,1); }
-    #countdown.elapsed #cd-fill { background: linear-gradient(90deg, #a86a10, #f0a030); }
+    #cd-fill.cross-anim { transition: width 0.8s cubic-bezier(0.4,0,0.2,1), background 0.3s ease, left 0.8s cubic-bezier(0.4,0,0.2,1); }
+    #countdown.elapsed #cd-fill { background: var(--accent); }
 
     .cd-marker {
       position: absolute;
@@ -374,13 +373,12 @@
       width: clamp(19px, calc(var(--s) * 2vh), 48px);
       height: clamp(19px, calc(var(--s) * 2vh), 48px);
       border-radius: 50%;
-      background: #555;
-      border: 2px solid #0d0d0d;
+      background: #48484a;
+      border: 3px solid var(--oneui-bg);
     }
     #cd-marker-start .cd-marker-dot,
     #cd-marker-end   .cd-marker-dot {
-      background: radial-gradient(circle at 35% 35%, #ffffff, #cfcfcf 60%, #8a8a8a);
-      box-shadow: 0 0 12px 4px rgba(255,255,255,0.35);
+      background: var(--text-primary);
     }
     .cd-marker-dot {
       position: relative;
@@ -396,7 +394,7 @@
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      border: 3px solid #fff;
+      border: 3px solid var(--text-primary);
       opacity: 0;
     }
     .cd-marker-dot.hit {
@@ -425,12 +423,12 @@
       align-items: center;
       font-size: clamp(1.13rem, calc(var(--cd-label-scale, 1) * 1.5vw), 2.8rem);
       font-weight: 800;
-      color: #ffedd5;
+      color: var(--text-primary);
       white-space: nowrap;
       letter-spacing: 0.03em;
     }
     .cd-marker-program {
-      color: #f0a030;
+      color: var(--warning);
       font-size: 0.8em;
       font-weight: 800;
       letter-spacing: 0.1em;
@@ -439,14 +437,13 @@
     }
     .cd-marker-program:empty { display: none; margin-bottom: 0; }
     .cd-confirmed-mark {
-      color: #4ade80;
-      text-shadow: 0 0 8px rgba(74,222,128,0.6);
+      color: var(--success);
       font-weight: 900;
     }
     .cd-marker-assigned {
       font-size: 0.7em;
       font-weight: 700;
-      color: #b8a88a;
+      color: var(--text-secondary);
       margin: 0 0.05em;
     }
     #cd-runner {
@@ -476,16 +473,15 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: #1c1c1c;
-      border: 1px solid #3a3a3a;
-      color: #fff;
+      background: var(--oneui-surface-2);
+      border: 2px solid transparent;
+      color: var(--text-primary);
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
       padding: clamp(4px, calc(var(--cd-text-scale, 1) * 0.5vh), 17px) clamp(11px, calc(var(--cd-text-scale, 1) * 1.3vw), 43px);
-      border-radius: 9px;
+      border-radius: clamp(10px, 1vw, 16px);
       white-space: nowrap;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-      transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     }
     .cd-tag-main-row {
       display: flex;
@@ -497,8 +493,7 @@
       width: 0.5em;
       height: 0.5em;
       border-radius: 50%;
-      background: #ff5252;
-      box-shadow: 0 0 8px 2px rgba(255,82,82,0.75);
+      background: var(--accent);
       flex-shrink: 0;
       animation: cd-live-pulse 1.4s ease-in-out infinite;
     }
@@ -511,8 +506,7 @@
       .cd-live-dot { animation: none; }
     }
     .cd-tag-main {
-      color: #ffedd5;
-      text-shadow: 0 0 10px rgba(255,237,213,0.4);
+      color: var(--text-primary);
       font-weight: 800;
       letter-spacing: 0.02em;
       font-size: clamp(1.33rem, calc(var(--cd-text-scale, 1) * 2vw), 3.87rem);
@@ -520,8 +514,7 @@
     }
     .cd-tag-sub {
       display: none;
-      color: #dce8ff;
-      text-shadow: 0 0 10px rgba(220,232,255,0.4);
+      color: var(--text-secondary);
       font-weight: 700;
       letter-spacing: 0.01em;
       font-size: clamp(1.04rem, calc(var(--cd-text-scale, 1) * 1.4vw), 2.87rem);
@@ -530,15 +523,14 @@
       padding-top: 3px;
       width: 100%;
       text-align: center;
-      border-top: 1px solid rgba(255,255,255,0.2);
+      border-top: 1px solid var(--oneui-hairline);
     }
     .cd-tag-sub.show { display: block; }
     /* 예정종료시각을 넘겨 아직도 방송 중이면 '-00:00'에 멈춰있는 대신 얼마나
        초과됐는지 세어 보여준다 — LIVE 중엔 말풍선이 이미 붉게 물들어 있어서
-       빨강 계열 대신 그 위에서 잘 튀는 노랑으로 구분한다. */
+       빨강 계열 대신 그 위에서 잘 튀는 노랑(warning)으로 구분한다. */
     .cd-tag-sub.overrun {
-      color: #ffe066;
-      text-shadow: 0 0 10px rgba(255,224,102,0.55);
+      color: var(--warning);
     }
     @keyframes tag-overrun-flash {
       0%   { transform: scale(1); }
@@ -550,16 +542,14 @@
       animation: tag-overrun-flash 0.5s ease-out;
     }
     /* 방송이 실제로 끝나면 말풍선이 경과/남음 대신 예정 대비 +/-를 한 줄로
-       보여준다. 늦게 끝남(+)은 초과 카운트와 같은 노랑, 일찍 끝남(-)은
-       확정 체크와 같은 초록으로 — 이미 쓰던 색 언어를 재사용해서 새로 안
+       보여준다. 늦게 끝남(+)은 초과 카운트와 같은 warning, 일찍 끝남(-)은
+       확정 체크와 같은 success로 — 이미 쓰던 색 언어를 재사용해서 새로 안
        외워도 되게 한다. */
     .cd-tag-main.final-over {
-      color: #ffe066;
-      text-shadow: 0 0 10px rgba(255,224,102,0.55);
+      color: var(--warning);
     }
     .cd-tag-main.final-under {
-      color: #4ade80;
-      text-shadow: 0 0 10px rgba(74,222,128,0.5);
+      color: var(--success);
     }
     @keyframes tag-final-blink {
       0%, 49%   { opacity: 1; }
@@ -571,25 +561,23 @@
     .cd-runner-tag-arrow {
       width: 0;
       height: 0;
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-top: 7px solid #1c1c1c;
-      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
-      transition: border-top-color 0.3s ease;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 8px solid var(--oneui-surface-2);
+      transition: border-top-color 0.2s ease;
     }
     #countdown.elapsed .cd-runner-tag-pill {
-      background: #241705;
-      border-color: #a86a10;
+      background: var(--accent-tint);
+      border-color: var(--accent);
     }
-    #countdown.elapsed .cd-runner-tag-arrow { border-top-color: #241705; }
-    /* LIVE 확정되면(onAirIndex 기준) 말풍선 자체를 붉게 — ON AIR와 같은 색 언어를
-       재사용해서 별도 뱃지 없이도 "지금 진짜 방송 중"이 한눈에 들어오게 한다. */
+    #countdown.elapsed .cd-runner-tag-arrow { border-top-color: var(--accent-tint); }
+    /* LIVE 확정되면(onAirIndex 기준) 말풍선 자체를 붉게 — ON AIR와 같은 단일
+       accent를 재사용해서 별도 뱃지 없이도 "지금 진짜 방송 중"이 한눈에 들어오게 한다. */
     #cd-runner-tag.is-live .cd-runner-tag-pill {
-      background: #2a1414;
-      border-color: #ff5252;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 18px 2px rgba(255,82,82,0.4);
+      background: var(--accent);
+      border-color: var(--accent);
     }
-    #cd-runner-tag.is-live .cd-runner-tag-arrow { border-top-color: #2a1414; }
+    #cd-runner-tag.is-live .cd-runner-tag-arrow { border-top-color: var(--accent); }
     .cd-runner-trail {
       position: absolute;
       top: 50%;
@@ -597,9 +585,10 @@
       width: clamp(80px, calc(var(--s) * 9vw), 267px);
       height: clamp(5px, calc(var(--s) * 0.7vh), 16px);
       transform: translateY(-50%);
-      background: linear-gradient(90deg, transparent, rgba(46,204,85,0.6));
+      background: var(--success);
+      opacity: 0.35;
       border-radius: 6px;
-      transition: background 0.4s ease, width 0.3s ease;
+      transition: background 0.2s ease, width 0.2s ease, opacity 0.2s ease;
     }
     .cd-runner-ring {
       position: absolute;
@@ -609,12 +598,13 @@
       height: clamp(12px, calc(var(--s) * 1.3vh), 32px);
       border-radius: 50%;
       transform: translate(-50%, -50%);
-      border: 2px solid rgba(46,204,85,0.55);
+      border: 2px solid var(--success);
+      opacity: 0.55;
       pointer-events: none;
     }
     #cd-runner.walking .cd-runner-ring { animation: runner-ping 2.4s cubic-bezier(.2,.6,.35,1) infinite; }
     #cd-runner.running .cd-runner-ring {
-      border-color: rgba(240,160,48,0.6);
+      border-color: var(--accent);
       animation: runner-ping 1.1s cubic-bezier(.2,.6,.35,1) infinite;
     }
     #cd-runner.finished .cd-runner-ring { display: none; }
@@ -626,27 +616,26 @@
       height: clamp(12px, calc(var(--s) * 1.3vh), 32px);
       border-radius: 50%;
       transform: translate(-50%, -50%);
-      background: radial-gradient(circle at 35% 35%, #e0ffe8, #2ecc55 60%, #167a34);
-      box-shadow: 0 0 calc(var(--s) * 9px) calc(var(--s) * 3px) rgba(46,204,85,0.55);
-      transition: background 0.4s ease, box-shadow 0.4s ease;
+      background: var(--success);
+      transition: background 0.2s ease;
     }
     #cd-runner.walking .cd-runner-head { animation: runner-glow 2.4s ease-in-out infinite; }
     #cd-runner.running .cd-runner-head { animation: runner-glow 0.9s ease-in-out infinite; }
     #cd-runner.running .cd-runner-trail {
-      background: linear-gradient(90deg, transparent, rgba(240,160,48,0.4));
+      background: var(--accent);
+      opacity: 0.4;
       width: clamp(27px, calc(var(--s) * 2.6vw), 93px);
     }
     #cd-runner.running .cd-runner-head {
-      background: radial-gradient(circle at 35% 35%, #ffe9c2, #f0a030 55%, #a86a10);
-      box-shadow: 0 0 calc(var(--s) * 13px) calc(var(--s) * 4px) rgba(240,160,48,0.65);
+      background: var(--accent);
     }
     #cd-runner.finished .cd-runner-head {
-      background: radial-gradient(circle at 35% 35%, #fff, #ffd34d 55%, #c99a00);
-      box-shadow: 0 0 calc(var(--s) * 11px) calc(var(--s) * 3px) rgba(255,211,77,0.6);
+      background: var(--warning);
       animation: none;
     }
     #cd-runner.finished .cd-runner-trail {
-      background: linear-gradient(90deg, transparent, rgba(255,211,77,0.7));
+      background: var(--warning);
+      opacity: 0.5;
     }
 
     @keyframes runner-ping {
@@ -655,7 +644,7 @@
     }
     @keyframes runner-glow {
       0%, 100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
-      50%      { transform: translate(-50%, -50%) scale(1.07); filter: brightness(1.2); }
+      50%      { transform: translate(-50%, -50%) scale(1.07); filter: brightness(1.15); }
     }
 
     /* ── 세로 모드 (전체 화면 90도 회전) ───────────────────────── */
@@ -709,8 +698,8 @@
       height: 40px;
       border: none;
       border-radius: 50%;
-      background: rgba(255,255,255,0.08);
-      color: rgba(255,255,255,0.35);
+      background: var(--oneui-surface-2);
+      color: var(--text-tertiary);
       font-size: 1.1rem;
       line-height: 40px;
       text-align: center;
@@ -719,8 +708,8 @@
       transition: background 0.2s ease, color 0.2s ease;
     }
     #fs-toggle:hover, #fs-toggle:active {
-      background: rgba(255,255,255,0.18);
-      color: rgba(255,255,255,0.75);
+      background: var(--oneui-surface);
+      color: var(--text-primary);
     }
   </style>
 </head>

@@ -25,11 +25,30 @@
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      /* One UI 6 — true black + one confident accent (tally-lamp red).
+         Warning(amber)/success(green) are reused, pre-existing semantic
+         colors (over/under, confirmed) — not competing "accents". */
+      --oneui-bg: #000000;
+      --oneui-surface: #1c1c1e;
+      --oneui-surface-2: #2c2c2e;
+      --oneui-hairline: rgba(255,255,255,0.08);
+      --accent: #ff453a;
+      --accent-tint: rgba(255,69,58,0.14);
+      --success: #30d158;
+      --warning: #ff9f0a;
+      --warning-tint: rgba(255,159,10,0.14);
+      --info: #0a84ff;
+      --text-primary: #ffffff;
+      --text-secondary: rgba(235,235,245,0.6);
+      --text-tertiary: rgba(235,235,245,0.35);
+    }
+
     body {
       min-height: 100dvh;
-      background: #0a0a0a;
+      background: var(--oneui-bg);
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-      color: #eee;
+      color: var(--text-primary);
       padding: 20px 16px 60px;
     }
 
@@ -56,10 +75,10 @@
       font-size: 1.1rem;
       font-weight: 800;
       letter-spacing: 0.06em;
-      color: #ccc;
+      color: var(--text-primary);
       padding-bottom: 14px;
       margin-bottom: 18px;
-      border-bottom: 1px solid #222;
+      border-bottom: 1px solid var(--oneui-hairline);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -69,29 +88,23 @@
     #save-flash {
       font-size: 0.72rem;
       font-weight: 700;
-      color: #2ecc55;
+      color: var(--success);
       opacity: 0;
       transition: opacity 0.3s ease;
     }
     #save-flash.show { opacity: 1; }
 
     .card {
-      background: #161616;
-      border: 1px solid #2a2a2a;
-      border-top: 3px solid #333;
-      border-radius: 14px;
+      background: var(--oneui-surface);
+      border-radius: 20px;
       padding: 18px 20px;
       margin-bottom: 16px;
     }
-    .card-size     { border-top-color: #3a7bd5; }
-    .card-orient   { border-top-color: #8a5cf6; }
-    .card-bottom   { border-top-color: #666; }
-    .card-advanced { border-top-color: #444; }
 
     .setting-label {
       font-size: 0.78rem;
       font-weight: 700;
-      color: #999;
+      color: var(--text-secondary);
       letter-spacing: 0.06em;
       margin-bottom: 12px;
       display: flex;
@@ -105,10 +118,10 @@
       font-weight: 800;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #666;
+      color: var(--text-tertiary);
       padding-bottom: 6px;
       margin-bottom: 10px;
-      border-bottom: 1px solid #262626;
+      border-bottom: 1px solid var(--oneui-hairline);
     }
     .size-group-label:not(:first-child) { margin-top: 20px; }
     .setting-row-inline {
@@ -117,11 +130,11 @@
       justify-content: space-between;
       gap: 10px;
     }
-    .val { font-size: 0.8rem; font-weight: 700; color: #888; min-width: 44px; text-align: right; }
+    .val { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); min-width: 44px; text-align: right; }
     .setting-hint {
       font-size: 0.74rem;
       font-weight: 500;
-      color: #777;
+      color: var(--text-tertiary);
       line-height: 1.5;
       margin-top: 2px;
     }
@@ -132,8 +145,8 @@
       align-items: center;
       gap: 10px;
       padding: 8px 10px;
-      border-radius: 8px;
-      background: #1a1a1a;
+      border-radius: 12px;
+      background: var(--oneui-surface-2);
       margin-bottom: 6px;
       font-size: 0.8rem;
     }
@@ -142,24 +155,24 @@
     /* 지금 탈리 화면에 실제로 뜨는 항목 표시 — 일정 시간대가 아니라 서버가
        실제로 추적 중인 eventId 기준이라, 대기/전환대기(gap-hold) 상태도
        정확히 반영된다. LIVE 여부에 따라 색을 구분한다. */
-    .sps-row.tracked { background: #3a2a10; border: 1px solid #f0a030; }
-    .sps-row.tracked-live { background: #2a1414; border: 1px solid #ff5252; }
-    .sps-row .sps-time { color: #ddd; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .sps-row .sps-name { color: #aaa; margin-top: 2px; font-size: 0.76rem; }
-    .sps-row .sps-ts { color: #f0a030; font-weight: 700; font-size: 0.76rem; white-space: nowrap; }
+    .sps-row.tracked { background: var(--warning-tint); border: 1px solid var(--warning); }
+    .sps-row.tracked-live { background: var(--accent-tint); border: 1px solid var(--accent); }
+    .sps-row .sps-time { color: var(--text-primary); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .sps-row .sps-name { color: var(--text-secondary); margin-top: 2px; font-size: 0.76rem; }
+    .sps-row .sps-ts { color: var(--warning); font-weight: 700; font-size: 0.76rem; white-space: nowrap; }
     .sps-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
-    .sps-row .sps-actual { color: #dce8ff; font-weight: 700; font-size: 0.7rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .sps-empty { color: #666; font-size: 0.78rem; text-align: center; padding: 10px 0; }
-    .sps-row .sps-diff { color: #888; font-size: 0.7rem; margin-top: 3px; }
-    .sps-row .sps-diff b { color: #dce8ff; font-weight: 700; }
+    .sps-row .sps-actual { color: var(--text-secondary); font-weight: 700; font-size: 0.7rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .sps-empty { color: var(--text-tertiary); font-size: 0.78rem; text-align: center; padding: 10px 0; }
+    .sps-row .sps-diff { color: var(--text-secondary); font-size: 0.7rem; margin-top: 3px; }
+    .sps-row .sps-diff b { color: var(--text-primary); font-weight: 700; }
     .sps-row .sps-live-tag {
       display: inline-flex; align-items: center; gap: 4px;
-      color: #ff5252; font-weight: 800; font-size: 0.7rem; letter-spacing: 0.08em;
+      color: var(--accent); font-weight: 800; font-size: 0.7rem; letter-spacing: 0.08em;
       margin-bottom: 2px;
     }
     .sps-row .sps-live-tag::before {
       content: ''; width: 6px; height: 6px; border-radius: 50%;
-      background: #ff5252; box-shadow: 0 0 5px 1px rgba(255,82,82,0.7);
+      background: var(--accent);
     }
 
     input[type=range] {
@@ -167,23 +180,23 @@
       width: 100%;
       height: 4px;
       border-radius: 2px;
-      background: #2a2a2a;
+      background: var(--oneui-surface-2);
       outline: none;
       cursor: pointer;
     }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      background: #ffffff;
+      background: var(--accent);
       cursor: pointer;
     }
     input[type=text] {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      color: #fff;
-      border-radius: 6px;
+      background: var(--oneui-surface-2);
+      border: none;
+      color: var(--text-primary);
+      border-radius: 10px;
       padding: 8px 10px;
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
@@ -195,10 +208,10 @@
     .time-input-row input[type=text] { flex: 1; }
 
     select.sps-select {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      color: #fff;
-      border-radius: 6px;
+      background: var(--oneui-surface-2);
+      border: none;
+      color: var(--text-primary);
+      border-radius: 10px;
       padding: 8px 10px;
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-size: 0.9rem;
@@ -207,41 +220,40 @@
     button.clear-btn {
       flex-shrink: 0;
       padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #2a2a2a;
-      background: #1a1a1a;
-      color: #888;
+      border-radius: 10px;
+      border: none;
+      background: var(--oneui-surface-2);
+      color: var(--text-secondary);
       font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
     }
-    button.clear-btn:active { background: #222; color: #ccc; }
+    button.clear-btn:active { background: #3a3a3c; color: var(--text-primary); }
     button.nday-toggle {
       flex-shrink: 0;
       width: 34px;
       height: 34px;
-      border-radius: 8px;
-      border: 1px solid #2a2a2a;
-      background: #1a1a1a;
-      color: #666;
+      border-radius: 10px;
+      border: none;
+      background: var(--oneui-surface-2);
+      color: var(--text-tertiary);
       font-size: 0.85rem;
       font-weight: 800;
       cursor: pointer;
-      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      transition: background 0.2s ease, color 0.2s ease;
     }
     button.nday-toggle.active {
-      background: rgba(240,160,48,0.16);
-      border-color: #f0a030;
-      color: #f0a030;
+      background: var(--warning-tint);
+      color: var(--warning);
     }
 
     .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .toggle-label { font-size: 0.85rem; font-weight: 600; color: #ccc; letter-spacing: 0.02em; }
+    .toggle-label { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); letter-spacing: 0.02em; }
     .toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .toggle-track {
       position: absolute; inset: 0;
-      background: #2a2a2a;
+      background: var(--oneui-surface-2);
       border-radius: 20px;
       cursor: pointer;
       transition: background 0.2s;
@@ -251,11 +263,11 @@
       position: absolute;
       left: 3px; top: 3px;
       width: 18px; height: 18px;
-      background: #666;
+      background: #6e6e73;
       border-radius: 50%;
       transition: transform 0.2s, background 0.2s;
     }
-    .toggle input:checked + .toggle-track { background: #1a4a8a; }
+    .toggle input:checked + .toggle-track { background: var(--accent); }
     .toggle input:checked + .toggle-track::after { transform: translateX(18px); background: #fff; }
 
     .sub-panel {
@@ -264,7 +276,7 @@
       gap: 14px;
       margin-top: 14px;
       padding-top: 14px;
-      border-top: 1px solid #222;
+      border-top: 1px solid var(--oneui-hairline);
     }
     .sub-panel.open { display: flex; }
 
@@ -272,16 +284,16 @@
     button.action-btn {
       flex: 1;
       padding: 12px 0;
-      border-radius: 10px;
-      border: 1px solid #333;
-      background: #1a1a1a;
-      color: #ccc;
+      border-radius: 12px;
+      border: none;
+      background: var(--oneui-surface-2);
+      color: var(--text-primary);
       font-weight: 700;
       font-size: 0.95rem;
       cursor: pointer;
     }
-    button.action-btn:active { background: #222; }
-    button.action-btn.running { background: #7a1010; border-color: #b0101a; color: #fff; }
+    button.action-btn:active { background: #3a3a3c; }
+    button.action-btn.running { background: var(--accent); color: #fff; }
 
     #sw-display, #timer-display {
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
@@ -289,60 +301,58 @@
       font-size: 2rem;
       font-weight: 900;
       text-align: center;
-      color: #fff;
+      color: var(--text-primary);
       margin-bottom: 14px;
     }
     .preset-row { display: flex; gap: 8px; margin-bottom: 12px; }
     button.preset-btn {
       flex: 1;
       padding: 9px 0;
-      border-radius: 8px;
-      border: 1px solid #2a2a2a;
-      background: #1a1a1a;
-      color: #999;
+      border-radius: 10px;
+      border: none;
+      background: var(--oneui-surface-2);
+      color: var(--text-secondary);
       font-weight: 700;
       font-size: 0.82rem;
       cursor: pointer;
     }
-    button.preset-btn:active { background: #222; color: #ccc; }
-    button.preset-btn.active { background: rgba(112,134,255,0.14); border-color: #7086ff; color: #a8b4ff; }
+    button.preset-btn:active { background: #3a3a3c; color: var(--text-primary); }
+    button.preset-btn.active { background: var(--accent-tint); color: var(--accent); }
 
     /* ── 하단 표시 모드 세그먼트 ─────────────────────────────────── */
     .segmented {
       display: flex;
       gap: 6px;
-      background: #0e0e0e;
-      border: 1px solid #262626;
+      background: var(--oneui-bg);
       padding: 4px;
-      border-radius: 11px;
+      border-radius: 13px;
     }
     .seg-btn {
       flex: 1;
       padding: 11px 0;
-      border-radius: 8px;
+      border-radius: 10px;
       border: none;
       background: transparent;
-      color: #777;
+      color: var(--text-tertiary);
       font-weight: 700;
       font-size: 0.86rem;
       letter-spacing: 0.02em;
       cursor: pointer;
-      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+      transition: background 0.2s ease, color 0.2s ease;
     }
+    /* 일반(일정) 모드는 "지금 방송 중"이 아니므로 accent(red)를 쓰지 않고
+       중립 톤으로 — amber(생방송)·cyan(타이머)만 각 모드 정체성 색을 유지한다. */
     .seg-btn.active {
-      background: rgba(90,140,255,0.12);
-      color: #7fa8ff;
-      box-shadow: inset 0 0 0 1px rgba(90,140,255,0.5);
+      background: var(--oneui-surface-2);
+      color: var(--text-primary);
     }
     .seg-btn.seg-amber.active {
-      background: rgba(240,160,48,0.12);
-      color: #f0a030;
-      box-shadow: inset 0 0 0 1px rgba(240,160,48,0.5);
+      background: var(--warning-tint);
+      color: var(--warning);
     }
     .seg-btn.seg-cyan.active {
-      background: rgba(0,212,255,0.10);
-      color: #00d4ff;
-      box-shadow: inset 0 0 0 1px rgba(0,212,255,0.5);
+      background: rgba(100,210,255,0.14);
+      color: #64d2ff;
     }
 
     /* ── 고급 설정 접기/펼치기 ───────────────────────────────────── */
@@ -353,14 +363,14 @@
       justify-content: space-between;
       background: none;
       border: none;
-      color: #999;
+      color: var(--text-secondary);
       font-size: 0.78rem;
       font-weight: 700;
       letter-spacing: 0.06em;
       cursor: pointer;
       padding: 0;
     }
-    .collapse-header .chevron { transition: transform 0.2s ease; color: #555; font-size: 0.9rem; }
+    .collapse-header .chevron { transition: transform 0.2s ease; color: var(--text-tertiary); font-size: 0.9rem; }
     .collapse-header.open .chevron { transform: rotate(180deg); }
     .collapse-header.open { margin-bottom: 12px; }
 
@@ -368,11 +378,11 @@
       display: block;
       text-align: center;
       margin-top: 24px;
-      color: #556;
+      color: var(--text-tertiary);
       font-size: 0.8rem;
       text-decoration: none;
     }
-    #display-link:hover { color: #789; }
+    #display-link:hover { color: var(--text-primary); }
   </style>
 </head>
 <body>
