@@ -695,6 +695,10 @@
       border-radius: 6px;
       transition: background 0.2s ease, width 0.2s ease, opacity 0.2s ease;
     }
+    /* 다음 방송이 아직 한참 남아 러너가 트랙 맨 앞에 멈춰있는 동안은 트레일을
+       숨긴다 — 실제로 움직이고 있지 않은데 카드 여백을 주황으로 채워서
+       왼쪽만 트랙에 딱 붙은 것처럼 보이는 비대칭 착시를 없앤다. */
+    #cd-runner.walking.parked .cd-runner-trail { opacity: 0; }
     .cd-runner-ring {
       position: absolute;
       top: 50%;
@@ -1520,15 +1524,21 @@
       cdFill.style.width = pct + '%';
       cdRunner.classList.remove('running', 'finished');
       cdRunner.classList.add('walking');
+      // 다음 방송이 리드인 구간(CD_LEAD_SEC)에도 아직 안 들어와서 러너가
+      // 트랙 맨 앞(0%)에 몇 시간이고 멈춰있는 경우, 러너 트레일이 카드
+      // 왼쪽 여백 전체를 주황으로 채워버려서 오른쪽 여백이랑 비대칭으로
+      // 보였다(사용자 피드백, 실측으로 좌표 자체는 대칭임을 확인) —
+      // 트랙 맨 앞에 "멈춰" 있을 때는 트레일을 숨긴다.
+      cdRunner.classList.toggle('parked', pct <= 0);
     } else if (now < end) {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = Math.max(0, pct - startPct) + '%';
-      cdRunner.classList.remove('walking', 'finished');
+      cdRunner.classList.remove('walking', 'finished', 'parked');
       cdRunner.classList.add('running');
     } else {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = (100 - startPct) + '%';
-      cdRunner.classList.remove('walking', 'running');
+      cdRunner.classList.remove('walking', 'running', 'parked');
       cdRunner.classList.add('finished');
     }
 
