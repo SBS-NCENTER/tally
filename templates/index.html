@@ -710,12 +710,13 @@
       border-radius: 6px;
       transition: background 0.2s ease, width 0.2s ease, opacity 0.2s ease;
     }
-    /* 다음 방송이 아직 한참 남아(리드인 반감기보다 더 먼) 러너가 트랙 맨 앞
-       근처에서 몇 시간이고 거의 눈에 안 띄게만 움직이는 동안은 트레일을
-       숨긴다 — 실제 이동량이 몇 px 안 되는데 트레일까지 켜두면 카드 여백을
-       주황으로 채워서 왼쪽만 트랙에 딱 붙은 것처럼 보이는 비대칭 착시를
-       만든다(JS의 cdFarWaiting 참고 — 리드인에 가까워지면 다시 켜진다). */
-    #cd-runner.walking.parked .cd-runner-trail { opacity: 0; }
+    /* 방송 대기(walking) 중엔 트레일을 아예 끈다 — #cd-fill이 이미 "지나온
+       만큼 하나의 색으로 칠해지는" 역할을 정확히 하고 있는데, 트레일(고정
+       픽셀 폭 반투명 꼬리)까지 같이 켜두면 채움 폭이 얇을 때 트레일이 채움
+       보다 더 길게 남아 흐린색+진한색 두 구간으로 갈라져 보였다(사용자
+       피드백). 라이브(running) 중엔 채움 폭이 보통 트레일보다 넓어서 이
+       문제가 안 보이므로 그쪽은 그대로 둔다. */
+    #cd-runner.walking .cd-runner-trail { opacity: 0; }
     .cd-runner-ring {
       position: absolute;
       top: 50%;
