@@ -544,10 +544,22 @@
       0%   { transform: scale(0.6); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
     }
+    /* 체크(✓) 글자만으로는 획이 가늘어서 멀리서 잘 안 보인다는 피드백 —
+       LIVE 뱃지랑 같은 언어(강조색 배경+흰 글자)로 작은 원형 뱃지를 깔아서
+       존재감을 키운다. */
     .cd-confirmed-mark {
-      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5em;
+      height: 1.5em;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #ffffff;
       font-weight: 900;
       font-size: clamp(0.75rem, calc(var(--cd-label-scale, 1) * 1.2rem), 2.5rem);
+      vertical-align: middle;
+      margin-left: 0.1em;
     }
     .cd-marker-assigned {
       font-size: clamp(0.75rem, calc(var(--cd-label-scale, 1) * 1.2rem), 2.5rem);
