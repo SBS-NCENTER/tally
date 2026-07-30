@@ -256,7 +256,7 @@
       min-height: calc(
         clamp(120px, calc(var(--cd-box-scale, 1) * 14vh), 254px) +
         clamp(54px, calc(var(--cd-text-scale, 1) * 6vh), 107px) +
-        clamp(62px, calc(var(--cd-text-scale, 1) * 7.2vh), 134px)
+        clamp(50px, calc(var(--cd-text-scale, 1) * 5vh), 95px)
       );
       padding: clamp(16px, calc(var(--cd-text-scale, 1) * 1.8vh), 43px) clamp(20px, 4vw, 40px);
       gap: clamp(0px, 0.4vh, 4px);
@@ -375,7 +375,7 @@
       /* 위쪽 여백은 프로그램명+시작/종료 라벨(.cd-marker-label) 몫이라
          그걸 키우는 --cd-label-scale을 따른다(스크린샷 실측 후 보강). */
       margin-top: clamp(80px, calc(var(--cd-label-scale, 1) * 6vh), 170px);
-      margin-bottom: clamp(62px, calc(var(--cd-text-scale, 1) * 7.2vh), 134px);
+      margin-bottom: clamp(50px, calc(var(--cd-text-scale, 1) * 5vh), 95px);
       display: none;
     }
     #cd-track.show { display: block; }
