@@ -44,6 +44,11 @@
       --success: #30d158;
       --warning: #ff9f0a;
       --warning-tint: rgba(255,159,10,0.14);
+      /* 다음 방송까지 한참 남아 "대기 중"임을 강조색(주황, 임박/생방송용)과
+         구분해서 보여주는 민트 — 트랙/러너가 회색 일색이 되지 않게 하면서도
+         "지금 급한 건 아니다"라는 의미까지 색으로 전달한다. */
+      --standby: #2dd4bf;
+      --standby-tint: rgba(45,212,191,0.14);
       --text-primary: #ffffff;
       --text-secondary: rgba(235,235,245,0.6);
       --text-tertiary: rgba(235,235,245,0.3);
@@ -486,11 +491,9 @@
       transform: none;
       align-items: flex-end;
     }
-    /* 종료 지점엔 프로그램명이 중복 표시되지 않게 — 참조 시안처럼 프로그램명은
-       좌상단 한 곳에만, 우측은 종료 시각만 보이게 한다. */
-    #cd-marker-end .cd-marker-program {
-      display: none;
-    }
+    /* 종료 지점도 시작과 같은 프로그램의 예정 종료라, 프로그램명을 양쪽에
+       똑같이 보여준다 — 우측만 봐도 "무슨 방송이 언제 끝나는지" 바로
+       알 수 있게(사용자 피드백, 5005 기존 화면 참고). */
     /* 프로그램명·뱃지·체크는 이제 부모(.cd-marker-label) em이 아니라 독립
        크기 — 실측 스크린샷 기준으로 맞춘 값(위 .cd-marker-label 주석 참고).
        참조 시안(Direction 3)의 .bc-title처럼 진하고 촘촘하게(letter-spacing
@@ -562,7 +565,7 @@
       margin-left: 0.1em;
     }
     .cd-marker-assigned {
-      font-size: clamp(0.75rem, calc(var(--cd-label-scale, 1) * 1.2rem), 2.5rem);
+      font-size: inherit;
       font-weight: 700;
       color: var(--text-secondary);
       margin: 0 0.05em;
@@ -799,6 +802,14 @@
       #cd-runner.walking.parked .cd-runner-head,
       #cd-runner.walking.parked .cd-runner-ring { animation: none; }
     }
+    /* 다음 방송이 리드인(15분 전)에도 한참 못 미쳐 러너가 "먼 대기" 반감기
+       곡선을 타는 동안(#cd-track.parked, cdFarWaiting 기준) — 지나온 트랙과
+       러너를 주황(임박/생방송 신호) 대신 민트로 칠해서 "그냥 대기 중이지
+       급한 건 아님"을 색으로도 구분해준다. 리드인 반감기 안쪽으로 들어오면
+       (.parked 해제) 다시 원래 주황으로 자연스럽게 전환된다. */
+    #cd-track.parked #cd-fill { background: var(--standby); }
+    #cd-track.parked .cd-runner-head { background: var(--standby); }
+    #cd-track.parked .cd-runner-ring { border-color: var(--standby); }
 
     /* ── 세로 모드 (전체 화면 90도 회전) ───────────────────────── */
     body.portrait-right, body.portrait-left {
@@ -900,7 +911,7 @@
 
   <!-- 시계 + 날짜 + 날씨 -->
   <div id="center">
-    <div id="clock"><span id="clock-time">--:--:--</span><span id="clock-meridiem"></span></div>
+    <div id="clock"><span id="clock-meridiem"></span><span id="clock-time">--:--:--</span></div>
     <div id="info-row">
       <div id="date">----년 --월 --일 (--)</div>
       <div class="divider"></div>
@@ -1338,7 +1349,14 @@
     return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
   }
   function pad2(v) { return String(v).padStart(2, '0'); }
-  function hhmm(d) { return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
+  function hhmm(d) {
+    if (clock12Hour) {
+      let h12 = d.getHours() % 12;
+      if (h12 === 0) h12 = 12;
+      return `${pad2(h12)}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())} ${d.getHours() < 12 ? 'AM' : 'PM'}`;
+    }
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -1616,16 +1634,19 @@
       // 지나 리드인에 가까워지면(cdFarWaiting=false) 트레일이 다시 켜지면서
       // 실제로 눈에 띄게 다가오는 모습을 보여준다.
       cdRunner.classList.toggle('parked', cdFarWaiting);
+      cdTrack.classList.toggle('parked', cdFarWaiting);
     } else if (now < end) {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = Math.max(0, pct - startPct) + '%';
       cdRunner.classList.remove('walking', 'finished', 'parked');
       cdRunner.classList.add('running');
+      cdTrack.classList.remove('parked');
     } else {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = (100 - startPct) + '%';
       cdRunner.classList.remove('walking', 'running', 'parked');
       cdRunner.classList.add('finished');
+      cdTrack.classList.remove('parked');
     }
 
   }
