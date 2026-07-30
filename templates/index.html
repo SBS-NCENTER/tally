@@ -82,7 +82,9 @@
     }
     #status-box.on-air {
       background: var(--accent);
-      box-shadow: 0 1.4vh 4vh rgba(255,87,34,0.5);
+      /* 아래로만 치우쳐 번지던 글로우를 위아래로 고르게 — 참조 시안처럼
+         "램프가 은은하게 사방으로 퍼지는" 느낌으로(사용자 피드백). */
+      box-shadow: 0 0 4.5vh rgba(255,87,34,0.55), 0 -0.6vh 2.4vh rgba(255,87,34,0.25);
     }
 
     #status-text {
@@ -115,7 +117,9 @@
       font-variant-numeric: tabular-nums;
       font-weight: 900;
       color: var(--text-primary);
-      letter-spacing: 0.02em;
+      /* Pretendard Black은 원래 굵고 밀도가 높아서, 이 정도 큰 사이즈에선
+         자간을 아주 살짝 더 줘야 답답해 보이지 않는다(사용자 피드백). */
+      letter-spacing: 0.035em;
       line-height: 1;
       transition: font-size 0.2s ease, padding 0.2s ease;
       padding: clamp(8px, calc(var(--clock-box-scale, 1) * 1.4vh), 56px) 0;
@@ -712,7 +716,14 @@
       border-radius: 50%;
       transform: translate(-50%, -50%);
       background: var(--accent);
-      transition: background 0.2s ease;
+      /* 애니메이션(핑/펄스) 중일 때만 링이 보이던 걸, 평소에도 은은한 정적
+         글로우가 있게 해서 점이 더 또렷하고 대비되어 보이게 한다(사용자
+         피드백 — 참조 시안의 러너가 항상 대비 링이 있어 보임). */
+      box-shadow: 0 0 0 5px rgba(255,87,34,0.16), 0 0 10px rgba(255,87,34,0.4);
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+    #cd-track.pending .cd-runner-head {
+      box-shadow: 0 0 0 5px rgba(45,212,191,0.16), 0 0 10px rgba(45,212,191,0.4);
     }
     #cd-runner.walking .cd-runner-head { animation: runner-glow 2.4s ease-in-out infinite; }
     #cd-runner.running .cd-runner-head { animation: runner-glow 0.9s ease-in-out infinite; }
