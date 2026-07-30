@@ -663,13 +663,13 @@ def sps_listener():
                         result['end_next_day'] = actual_end_dt.date() != picked['start'].date()
                     is_live = on_air_event_id is not None and on_air_event_id == result['eventId']
 
-                    # 지금 뭔가(부조 무관, 채널 전체 기준) 생방송 중이면 — 그게 이
-                    # 방송 자신이 아닌 한 — 실제로 끝나기 전까지는 이 진입시각이
-                    # 여전히 "예정"일 뿐이다(앞 방송이 늦게 끝나거나 주조 순서가
-                    # 바뀌면 얼마든지 더 밀릴 수 있음, 간격이 몇 분이든 몇 시간이든
-                    # 무관). 지금 아무것도 생방송 중이 아니면(나이트라인 끝나고 한참
-                    # 뒤 모닝와이드1부처럼) 그 순간부터 바로 확정이다.
-                    start_confirmed = on_air_event_id is None or on_air_event_id == picked['eventId']
+                    # 지금 주조에서 내보내는 게(onAirIndex) 뭔가 있어도, 그게 생방송이
+                    # 아니라 서버플레이(사전 편성된 VCR/CM 등, all_live_today에 안 잡힘)면
+                    # 이미 정해진 길이라 캐스케이드로 밀릴 일이 없다 — 확정으로 본다.
+                    # 반대로 그게 이 방송 자신이 아닌 "다른 생방송"이면, 실제로 끝나기
+                    # 전까지는(늦게 끝나거나 순서가 바뀌면 밀릴 수 있으니) 여전히 예정이다.
+                    on_air_is_live = any(e['eventId'] == on_air_event_id for e in all_live_today)
+                    start_confirmed = (not on_air_is_live) or on_air_event_id == picked['eventId']
 
                     with open(SETTINGS_FILE, encoding='utf-8') as f:
                         s = json.load(f)
