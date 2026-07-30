@@ -491,9 +491,9 @@
       transform: none;
       align-items: flex-end;
     }
-    /* 종료 지점도 시작과 같은 프로그램의 예정 종료라, 프로그램명을 양쪽에
-       똑같이 보여준다 — 우측만 봐도 "무슨 방송이 언제 끝나는지" 바로
-       알 수 있게(사용자 피드백, 5005 기존 화면 참고). */
+    /* 종료 지점엔 시작과 같은 프로그램명이 중복이라 지저분해 보인다는
+       피드백으로 다시 시작 쪽에만 표시 — 어차피 방송 중 프로그램이 바뀌는
+       경우가 없어 종료 시각만 봐도 충분히 유추 가능. */
     /* 프로그램명은 바로 밑 시작/종료 시각(.cd-marker-label)과 같은 크기로
        맞춘다(font-size: inherit — 예전엔 더 작아서 시각보다 덜 눈에 띔,
        사용자 피드백). 색은 강조색을 써봤다가 원래 흰색이 더 낫다는
@@ -514,34 +514,11 @@
       letter-spacing: 0;
       margin-left: 0.2em;
     }
-    /* 실제로 주조에서 이 부조로 컷팅된 상태(onAirIndex 기준 broadcastIsLive)일
-       때만 프로그램명 옆에 뜨는 LIVE 뱃지 — 방송 예정/대기 중엔 안 보인다. */
-    /* .cd-marker-label이 flex-column이라 그 직계 자식은 전부 각자 한 줄씩
-       차지한다 — 프로그램명+LIVE뱃지를 한 줄에 나란히 두려면 이 둘을 묶는
-       가로 방향 flex 한 줄로 따로 감싸야 한다("나이트 라인(TS-4) LIVE"). */
-    .cd-marker-title-row {
-      display: flex;
-      align-items: baseline;
-    }
-    .cd-live-badge {
-      display: none;
-      color: #ffffff;
-      background: var(--accent);
-      font-weight: 900;
-      font-size: 0.4em;
-      letter-spacing: 0.05em;
-      padding: 0.2em 0.5em 0.18em;
-      border-radius: 999px;
-      margin-left: 0.4em;
-      align-self: center;
-    }
-    /* 뱃지가 뙇 나타나지 않고 살짝 튀어오르듯 등장 — LIVE 전환처럼 자주
-       안 일어나는 상태 변화에만 쓰는 one-shot 모션이라(매초 반복 X)
-       24시간 화면에서도 거슬리지 않는다. */
-    .cd-live-badge.show {
-      display: inline-block;
-      animation: cd-live-badge-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    }
+    /* LIVE 표시는 이제 프로그램명 옆이 아니라 타임라인 밑 카운트다운 알약
+       안(.cd-live-dot, 아래 .cd-runner-tag-pill 섹션)으로 옮겼다 — 위아래로
+       흩어져 있던 "확정" 체크·"LIVE" 뱃지·카운트다운 정보가 한곳에 모이게
+       (사용자 피드백). 뱃지가 뙇 나타나지 않고 살짝 튀어오르듯 등장하는
+       one-shot 모션(cd-live-badge-in)은 그 자리에서 그대로 재사용한다. */
     @keyframes cd-live-badge-in {
       0%   { transform: scale(0.6); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
@@ -627,25 +604,27 @@
       align-items: center;
       gap: 0.4em;
     }
+    /* 예전엔 프로그램명 옆에 따로 뜨던 LIVE 뱃지를 여기로 옮겨왔다 — 카운트다운
+       알약이 흰색으로 뒤집히는(#cd-runner-tag.is-live) 상태 변화 자체론 "왜
+       색이 바뀌었는지" 설명이 없어서, 같은 자리에 짧은 텍스트 칩으로 이유를
+       바로 알려준다. */
     .cd-live-dot {
       display: none;
-      width: 0.5em;
-      height: 0.5em;
-      border-radius: 50%;
+      color: #ffffff;
       background: var(--accent);
+      font-weight: 900;
+      font-size: 0.32em;
+      letter-spacing: 0.04em;
+      padding: 0.28em 0.6em 0.24em;
+      border-radius: 999px;
       flex-shrink: 0;
-      animation: cd-live-pulse 1.4s ease-in-out infinite;
     }
-    /* 참조 시안(Direction 3)의 알약엔 점 기호가 없음 — 숫자만 깔끔하게 보여준다는
-       원칙(버전3 피드백)과 같은 이유로 여기서도 뺀다. */
-    .cd-live-dot.show { display: none; }
-    @keyframes cd-live-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.35; transform: scale(0.8); }
+    .cd-live-dot.show {
+      display: inline-block;
+      animation: cd-live-badge-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
     }
     @media (prefers-reduced-motion: reduce) {
-      .cd-live-dot { animation: none; }
-      .cd-live-badge.show { animation: none; }
+      .cd-live-dot.show { animation: none; }
     }
     .cd-tag-main {
       color: inherit;
@@ -947,14 +926,13 @@
       <div class="cd-marker" id="cd-marker-start">
         <span class="cd-marker-dot"></span>
         <span class="cd-marker-label">
-          <span class="cd-marker-title-row"><span class="cd-marker-program" id="cd-marker-start-program"></span><span class="cd-live-badge" id="cd-live-badge">LIVE</span></span>
+          <span class="cd-marker-program" id="cd-marker-start-program"></span>
           <span id="cd-marker-start-label">시작</span>
         </span>
       </div>
       <div class="cd-marker" id="cd-marker-end">
         <span class="cd-marker-dot"></span>
         <span class="cd-marker-label">
-          <span class="cd-marker-program" id="cd-marker-end-program"></span>
           <span id="cd-marker-end-label">종료</span>
         </span>
       </div>
@@ -969,7 +947,7 @@
       <div class="cd-runner-tag" id="cd-runner-tag">
         <span class="cd-runner-tag-pill" id="cd-runner-tag-text">
           <span class="cd-tag-main-row">
-            <span class="cd-live-dot" id="cd-live-dot"></span>
+            <span class="cd-live-dot" id="cd-live-dot">LIVE</span>
             <span class="cd-tag-main" id="cd-tag-main">--:--</span>
           </span>
           <span class="cd-tag-sub" id="cd-tag-sub"></span>
@@ -1020,11 +998,9 @@
   const cdMarkerStartLabel = document.getElementById('cd-marker-start-label');
   const cdMarkerEndLabel   = document.getElementById('cd-marker-end-label');
   const cdMarkerStartProgram = document.getElementById('cd-marker-start-program');
-  const cdMarkerEndProgram   = document.getElementById('cd-marker-end-program');
   const cdRunnerTagEl        = document.getElementById('cd-runner-tag');
   const cdRunnerTagPill      = document.getElementById('cd-runner-tag-text');
   const cdLiveDot            = document.getElementById('cd-live-dot');
-  const cdLiveBadge          = document.getElementById('cd-live-badge');
   const stopwatchCol     = document.getElementById('stopwatch-col');
   const stopwatchLabel   = document.getElementById('stopwatch-label');
   const stopwatchTimerEl = document.getElementById('stopwatch-timer');
@@ -1415,11 +1391,13 @@
       return;
     }
 
+    // broadcastIsLive는 sps_listener가 onAirIndex(주조→부조 실제 컷팅)를 실시간으로
+    // 확인해서 반영하는 값 — 프로그램명 옆 별도 뱃지 대신, 타임라인 밑 카운트다운
+    // 알약 자체를 흰색으로 뒤집고(#cd-runner-tag.is-live) 그 안에 LIVE 라벨을
+    // 같이 넣어서 "지금 진짜 방송 중"을 한곳에서 알려준다(사용자 피드백 — 위아래로
+    // 정보가 흩어져 있던 걸 카운트다운 박스 하나로 모음).
     cdRunnerTagEl.classList.toggle('is-live', broadcastIsLive);
     cdLiveDot.classList.toggle('show', broadcastIsLive);
-    // broadcastIsLive는 sps_listener가 onAirIndex(주조→부조 실제 컷팅)를 실시간으로
-    // 확인해서 반영하는 값 — 그 값 그대로 프로그램명 옆에 LIVE 뱃지를 띄운다.
-    cdLiveBadge.classList.toggle('show', broadcastIsLive);
 
     const { start, end } = anchorBroadcastWindow(now, startVal, broadcastTimeNextDay, endVal, broadcastEndTimeNextDay);
     const rawDiffMs = start - now;
@@ -1469,7 +1447,6 @@
     const scheduledEnd = broadcastScheduledEndTime
       ? timeToday(start, broadcastScheduledEndTime, broadcastScheduledEndTimeNextDay) : end;
     cdMarkerEndLabel.textContent = (isDifferentDay(scheduledEnd, now) ? 'N ' : '') + hhmm(scheduledEnd);
-    cdMarkerEndProgram.innerHTML = programLabel();
 
     // 방송이 실제로 끝났으면(=LIVE가 꺼지고 예정과 실제 종료가 달라지면) 그
     // 사실을 우하단 텍스트가 아니라 말풍선 자체로 보여준다 — 끝난 뒤엔 말풍선의
