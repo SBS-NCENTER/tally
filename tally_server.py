@@ -495,19 +495,6 @@ def sps_next_handoff_distance(all_live_today, now):
     return min(abs(b - now) for b in boundaries)
 
 
-def sps_find_preceding_handoff(all_live_today, picked):
-    """picked 바로 앞에 SPS_HANDOFF_GAP 이내로 붙어있는 생방송(스튜디오 무관)이
-    있으면 그 항목을, 없으면 None을 반환. 모닝와이드1→2→3부, 뉴스헌터스→8뉴스처럼
-    앞 생방송이 실제로 끝나야 뒤 생방송 진입시간이 캐스케이드로 더 안 밀리고
-    확정되는 관계를 찾기 위함."""
-    candidates = [e for e in all_live_today if e['eventId'] != picked['eventId'] and e['end'] <= picked['start']]
-    if not candidates:
-        return None
-    nearest = max(candidates, key=lambda e: e['end'])
-    gap = picked['start'] - nearest['end']
-    return nearest if timedelta(0) <= gap <= SPS_HANDOFF_GAP else None
-
-
 def sps_listener():
     """SPS 운행표를 주기적으로 조회해서 생방송(liveOrVcr, 선택된 부조정실) 진행 항목을
     발견하면 생방송(카운트다운) 모드의 시작/종료 시각을 자동으로 채워준다. settings.json의
@@ -676,22 +663,13 @@ def sps_listener():
                         result['end_next_day'] = actual_end_dt.date() != picked['start'].date()
                     is_live = on_air_event_id is not None and on_air_event_id == result['eventId']
 
-                    # 앞에 SPS_HANDOFF_GAP 이내로 바로 붙는 생방송이 없으면(오늘 첫 방송
-                    # 등) 캐스케이드로 당장 흔들릴 상대가 없으니 처음부터 확정으로 본다.
-                    # 있으면, 그 앞 생방송이 실제로 끝나야(=onAirIndex가 더 이상 그걸
-                    # 가리키지 않아야) 확정 — 그 전까지는 계속 밀릴 수 있는 잠정값이다.
-                    preceding = sps_find_preceding_handoff(all_live_today, picked)
-                    start_confirmed = True
-                    if preceding is not None:
-                        start_confirmed = False
-                        if on_air_event_id is not None:
-                            on_air_entry = next((e for e in repos if e.get('eventId') == on_air_event_id), None)
-                            if on_air_entry:
-                                try:
-                                    on_air_start = datetime.strptime(on_air_entry['startTime'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=KST)
-                                    start_confirmed = on_air_start >= preceding['end']
-                                except Exception:
-                                    pass
+                    # 지금 뭔가(부조 무관, 채널 전체 기준) 생방송 중이면 — 그게 이
+                    # 방송 자신이 아닌 한 — 실제로 끝나기 전까지는 이 진입시각이
+                    # 여전히 "예정"일 뿐이다(앞 방송이 늦게 끝나거나 주조 순서가
+                    # 바뀌면 얼마든지 더 밀릴 수 있음, 간격이 몇 분이든 몇 시간이든
+                    # 무관). 지금 아무것도 생방송 중이 아니면(나이트라인 끝나고 한참
+                    # 뒤 모닝와이드1부처럼) 그 순간부터 바로 확정이다.
+                    start_confirmed = on_air_event_id is None or on_air_event_id == picked['eventId']
 
                     with open(SETTINGS_FILE, encoding='utf-8') as f:
                         s = json.load(f)
