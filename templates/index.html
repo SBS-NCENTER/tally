@@ -1275,8 +1275,22 @@
     if (isBeforeStart) {
       const leadSec    = Math.min(CD_LEAD_SEC, durationSec);
       const trackStart = new Date(start.getTime() - leadSec * 1000);
-      startPct = (leadSec / (leadSec + durationSec)) * 100;
-      const totalSec = (end - trackStart) / 1000;
+      // 방송이 리드인(15분)보다 짧으면(예: 12분짜리 뉴스) leadSec이 durationSec에
+      // 맞춰 같이 줄어들어(위 Math.min) 리드인:방송 비율이 1:1에 가까워지고,
+      // 심하면(정확히 같아지면) startPct가 정확히 50%가 돼버려 정작 방송 구간
+      // 자체가 트랙 절반밖에 못 차지한다(실측: 12분 방송에서 정확히 50% 확인,
+      // 사용자 피드백). 실제 리드인 타이밍(leadSec, trackStart)은 손대지 않고,
+      // "화면에 얼마나 넓게 그릴지"만 방송 길이를 최소 60분으로 쳐서 계산 —
+      // 짧은 방송이라도 방송 구간이 트랙의 대부분을 차지하게 한다(88분 같은
+      // 원래도 넉넉한 방송은 60분 밑으로 안 깎이니 그대로 유지, 회귀 없음).
+      // totalSec도 반드시 같은 기준(layoutDurationSec)으로 맞춰야 한다 — 안 그러면
+      // 러너 위치(pct)는 실제 durationSec 기준으로 방송 시작 순간 50%까지 가는데
+      // 마커(startPct)는 새로 줄어든 값에 멈춰 있어 러너가 마커를 훌쩍 지나쳐
+      // 보이는 어긋남이 생긴다.
+      const LAYOUT_MIN_DURATION_SEC = 60 * 60;
+      const layoutDurationSec = Math.max(durationSec, LAYOUT_MIN_DURATION_SEC);
+      startPct = (leadSec / (leadSec + layoutDurationSec)) * 100;
+      const totalSec = leadSec + layoutDurationSec;
       const elapsedFromTrackStart = (now - trackStart) / 1000;
       pct = Math.max(0, Math.min(1, elapsedFromTrackStart / totalSec)) * 100;
     } else {
