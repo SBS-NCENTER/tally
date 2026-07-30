@@ -710,9 +710,11 @@
       border-radius: 6px;
       transition: background 0.2s ease, width 0.2s ease, opacity 0.2s ease;
     }
-    /* 다음 방송이 아직 한참 남아 러너가 트랙 맨 앞에 멈춰있는 동안은 트레일을
-       숨긴다 — 실제로 움직이고 있지 않은데 카드 여백을 주황으로 채워서
-       왼쪽만 트랙에 딱 붙은 것처럼 보이는 비대칭 착시를 없앤다. */
+    /* 다음 방송이 아직 한참 남아(리드인 반감기보다 더 먼) 러너가 트랙 맨 앞
+       근처에서 몇 시간이고 거의 눈에 안 띄게만 움직이는 동안은 트레일을
+       숨긴다 — 실제 이동량이 몇 px 안 되는데 트레일까지 켜두면 카드 여백을
+       주황으로 채워서 왼쪽만 트랙에 딱 붙은 것처럼 보이는 비대칭 착시를
+       만든다(JS의 cdFarWaiting 참고 — 리드인에 가까워지면 다시 켜진다). */
     #cd-runner.walking.parked .cd-runner-trail { opacity: 0; }
     .cd-runner-ring {
       position: absolute;
@@ -770,11 +772,14 @@
       0%, 100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
       50%      { transform: translate(-50%, -50%) scale(1.07); filter: brightness(1.15); }
     }
-    /* 다음 방송이 한참 남아 러너가 트랙 맨 앞에 멈춰있는 동안, 트레일을
-       없앴더니(비대칭 착시 해결) 이번엔 러너가 아예 안 움직이는 것처럼
-       보였다(사용자 피드백) — 진행 중이라는 착각은 주지 않으면서(위치는
-       그대로 고정) "대기 중, 시스템은 살아있다"는 걸 눈에 띄게 알려주는
-       숨쉬기 펄스로 대체(기존 walking 글로우/핑보다 더 뚜렷하게). */
+    /* 다음 방송이 한참 남아 러너가 트랙 맨 앞 근처에서 몇 시간이고 거의 안
+       보일 만큼만 움직이던 동안, 트레일을 없앴더니(비대칭 착시 해결) 이번엔
+       러너가 아예 안 움직이는 것처럼 보였다(사용자 피드백) — 실제 위치는
+       반감기 곡선을 따라 계속(아주 조금씩) 진짜로 전진하지만, 그 변화가
+       눈에 안 띄는 동안엔 "대기 중, 시스템은 살아있다"는 걸 눈에 띄게
+       알려주는 숨쉬기 펄스를 같이 얹는다(기존 walking 글로우/핑보다 더
+       뚜렷하게). 리드인 반감기 안쪽으로 들어오면(cdFarWaiting=false) 위치
+       변화 자체가 눈에 띄게 되므로 이 펄스는 꺼진다. */
     #cd-runner.walking.parked .cd-runner-head {
       animation: runner-parked-pulse 2.6s ease-in-out infinite;
     }
@@ -1259,6 +1264,17 @@
 
   /* ── 방송 시작 카운트다운 ───────────────────────────────────── */
   const CD_LEAD_SEC = 15 * 60;
+  // 러너가 실제 리드인(CD_LEAD_SEC, 마지막 15분) 구간에 들어오기 전 — 몇 시간이고
+  // 이어질 수 있는 "먼 대기" 구간에서도 최소한의 진짜(가짜 애니메이션이 아닌)
+  // 움직임을 보여주기 위한 상수. 이 구간은 위치 자체가 운영상 의미가 없어서
+  // (아무도 3시간 전 위치로 초 단위 판단을 하지 않음) 정확도 대신, 남은 시간에
+  // 따라 단조 증가하되 멀수록 강하게 압축되는 반감기(half-life) 곡선을 쓴다.
+  // FAR_ZONE_PCT: 트랙 0~100 중 "먼 대기" 몫으로 떼어두는 최대치(%) — 리드인
+  //   진입 순간(remaining=0) 정확히 이 값으로 이어붙어 아래 선형 구간과 맞물린다.
+  // FAR_ZONE_HALFLIFE_SEC: 리드인 진입까지 이만큼(초) 남았을 때 FAR_ZONE_PCT의
+  //   절반 지점에 위치하도록 곡선을 조정하는 반감기.
+  const FAR_ZONE_PCT = 6;
+  const FAR_ZONE_HALFLIFE_SEC = 3600;
   let cdWasBeforeStart = null;
   let cdWasOverrun = false;
   let cdWasFinalEnded = false;
@@ -1459,13 +1475,36 @@
     // 시작점을 지나면 트랙 좌표계를 '시작~종료'로 재구성 — 리드인 구간이 차지하던 공간을
     // 되찾아 트랙이 화면 전체 폭으로 길어진다 (크로싱 순간에만 cross-anim으로 부드럽게 전환).
     let startPct, pct;
+    // 리드인(CD_LEAD_SEC)에도 아직 안 들어와서 "먼 대기" 곡선을 타고 있는지 —
+    // 이 값이 트레일 숨김/숨쉬기 펄스(.parked)를 계속 켤지 판단하는 기준이 된다.
+    let cdFarWaiting = false;
     if (isBeforeStart) {
       const leadSec    = Math.min(CD_LEAD_SEC, durationSec);
       const trackStart = new Date(start.getTime() - leadSec * 1000);
       startPct = (leadSec / (leadSec + durationSec)) * 100;
-      const totalSec = (end - trackStart) / 1000;
-      const elapsedFromTrackStart = (now - trackStart) / 1000;
-      pct = Math.max(0, Math.min(1, elapsedFromTrackStart / totalSec)) * 100;
+
+      // "먼 대기" 몫은 트랙 0%부터 farPct까지 — 프로그램이 아주 길어서(durationSec가
+      // 커서) startPct 자체가 작을 때, 이 몫이 리드인(정밀 구간) 몫을 잠식하지
+      // 않도록 startPct의 절반을 넘지 않게 막는다.
+      const farPct = Math.min(FAR_ZONE_PCT, startPct / 2);
+      const remainingToTrackStartSec = (trackStart - now) / 1000;
+
+      if (remainingToTrackStartSec <= 0) {
+        // 실제 리드인 구간(마지막 leadSec) 안 — 여기는 그대로 완전히 선형이라
+        // 실제 경과 시간과 1:1로 대응한다(정확도가 중요한 구간이라 손대지 않음).
+        const elapsedFromTrackStart = -remainingToTrackStartSec;
+        const frac = leadSec > 0 ? Math.min(1, elapsedFromTrackStart / leadSec) : 1;
+        pct = farPct + frac * (startPct - farPct);
+      } else {
+        // 리드인보다 몇 시간이고 이전 — 정확한 위치는 운영상 의미가 없지만,
+        // 진짜로 시간이 흐르는 대로(가짜 애니메이션이 아니라) 단조 증가하는
+        // 반감기 곡선을 써서 "몇 시간째 트랙 맨 앞에 못박힌" 문제를 없앤다.
+        // remaining→0으로 갈수록 정확히 farPct로 이어붙어 위 선형 구간과
+        // 매끄럽게(불연속 없이) 맞물린다.
+        pct = farPct * FAR_ZONE_HALFLIFE_SEC / (FAR_ZONE_HALFLIFE_SEC + remainingToTrackStartSec);
+        cdFarWaiting = remainingToTrackStartSec > FAR_ZONE_HALFLIFE_SEC;
+      }
+      pct = Math.max(0, Math.min(startPct, pct));
     } else {
       startPct = 0;
       pct = Math.max(0, Math.min(1, (now - start) / (end - start))) * 100;
@@ -1566,12 +1605,16 @@
       cdFill.style.width = pct + '%';
       cdRunner.classList.remove('running', 'finished');
       cdRunner.classList.add('walking');
-      // 다음 방송이 리드인 구간(CD_LEAD_SEC)에도 아직 안 들어와서 러너가
-      // 트랙 맨 앞(0%)에 몇 시간이고 멈춰있는 경우, 러너 트레일이 카드
-      // 왼쪽 여백 전체를 주황으로 채워버려서 오른쪽 여백이랑 비대칭으로
-      // 보였다(사용자 피드백, 실측으로 좌표 자체는 대칭임을 확인) —
-      // 트랙 맨 앞에 "멈춰" 있을 때는 트레일을 숨긴다.
-      cdRunner.classList.toggle('parked', pct <= 0);
+      // 다음 방송이 리드인 구간(CD_LEAD_SEC)에도 아직 안 들어와서 "먼 대기"
+      // 반감기 곡선을 타는 동안(cdFarWaiting) — 실제로는 아주 조금씩이지만
+      // 진짜로 움직이고 있긴 해도, 트랙 맨 앞 근처 몇 % 안에서 몇 시간이고
+      // 머무는 동안 러너 트레일을 그대로 켜두면 카드 왼쪽 여백을 주황으로
+      // 채워버려서 오른쪽 여백이랑 비대칭으로 보였다(사용자 피드백, 실측으로
+      // 좌표 자체는 대칭임을 확인) — 이 구간에서는 트레일을 숨기고, 대신
+      // 숨쉬기 펄스로 "대기 중이지만 시스템은 살아있다"를 알린다. 반감기를
+      // 지나 리드인에 가까워지면(cdFarWaiting=false) 트레일이 다시 켜지면서
+      // 실제로 눈에 띄게 다가오는 모습을 보여준다.
+      cdRunner.classList.toggle('parked', cdFarWaiting);
     } else if (now < end) {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = Math.max(0, pct - startPct) + '%';
