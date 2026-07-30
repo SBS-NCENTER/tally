@@ -660,11 +660,11 @@
       animation: live-glow 2.6s ease-in-out infinite;
     }
     @keyframes live-glow {
-      0%, 100% { box-shadow: 0 0 0 clamp(2px, calc(var(--s) * 0.3vh), 5px) rgba(255,87,34,0.35); }
-      50%      { box-shadow: 0 0 0 clamp(5px, calc(var(--s) * 0.75vh), 12px) rgba(255,87,34,0.55); }
+      0%, 100% { box-shadow: 0 0 0 clamp(1px, calc(var(--s) * 0.13vh), 2px) rgba(255,87,34,0.35); }
+      50%      { box-shadow: 0 0 0 clamp(2px, calc(var(--s) * 0.3vh), 5px) rgba(255,87,34,0.55); }
     }
     @media (prefers-reduced-motion: reduce) {
-      #cd-runner-tag.is-live .cd-runner-tag-pill { animation: none; box-shadow: 0 0 0 clamp(3px, calc(var(--s) * 0.5vh), 8px) rgba(255,87,34,0.45); }
+      #cd-runner-tag.is-live .cd-runner-tag-pill { animation: none; box-shadow: 0 0 0 clamp(1.5px, calc(var(--s) * 0.2vh), 3px) rgba(255,87,34,0.45); }
     }
     .cd-runner-trail {
       position: absolute;
