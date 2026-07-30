@@ -517,12 +517,7 @@
     /* LIVE 표시는 이제 프로그램명 옆이 아니라 타임라인 밑 카운트다운 알약
        안(.cd-live-dot, 아래 .cd-runner-tag-pill 섹션)으로 옮겼다 — 위아래로
        흩어져 있던 "확정" 체크·"LIVE" 뱃지·카운트다운 정보가 한곳에 모이게
-       (사용자 피드백). 뱃지가 뙇 나타나지 않고 살짝 튀어오르듯 등장하는
-       one-shot 모션(cd-live-badge-in)은 그 자리에서 그대로 재사용한다. */
-    @keyframes cd-live-badge-in {
-      0%   { transform: scale(0.6); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
+       (사용자 피드백). */
     /* 체크(✓) 글자만으로는 획이 가늘어서 멀리서 잘 안 보인다는 피드백 —
        LIVE 뱃지랑 같은 언어(강조색 배경+흰 글자)로 작은 원형 뱃지를 깔아서
        존재감을 키운다. */
@@ -608,12 +603,19 @@
        알약이 흰색으로 뒤집히는(#cd-runner-tag.is-live) 상태 변화 자체론 "왜
        색이 바뀌었는지" 설명이 없어서, 같은 자리에 짧은 텍스트 칩으로 이유를
        바로 알려준다. */
+    /* 예전엔 .cd-tag-main-row 안에서 0.32em로 정의돼 있었는데, 이 em은 정작
+       옆의 큰 숫자(.cd-tag-main)가 아니라 부모(.cd-runner-tag-pill)의
+       기본(스케일 안 먹는) 글자 크기를 기준으로 계산돼 화면 실측 크기 설정을
+       올릴수록 옆 숫자만 커지고 LIVE 칩은 그대로라 거의 안 보이는 문제가
+       있었다(사용자 피드백) — 다른 카운트다운 텍스트와 똑같이 --cd-text-scale
+       기준 clamp로 맞춘다. 등장도 알약 색 전환과 같은 0.2s ease 페이드로
+       통일해서, 알약이 미끄러지는 동안 칩만 따로 튀는 것처럼 안 보이게 한다. */
     .cd-live-dot {
       display: none;
       color: #ffffff;
       background: var(--accent);
       font-weight: 900;
-      font-size: 0.32em;
+      font-size: clamp(0.62rem, calc(var(--cd-text-scale, 1) * 0.95vw), 1.5rem);
       letter-spacing: 0.04em;
       padding: 0.28em 0.6em 0.24em;
       border-radius: 999px;
@@ -621,7 +623,11 @@
     }
     .cd-live-dot.show {
       display: inline-block;
-      animation: cd-live-badge-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      animation: cd-live-fade-in 0.2s ease both;
+    }
+    @keyframes cd-live-fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
     @media (prefers-reduced-motion: reduce) {
       .cd-live-dot.show { animation: none; }
