@@ -1306,10 +1306,18 @@
     return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
   }
   function pad2(v) { return String(v).padStart(2, '0'); }
-  // 타임라인 시작/종료 시각은 AM/PM 없이 24시간제로 고정 — 메인 시계는
-  // clock12Hour 설정을 따르지만(사용자 피드백), 여기는 굳이 안 붙여도
-  // 항상 명확하고 자리도 덜 차지해서 그대로 둔다.
-  function hhmm(d) { return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
+  // 타임라인 시작/종료 시각도 메인 시계와 같은 clock12Hour를 따라 시(時)
+  // 숫자 표기는 맞추되(예: 12시간제면 13시→1시), 자리를 덜 차지하고 굳이
+  // 안 붙여도 명확해서 AM/PM 문자는 여기선 안 붙인다(사용자 피드백 —
+  // 시계는 2:48 PM인데 밑은 13:55라 서로 안 맞아 보기 불편하다는 지적).
+  function hhmm(d) {
+    if (clock12Hour) {
+      let h12 = d.getHours() % 12;
+      if (h12 === 0) h12 = 12;
+      return `${pad2(h12)}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+    }
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
