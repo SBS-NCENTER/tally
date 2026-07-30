@@ -368,6 +368,16 @@
     .sub-panel.open { display: flex; }
 
     .btn-row { display: flex; gap: 10px; }
+    /* 화면 크기 값들을 이것저것 만져본 뒤 "잘 튜닝된 기본값"으로 한 번에
+       되돌리고 싶을 때 쓰는 버튼 — 슬라이더 하나하나 되돌릴 필요 없이. */
+    .reset-size-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; padding: 10px 0; margin-bottom: 14px;
+      border-radius: 10px; border: 1px solid var(--oneui-hairline);
+      background: transparent; color: var(--text-secondary);
+      font-weight: 700; font-size: 0.82rem; cursor: pointer;
+    }
+    .reset-size-btn:active { background: var(--oneui-surface-2); }
     button.action-btn {
       flex: 1;
       padding: 12px 0;
@@ -668,6 +678,7 @@
       <span class="chevron">▾</span>
     </button>
     <div class="sub-panel" id="size-sub">
+      <button type="button" class="reset-size-btn" id="reset-size-btn">{{ icon('revert') }}기본값으로 초기화</button>
       <div class="size-group-label">공통 요소</div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>탈리 박스 높이</span><span class="val" id="tally-box-size-val">1.00x</span></div>
@@ -833,6 +844,29 @@
   }
   document.addEventListener('input', e => {
     if (e.target.matches && e.target.matches('input[type=range]')) refreshRangeFill(e.target);
+  });
+
+  // 여러 세션에 걸쳐 튜닝해서 시인성이 잘 맞는 걸로 확인된 기본값 — 슬라이더를
+  // 이것저것 만져본 뒤 "기본값으로 초기화" 버튼 한 번으로 전부 되돌리기 위함.
+  const SIZE_DEFAULTS = {
+    'tally-box-size': 1.25, 'tally-size': 1.75,
+    'clock-box-size': 1,    'clock-size': 1.55,
+    'sch-box-size': 1,      'sch-size': 1,
+    'cd-box-size': 1.5, 'cd-text-size': 2.1, 'cd-label-size': 1.95,
+    'sw-box-size': 1.45, 'sw-text-size': 1.65,
+    'p-box-size': 1, 'p-tally-size': 1, 'p-clock-size': 1,
+    'p-sch-size': 1, 'p-cd-size': 1, 'p-sw-size': 1,
+  };
+  document.getElementById('reset-size-btn').addEventListener('click', () => {
+    Object.entries(SIZE_DEFAULTS).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = val;
+      refreshRangeFill(el);
+      const valEl = document.getElementById(id + '-val');
+      if (valEl) valEl.textContent = val.toFixed(2) + 'x';
+    });
+    saveSettings();
   });
 
   const clockSizeSlider = document.getElementById('clock-size');
