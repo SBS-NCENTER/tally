@@ -605,7 +605,10 @@
          위에 뜬 알약으로 보이게 한다 — 참조 시안도 tag-idle-bg가 module-bg
          보다 살짝 밝다. */
       background: var(--oneui-surface-2);
-      color: var(--text-secondary);
+      /* 배경은 은은한 회색으로 두되(라이브 흰 알약과 상태 구분용), 안의
+         숫자는 흰색으로 — 방송 대기 중엔 이 숫자가 화면에서 제일 중요한
+         정보인데 회색 글자라 대비가 약하다는 피드백. */
+      color: var(--text-primary);
       font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
       /* 참조 시안(Direction 3)의 --travel-pad(.6/1.6/.65cqw)·--travel-radius(1.9cqw)
