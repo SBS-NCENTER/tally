@@ -495,12 +495,11 @@
        똑같이 보여준다 — 우측만 봐도 "무슨 방송이 언제 끝나는지" 바로
        알 수 있게(사용자 피드백, 5005 기존 화면 참고). */
     /* 프로그램명은 바로 밑 시작/종료 시각(.cd-marker-label)과 같은 크기로
-       맞추고(font-size: inherit — 예전엔 더 작아서 시각보다 덜 눈에 띔,
-       사용자 피드백) 색도 흰색이 아니라 강조색(accent)으로 줘서 흰 시각
-       텍스트와 확실히 구분되게 한다 — "몇 시에"(흰색)보다 "무슨 방송인지"
-       (강조색)가 한눈에 먼저 들어오게. */
+       맞춘다(font-size: inherit — 예전엔 더 작아서 시각보다 덜 눈에 띔,
+       사용자 피드백). 색은 강조색을 써봤다가 원래 흰색이 더 낫다는
+       피드백을 받아 되돌림. */
     .cd-marker-program {
-      color: var(--accent);
+      color: var(--text-primary);
       font-size: inherit;
       font-weight: 900;
       letter-spacing: -0.005em;
@@ -802,14 +801,13 @@
       #cd-runner.walking.parked .cd-runner-head,
       #cd-runner.walking.parked .cd-runner-ring { animation: none; }
     }
-    /* 다음 방송이 리드인(15분 전)에도 한참 못 미쳐 러너가 "먼 대기" 반감기
-       곡선을 타는 동안(#cd-track.parked, cdFarWaiting 기준) — 지나온 트랙과
-       러너를 주황(임박/생방송 신호) 대신 민트로 칠해서 "그냥 대기 중이지
-       급한 건 아님"을 색으로도 구분해준다. 리드인 반감기 안쪽으로 들어오면
-       (.parked 해제) 다시 원래 주황으로 자연스럽게 전환된다. */
-    #cd-track.parked #cd-fill { background: var(--standby); }
-    #cd-track.parked .cd-runner-head { background: var(--standby); }
-    #cd-track.parked .cd-runner-ring { border-color: var(--standby); }
+    /* 방송 시작 전(#cd-track.pending, now < start 동안 전부 — "먼 대기"뿐
+       아니라 리드인 구간까지 포함) 지나온 트랙과 러너를 주황(임박/생방송
+       신호) 대신 민트로 칠해서 "아직 대기 중"임을 색으로 구분해준다.
+       실제로 방송이 시작(running)하는 순간 원래 주황으로 전환된다. */
+    #cd-track.pending #cd-fill { background: var(--standby); }
+    #cd-track.pending .cd-runner-head { background: var(--standby); }
+    #cd-track.pending .cd-runner-ring { border-color: var(--standby); }
 
     /* ── 세로 모드 (전체 화면 90도 회전) ───────────────────────── */
     body.portrait-right, body.portrait-left {
@@ -1349,14 +1347,10 @@
     return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
   }
   function pad2(v) { return String(v).padStart(2, '0'); }
-  function hhmm(d) {
-    if (clock12Hour) {
-      let h12 = d.getHours() % 12;
-      if (h12 === 0) h12 = 12;
-      return `${pad2(h12)}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())} ${d.getHours() < 12 ? 'AM' : 'PM'}`;
-    }
-    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
-  }
+  // 타임라인 시작/종료 시각은 AM/PM 없이 24시간제로 고정 — 메인 시계는
+  // clock12Hour 설정을 따르지만(사용자 피드백), 여기는 굳이 안 붙여도
+  // 항상 명확하고 자리도 덜 차지해서 그대로 둔다.
+  function hhmm(d) { return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -1635,18 +1629,21 @@
       // 실제로 눈에 띄게 다가오는 모습을 보여준다.
       cdRunner.classList.toggle('parked', cdFarWaiting);
       cdTrack.classList.toggle('parked', cdFarWaiting);
+      // 방송 시작 전이면(먼 대기든 리드인 구간이든 전부) 민트 — 실제로
+      // 방송이 시작해야만(running) 원래 강조색(주황)으로 바뀐다.
+      cdTrack.classList.add('pending');
     } else if (now < end) {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = Math.max(0, pct - startPct) + '%';
       cdRunner.classList.remove('walking', 'finished', 'parked');
       cdRunner.classList.add('running');
-      cdTrack.classList.remove('parked');
+      cdTrack.classList.remove('parked', 'pending');
     } else {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = (100 - startPct) + '%';
       cdRunner.classList.remove('walking', 'running', 'parked');
       cdRunner.classList.add('finished');
-      cdTrack.classList.remove('parked');
+      cdTrack.classList.remove('parked', 'pending');
     }
 
   }
