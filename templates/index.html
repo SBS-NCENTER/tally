@@ -6,26 +6,26 @@
   <title>SBS Web Tally</title>
   <style>
     @font-face {
-      font-family: 'Pretendard';
-      src: url('/static/fonts/Pretendard-SemiBold.woff2') format('woff2');
+      font-family: 'SUIT';
+      src: url('/static/fonts/SUIT-SemiBold.woff2') format('woff2');
       font-weight: 600;
       font-display: swap;
     }
     @font-face {
-      font-family: 'Pretendard';
-      src: url('/static/fonts/Pretendard-Bold.woff2') format('woff2');
+      font-family: 'SUIT';
+      src: url('/static/fonts/SUIT-Bold.woff2') format('woff2');
       font-weight: 700;
       font-display: swap;
     }
     @font-face {
-      font-family: 'Pretendard';
-      src: url('/static/fonts/Pretendard-ExtraBold.woff2') format('woff2');
+      font-family: 'SUIT';
+      src: url('/static/fonts/SUIT-ExtraBold.woff2') format('woff2');
       font-weight: 800;
       font-display: swap;
     }
     @font-face {
-      font-family: 'Pretendard';
-      src: url('/static/fonts/Pretendard-Black.woff2') format('woff2');
+      font-family: 'SUIT';
+      src: url('/static/fonts/SUIT-Heavy.woff2') format('woff2');
       font-weight: 900;
       font-display: swap;
     }
@@ -60,7 +60,7 @@
       flex-direction: column;
       align-items: center;
       background: var(--oneui-bg);
-      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       user-select: none;
       overflow: hidden;
       cursor: none;
@@ -113,12 +113,12 @@
     }
 
     #clock {
-      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
       font-weight: 900;
       color: var(--text-primary);
-      /* Pretendard Black은 원래 굵고 밀도가 높아서, 이 정도 큰 사이즈에선
-         자간을 아주 살짝 더 줘야 답답해 보이지 않는다(사용자 피드백). */
+      /* 굵은 웨이트는 이 정도 큰 사이즈에선 자간을 아주 살짝 더 줘야
+         답답해 보이지 않는다(사용자 피드백, Pretendard 시절부터 유지). */
       letter-spacing: 0.035em;
       line-height: 1;
       transition: font-size 0.2s ease, padding 0.2s ease;
@@ -212,7 +212,7 @@
     }
 
     .sch-timerange {
-      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-size: clamp(1.2rem, 2.2vw, 1.8rem);
       font-weight: 700;
       color: var(--text-secondary);
@@ -351,7 +351,7 @@
     }
     .tm-col.running .tm-label, .tm-col.finished .tm-label { color: var(--tm-accent); }
     .tm-value {
-      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
       font-size: clamp(2.4rem, calc(var(--sw-text-scale, 1) * 4.6vw), 7.2rem);
       font-weight: 900;
@@ -589,7 +589,7 @@
          숫자는 흰색으로 — 방송 대기 중엔 이 숫자가 화면에서 제일 중요한
          정보인데 회색 글자라 대비가 약하다는 피드백. */
       color: var(--text-primary);
-      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
       /* 참조 시안(Direction 3)의 --travel-pad(.6/1.6/.65cqw)·--travel-radius(1.9cqw)
          비율 그대로 — cqw는 컨테이너 "폭" 기준이라 세로 여백도 vh가 아니라
