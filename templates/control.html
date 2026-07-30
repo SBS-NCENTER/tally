@@ -586,7 +586,7 @@
 
       <div id="sps-gap-row" class="setting-row">
         <div class="setting-row-inline"><span>{{ icon('skip') }}다음 방송 전환 대기</span><span class="val" id="sps-gap-val">즉시 전환</span></div>
-        <input type="range" id="sps-gap" min="0" max="1800" step="10" value="0" />
+        <input type="range" id="sps-gap" min="0" max="60" step="1" value="0" />
         <div class="setting-hint">방송이 끝나면 바로 다음 방송으로 넘어갈지, 몇 분간 방금 끝난 방송을 더 보여줄지 정합니다. "즉시 전환"이면 끝나자마자 다음 방송으로 바뀝니다.</div>
       </div>
 
@@ -1074,19 +1074,12 @@
   liveRevertSlider.addEventListener('input', () => { refreshLiveRevert(); saveSettings(); });
 
   function refreshSpsGap() {
-    // 슬라이더 자체는 10초 단위(초)로 두고, 저장은 기존 필드(spsGapMinutes, 분)
-    // 그대로 유지 — 분 단위만 있으면 10~50초 같은 촘촘한 대기시간을 못 정해서
-    // 초 단위 슬라이더로 바꾸고 분으로 환산해 저장한다.
+    // 슬라이더는 1초 단위(0~60초)로 두고, 저장은 기존 필드(spsGapMinutes, 분)
+    // 그대로 유지 — 실사용상 방금 끝난 방송을 몇 분씩 붙잡아둘 일은 거의 없고,
+    // 오히려 1초 단위로 촘촘하게 몇 초만 정하는 쪽이 훨씬 실용적이라 기존
+    // 0~30분(10초 단위) 범위를 0~60초(1초 단위)로 좁혔다.
     const sec = parseFloat(spsGapSlider.value);
-    if (sec === 0) {
-      spsGapVal.textContent = '즉시 전환';
-    } else if (sec < 60) {
-      spsGapVal.textContent = sec + '초 후 전환';
-    } else {
-      const m = Math.floor(sec / 60);
-      const s = sec % 60;
-      spsGapVal.textContent = (s === 0 ? `${m}분` : `${m}분 ${s}초`) + ' 후 전환';
-    }
+    spsGapVal.textContent = sec === 0 ? '즉시 전환' : sec + '초 후 전환';
   }
   refreshSpsGap();
   spsGapSlider.addEventListener('input', () => { refreshSpsGap(); saveSettings(); });
@@ -1608,7 +1601,7 @@
       broadcastEndTimeNdayBtn.classList.toggle('active', !!s.broadcastEndTimeNextDay);
       spsAutoToggle.checked = s.spsAutoDetect === undefined ? true : !!s.spsAutoDetect;
       populateStudioOptions(s.spsStudio || '');
-      if (s.spsGapMinutes !== undefined) spsGapSlider.value = Math.round(s.spsGapMinutes * 60 / 10) * 10;
+      if (s.spsGapMinutes !== undefined) spsGapSlider.value = Math.min(60, Math.round(s.spsGapMinutes * 60));
       refreshSpsGap();
       applySpsAutoUI();
 

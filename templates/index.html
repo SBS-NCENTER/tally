@@ -494,14 +494,14 @@
     /* 종료 지점도 시작과 같은 프로그램의 예정 종료라, 프로그램명을 양쪽에
        똑같이 보여준다 — 우측만 봐도 "무슨 방송이 언제 끝나는지" 바로
        알 수 있게(사용자 피드백, 5005 기존 화면 참고). */
-    /* 프로그램명·뱃지·체크는 이제 부모(.cd-marker-label) em이 아니라 독립
-       크기 — 실측 스크린샷 기준으로 맞춘 값(위 .cd-marker-label 주석 참고).
-       참조 시안(Direction 3)의 .bc-title처럼 진하고 촘촘하게(letter-spacing
-       타이트) — 예전의 넓은 자간+대문자 변환은 "라벨" 취급이라 시작/종료
-       시각이랑 구분이 잘 안 됐다. */
+    /* 프로그램명은 바로 밑 시작/종료 시각(.cd-marker-label)과 같은 크기로
+       맞추고(font-size: inherit — 예전엔 더 작아서 시각보다 덜 눈에 띔,
+       사용자 피드백) 색도 흰색이 아니라 강조색(accent)으로 줘서 흰 시각
+       텍스트와 확실히 구분되게 한다 — "몇 시에"(흰색)보다 "무슨 방송인지"
+       (강조색)가 한눈에 먼저 들어오게. */
     .cd-marker-program {
-      color: var(--text-primary);
-      font-size: clamp(0.85rem, calc(var(--cd-label-scale, 1) * 1.35rem), 2.9rem);
+      color: var(--accent);
+      font-size: inherit;
       font-weight: 900;
       letter-spacing: -0.005em;
       margin-bottom: 0.25em;
