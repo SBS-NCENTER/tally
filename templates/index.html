@@ -919,7 +919,7 @@
 
     .qp-head {
       display: flex; align-items: center; justify-content: space-between;
-      color: var(--text-tertiary); font-size: clamp(0.4rem, 0.85vw, 0.6rem);
+      color: var(--text-tertiary); font-size: clamp(10px, 0.52vw, 14px);
       font-weight: 800; letter-spacing: 0.07em; flex-shrink: 0;
     }
     .qp-head .qp-dot {
@@ -931,7 +931,7 @@
     }
 
     .qp-title {
-      font-size: clamp(0.36rem, 0.78vw, 0.54rem);
+      font-size: clamp(10px, 0.55vw, 15px);
       color: var(--text-tertiary); font-weight: 800; letter-spacing: 0.05em;
       margin-bottom: 3%;
       display: flex; align-items: center; justify-content: space-between;
@@ -957,10 +957,10 @@
       display: flex; align-items: center; justify-content: center;
       border-radius: 50%;
       background: rgba(255,255,255,0.07);
-      font-size: clamp(0.5rem, 1vw, 0.74rem);
+      font-size: clamp(12px, 0.68vw, 19px);
       transition: background 0.18s ease, color 0.18s ease;
     }
-    .qp-mode .qp-lb { font-size: clamp(0.36rem, 0.76vw, 0.54rem); font-weight: 800; white-space: nowrap; }
+    .qp-mode .qp-lb { font-size: clamp(11px, 0.6vw, 16px); font-weight: 800; white-space: nowrap; }
     .qp-mode.active {
       background: linear-gradient(160deg, rgba(255,87,34,0.22), rgba(255,87,34,0.06));
       border-color: rgba(255,87,34,0.5);
@@ -976,24 +976,24 @@
       position: relative; overflow: hidden; border-radius: 9px; cursor: pointer;
     }
     .qp-toggle .qp-tl {
-      font-size: clamp(0.4rem, 0.82vw, 0.58rem);
+      font-size: clamp(11px, 0.62vw, 17px);
       font-weight: 800; color: var(--text-secondary); white-space: nowrap;
     }
     .qp-sw {
       position: relative; flex-shrink: 0;
-      width: clamp(24px, 2.4vw, 34px); height: clamp(14px, 1.4vw, 20px);
+      width: clamp(30px, 1.9vw, 48px); height: clamp(17px, 1.08vw, 27px);
       border-radius: 999px; background: rgba(255,255,255,0.14);
       transition: background 0.2s ease;
     }
     .qp-sw::after {
       content: ''; position: absolute; top: 2px; left: 2px;
-      width: calc(clamp(14px, 1.4vw, 20px) - 4px); height: calc(clamp(14px, 1.4vw, 20px) - 4px);
+      width: calc(clamp(17px, 1.08vw, 27px) - 4px); height: calc(clamp(17px, 1.08vw, 27px) - 4px);
       border-radius: 50%; background: #fff;
       transition: transform 0.2s cubic-bezier(0.22,1,0.36,1);
     }
     .qp-toggle.on .qp-sw { background: var(--accent); }
     .qp-toggle.on .qp-sw::after {
-      transform: translateX(calc(clamp(24px, 2.4vw, 34px) - clamp(14px, 1.4vw, 20px)));
+      transform: translateX(calc(clamp(30px, 1.9vw, 48px) - clamp(17px, 1.08vw, 27px)));
     }
 
     .qp-sub { margin-top: 6%; }
@@ -1004,8 +1004,8 @@
       border: 1px solid rgba(255,255,255,0.07);
       color: var(--text-secondary);
       font-weight: 800;
-      font-size: clamp(0.38rem, 0.8vw, 0.56rem);
-      padding: 2% 3.4%;
+      font-size: clamp(10px, 0.55vw, 15px);
+      padding: 3% 4.5%;
       border-radius: 999px;
       cursor: pointer; position: relative; overflow: hidden;
       transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
@@ -1014,16 +1014,16 @@
 
     .qp-field + .qp-field { margin-top: 5%; }
     .qp-flabel {
-      font-size: clamp(0.34rem, 0.72vw, 0.5rem);
+      font-size: clamp(9px, 0.5vw, 13px);
       color: var(--text-tertiary); font-weight: 800; margin-bottom: 2.5%;
     }
     .qp-timerow { display: flex; align-items: stretch; gap: 3%; }
     .qp-nday {
-      flex-shrink: 0; width: clamp(16px, 1.7vw, 24px);
+      flex-shrink: 0; width: clamp(22px, 1.35vw, 34px);
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 7px; color: var(--text-tertiary);
-      font-size: clamp(0.34rem, 0.72vw, 0.5rem); font-weight: 900;
+      font-size: clamp(9px, 0.5vw, 13px); font-weight: 900;
       cursor: pointer;
       transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
@@ -1034,13 +1034,13 @@
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 7px; color: var(--text-primary);
       font-family: inherit; font-variant-numeric: tabular-nums;
-      font-size: clamp(0.4rem, 0.85vw, 0.6rem); font-weight: 800;
-      text-align: center; padding: 4% 0; outline: none;
+      font-size: clamp(11px, 0.62vw, 17px); font-weight: 800;
+      text-align: center; padding: 5% 0; outline: none;
       transition: border-color 0.15s ease, background 0.15s ease;
     }
     .qp-time:focus { border-color: var(--accent); background: rgba(255,87,34,0.09); }
     .qp-hint {
-      font-size: clamp(0.3rem, 0.66vw, 0.44rem);
+      font-size: clamp(8px, 0.45vw, 12px);
       color: var(--text-tertiary); line-height: 1.5; margin-top: 4%;
     }
 
@@ -1051,8 +1051,8 @@
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.08);
       color: var(--text-primary); font-weight: 800;
-      font-size: clamp(0.36rem, 0.76vw, 0.54rem);
-      padding: 7% 0; border-radius: 9px;
+      font-size: clamp(11px, 0.6vw, 16px);
+      padding: 8% 0; border-radius: 9px;
       cursor: pointer; position: relative; overflow: hidden;
       transition: background 0.15s ease, transform 0.12s ease;
     }
@@ -1066,7 +1066,7 @@
       border-top: 1px solid var(--oneui-hairline);
       padding-top: 6%;
     }
-    .qp-count { color: var(--text-tertiary); font-weight: 800; font-size: clamp(0.3rem, 0.66vw, 0.44rem); }
+    .qp-count { color: var(--text-tertiary); font-weight: 800; font-size: clamp(8px, 0.45vw, 12px); }
     #qp-sched-list {
       flex: 1; min-height: 0; overflow-y: auto;
       display: flex; flex-direction: column; gap: clamp(3px, 0.7vh, 6px);
@@ -1080,7 +1080,7 @@
       background: rgba(255,255,255,0.04);
       border: 1px solid transparent;
       border-radius: 8px;
-      padding: clamp(4px, 0.9vh, 8px) clamp(5px, 0.55vw, 9px);
+      padding: clamp(6px, 0.75vh, 12px) clamp(7px, 0.5vw, 14px);
       display: flex; flex-direction: column; gap: 1px;
       transition: background 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
     }
@@ -1090,16 +1090,16 @@
     .qp-rtop { display: flex; align-items: baseline; justify-content: space-between; gap: 4%; }
     .qp-rtime {
       color: var(--text-primary); font-weight: 800; font-variant-numeric: tabular-nums;
-      font-size: clamp(0.36rem, 0.76vw, 0.53rem); white-space: nowrap;
+      font-size: clamp(10px, 0.55vw, 15px); white-space: nowrap;
     }
     .qp-rts {
       color: var(--warning); font-weight: 800;
-      font-size: clamp(0.32rem, 0.68vw, 0.46rem); white-space: nowrap; flex-shrink: 0;
+      font-size: clamp(9px, 0.5vw, 13px); white-space: nowrap; flex-shrink: 0;
     }
     .qp-row.tracked-live .qp-rts { color: var(--accent); }
     .qp-rname {
       color: var(--text-secondary); font-weight: 700;
-      font-size: clamp(0.34rem, 0.72vw, 0.5rem);
+      font-size: clamp(10px, 0.52vw, 14px);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .qp-row.tracked .qp-rname, .qp-row.tracked-live .qp-rname { color: var(--text-primary); }
@@ -1111,7 +1111,7 @@
     .qp-row.tracked-live .qp-ldot { display: inline-block; }
     @keyframes qp-livepulse { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
     .qp-empty {
-      color: var(--text-tertiary); font-size: clamp(0.32rem, 0.7vw, 0.48rem);
+      color: var(--text-tertiary); font-size: clamp(9px, 0.5vw, 13px);
       text-align: center; padding: 12% 0;
     }
 
@@ -1120,7 +1120,7 @@
       background: rgba(255,255,255,0.32); pointer-events: none;
     }
     #qp-holdmsg {
-      text-align: center; font-size: clamp(0.36rem, 0.75vw, 0.5rem);
+      text-align: center; font-size: clamp(9px, 0.5vw, 13px);
       color: var(--accent); opacity: 0; font-weight: 700; flex-shrink: 0;
       transition: opacity 0.15s ease;
     }
