@@ -917,6 +917,12 @@ def auto_revert_watcher():
 # ── Flask ─────────────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
+    # 방송 화면 자체에 퀵 설정 사이드 패널이 생기면서, 이 페이지도 /settings(POST)와
+    # /sps/* 조회를 해야 한다 — 그 엔드포인트들이 control_authed 세션을 요구하므로
+    # 여기서도 같이 세워준다. /control이 이미 PIN 없이 무조건 통과시키고 있으므로
+    # (위 control() 참고) 이걸로 새로 열리는 권한은 없다 — 서버에 접근할 수 있으면
+    # 어차피 /control로 동일한 조작이 가능한 상태였다.
+    session['control_authed'] = True
     return render_template('index.html')
 
 
