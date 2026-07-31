@@ -483,6 +483,10 @@
       color: var(--text-primary);
       white-space: nowrap;
       letter-spacing: 0.03em;
+      /* line-height를 안 정하면 기본값(≈1.2)의 leading이 프로그램명과 시각
+         사이에 위아래로 붙어, 실측상 글자 높이 56px에 줄 간격이 40px까지
+         벌어졌다(사용자 피드백) — 한 덩어리로 읽히게 촘촘히 고정한다. */
+      line-height: 1.06;
     }
     #cd-marker-start .cd-marker-label {
       left: 0;
@@ -507,7 +511,7 @@
       font-size: inherit;
       font-weight: 900;
       letter-spacing: -0.005em;
-      margin-bottom: 0.25em;
+      margin-bottom: 0.1em;
     }
     .cd-marker-program:empty { display: none; margin-bottom: 0; }
     /* 스튜디오 태그("(TS-4)")는 참조 시안의 .bc-studio처럼 연한 회색·중간
