@@ -1488,12 +1488,21 @@
   }
   setInterval(updateTimerDisplay, 1000);
 
+  // 타이머 길이 입력칸 전용 포맷 — 공용 formatStopwatch는 1시간을 넘으면
+  // "HH:MM:SS"를 돌려주는데 이 칸은 MM:SS 전용(maxlength=5)이라 형식이 어긋나고,
+  // 그러면 blur 시 정규식에 안 걸려 입력이 계속 되돌아간다(최대 99:59까지 설정
+  // 가능하므로 실제로 도달하는 범위다).
+  function fmtTimerDur(sec) {
+    const t = Math.max(0, Math.round(sec));
+    const p = v => String(v).padStart(2, '0');
+    return p(Math.floor(t / 60)) + ':' + p(t % 60);
+  }
   function setTimerDuration(sec) {
     timerDurationSec = Math.max(1, sec);
     timerRunning = false;
     timerStartedAt = null;
     timerRemainingMs = timerDurationSec * 1000;
-    timerDurationInput.value = formatStopwatch(timerRemainingMs);
+    timerDurationInput.value = fmtTimerDur(timerDurationSec);
     updateTimerDisplay();
     saveSettings();
   }
@@ -1531,7 +1540,7 @@
   });
   timerDurationInput.addEventListener('blur', () => {
     const m = timerDurationInput.value.match(/^(\d{1,2}):?(\d{1,2})?$/);
-    if (!m) { timerDurationInput.value = formatStopwatch(timerDurationSec * 1000); return; }
+    if (!m) { timerDurationInput.value = fmtTimerDur(timerDurationSec); return; }
     const mi = Math.min(99, parseInt(m[1], 10) || 0);
     const se = Math.min(59, parseInt(m[2] || '0', 10) || 0);
     setTimerDuration(mi * 60 + se);
@@ -1627,7 +1636,7 @@
       timerRunning     = !!s.timerRunning;
       timerRemainingMs = s.timerRemainingMs !== undefined ? parseFloat(s.timerRemainingMs) : timerDurationSec * 1000;
       timerStartedAt   = s.timerStartedAt ? parseFloat(s.timerStartedAt) : null;
-      timerDurationInput.value = formatStopwatch(timerDurationSec * 1000);
+      timerDurationInput.value = fmtTimerDur(timerDurationSec);
       updateTimerDisplay();
       document.querySelectorAll('input[type=range]').forEach(refreshRangeFill);
     })
