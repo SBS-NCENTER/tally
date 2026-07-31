@@ -1018,17 +1018,24 @@
   }
 
   let flashTimer = null;
+  // 저장 직후 잠깐 서버 동기화를 멈추는 창(아래 syncSharedState에서 확인).
+  // 선언이 사용처보다 뒤에 있으면 TDZ에 걸릴 수 있어 여기서 미리 잡아둔다.
+  let ctrlSuppressUntil = 0;
   function saveSettings() {
+    // 저장 요청이 서버에 반영되기 전에 5초 폴링이 끼어들면, 방금 바꾼 값이
+    // 옛 서버 값으로 되돌아가 보인다 — 저장 직후 잠깐은 동기화를 멈춘다.
+    ctrlSuppressUntil = Date.now() + 2500;
     return fetch('/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(currentSettings()),
     }).then(r => {
+      ctrlSuppressUntil = 0;
       if (r.status === 403) { window.location.href = '/control-login'; return; }
       saveFlash.classList.add('show');
       clearTimeout(flashTimer);
       flashTimer = setTimeout(() => saveFlash.classList.remove('show'), 900);
-    }).catch(() => {});
+    }).catch(() => { ctrlSuppressUntil = 0; });
   }
 
   /* ── 슬라이더/토글 표시 갱신 + 저장 바인딩 ─────────────────────── */
@@ -1168,11 +1175,65 @@
     }
   }
 
+  /* 방송 화면의 퀵 설정 사이드 패널에서도 같은 값을 바꿀 수 있게 되면서, 이 페이지가
+     로드 시점 값만 들고 있으면 두 가지 문제가 생긴다.
+       1) 저쪽에서 모드를 바꿔도 여기 화면은 옛 모드를 계속 보여준다.
+       2) 더 나쁜 건, 여기서 아무 설정이나 저장하는 순간 낡은 모드 값이 그대로
+          다시 전송돼(서버 POST는 전체 덮어쓰기) 저쪽 변경이 조용히 되돌아간다.
+     그래서 양쪽이 같이 쓰는 값들은 주기적으로 서버 상태로 다시 맞춘다.
+     단, 사용자가 지금 만지고 있는 입력칸과 방금 저장한 직후는 건드리지 않는다. */
+  function syncSharedState(s) {
+    if (Date.now() < ctrlSuppressUntil) return;
+
+    const serverMode = s.countdownMode ? 'countdown' : (s.stopwatchMode ? 'stopwatch' : 'schedule');
+    if (serverMode !== bottomMode) {
+      bottomMode = serverMode;
+      applyBottomModeUI();
+    }
+
+    const serverAuto = s.spsAutoDetect === undefined ? true : !!s.spsAutoDetect;
+    if (serverAuto !== spsAutoToggle.checked) {
+      spsAutoToggle.checked = serverAuto;
+      applySpsAutoUI();
+    }
+    if (s.spsStudio !== undefined && s.spsStudio !== spsStudioSelect.value
+        && document.activeElement !== spsStudioSelect) {
+      spsStudioSelect.value = s.spsStudio;
+    }
+
+    // 수동 입력 시각 — 타이핑 중인 칸은 그대로 둔다
+    if (s.broadcastTime !== undefined && document.activeElement !== broadcastTimeInput) {
+      broadcastTimeInput.value = s.broadcastTime;
+    }
+    if (s.broadcastEndTime !== undefined && document.activeElement !== broadcastEndTimeInput) {
+      broadcastEndTimeInput.value = s.broadcastEndTime;
+    }
+    broadcastTimeNdayBtn.classList.toggle('active', !!s.broadcastTimeNextDay);
+    broadcastEndTimeNdayBtn.classList.toggle('active', !!s.broadcastEndTimeNextDay);
+
+    // 스톱워치·타이머 — 저쪽에서 시작/정지했으면 여기 표시도 따라가야 한다
+    swRunning   = !!s.stopwatchRunning;
+    swElapsedMs = s.stopwatchElapsedMs !== undefined ? parseFloat(s.stopwatchElapsedMs) : swElapsedMs;
+    swStartedAt = s.stopwatchStartedAt ? parseFloat(s.stopwatchStartedAt) : null;
+    updateSwDisplay();
+
+    if (s.timerDurationSec !== undefined) timerDurationSec = parseFloat(s.timerDurationSec);
+    timerRunning     = !!s.timerRunning;
+    timerRemainingMs = s.timerRemainingMs !== undefined ? parseFloat(s.timerRemainingMs) : timerRemainingMs;
+    timerStartedAt   = s.timerStartedAt ? parseFloat(s.timerStartedAt) : null;
+    if (document.activeElement !== timerDurationInput) {
+      timerDurationInput.value = fmtTimerDur(timerDurationSec);
+    }
+    updateTimerDisplay();
+  }
+
   function pollBroadcastStatus() {
-    if (!spsAutoToggle.checked) return;
     fetch('/settings')
       .then(r => r.json())
       .then(s => {
+        syncSharedState(s);
+        // 아래 운행표 강조·요약 카드는 자동 연동 중일 때만 의미가 있다
+        if (!spsAutoToggle.checked) return;
         trackedEventId = s.broadcastEventId || null;
         trackedIsLive = !!s.broadcastIsLive;
         applyTrackedHighlight();
