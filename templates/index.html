@@ -1424,28 +1424,47 @@
   // 않는다(예: 예전엔 1080px 화면에서 시계 슬라이더 상단 60%가 사전 상한에
   // 막혀 아무 효과가 없었다). 실측 후 보정이라 어떤 화면 크기에서도 슬라이더가
   // 낼 수 있는 값까지는 항상 그대로 반영된다.
+  /* 폭을 재서 줄이는 로직에는 함정이 하나 있다 — #clock에는
+     `transition: font-size 0.2s`가 걸려 있어서, fontSize를 세팅한 직후
+     offsetWidth를 읽으면 아직 애니메이션 중간 크기의 폭이 잡힌다.
+     그 값으로 축소 비율을 계산하면 호출할 때마다 조금씩 더 작아져서,
+     재측정을 여러 번 하면 시계가 계속 쪼그라든다(실측: 284px → 102px).
+     측정하는 동안만 트랜지션을 끄고, 확정된 뒤 되살린다. */
+  function measureWithoutTransition(el, fn) {
+    const prev = el.style.transition;
+    el.style.transition = 'none';
+    const r = fn();
+    void el.offsetWidth;          // 트랜지션 복원 전에 확정값을 리플로우로 굳힌다
+    el.style.transition = prev;
+    return r;
+  }
+
   function setClockFontSize(rem) {
     if (isPortraitMode()) {
       // 90도 회전 구조라 두 축이 뒤바뀐다:
       // - #clock의 '너비'(8ch, 로컬 좌표)는 화면에선 '세로' 길이가 됨 → innerHeight 기준 제한
       // - #center가 상태박스/일정과 나눠쓰는 '쌓임 축' 예산은 화면상 '가로' → innerWidth 기준 제한
-      clockEl.style.transform = '';
-      clockEl.style.removeProperty('font-size');
-      clockEl.style.setProperty('--clock-fs', rem + 'rem');
-      const maxPx = window.innerHeight - 120;
-      const w = clockEl.offsetWidth;
-      if (w > maxPx) {
-        clockEl.style.setProperty('--clock-fs', (rem * maxPx / w) + 'rem');
-      }
+      measureWithoutTransition(clockEl, () => {
+        clockEl.style.transform = '';
+        clockEl.style.removeProperty('font-size');
+        clockEl.style.setProperty('--clock-fs', rem + 'rem');
+        const maxPx = window.innerHeight - 120;
+        const w = clockEl.offsetWidth;
+        if (w > maxPx) {
+          clockEl.style.setProperty('--clock-fs', (rem * maxPx / w) + 'rem');
+        }
+      });
     } else {
-      clockEl.style.removeProperty('--clock-fs');
-      clockEl.style.transform = '';
-      clockEl.style.fontSize = rem + 'rem';
-      const maxPx = window.innerWidth - 80;
-      const w = clockEl.offsetWidth;
-      if (w > maxPx) {
-        clockEl.style.fontSize = (rem * maxPx / w) + 'rem';
-      }
+      measureWithoutTransition(clockEl, () => {
+        clockEl.style.removeProperty('--clock-fs');
+        clockEl.style.transform = '';
+        clockEl.style.fontSize = rem + 'rem';
+        const maxPx = window.innerWidth - 80;
+        const w = clockEl.offsetWidth;
+        if (w > maxPx) {
+          clockEl.style.fontSize = (rem * maxPx / w) + 'rem';
+        }
+      });
     }
   }
   function setTallyFontSize(rem) {
@@ -1476,17 +1495,35 @@
     });
   }
 
+  /* 위 BASELINE 값들은 실제 배포 대상인 2560x1440 키오스크에서 눈으로 맞춘
+     절대 rem이라, 화면 크기가 달라져도 글자가 같은 물리 크기로 나온다
+     (실측: 시계 높이가 1440p에서 284px, 1080p에서 288px로 거의 동일).
+     그래서 더 작은 화면에서는 같은 글자가 화면을 훨씬 크게 차지하고,
+     1920x1080에서는 시계가 화면 폭의 97%를 먹으며 좌우가 잘렸다.
+
+     화면 높이를 기준으로 비율을 맞춰서 어떤 해상도에서도 키오스크와 같은
+     비율로 보이게 한다. 1440p에서는 계수가 정확히 1이라 기존 키오스크
+     화면은 전혀 바뀌지 않는다. 세로 모드는 90도 회전 구조라 쌓임 축이
+     가로가 되므로 innerWidth를 기준으로 삼는다. */
+  const DESIGN_H = 1440;
+  function vpFactor() {
+    const axis = isPortraitMode() ? window.innerWidth : window.innerHeight;
+    return axis / DESIGN_H;
+  }
+
   function applyLandscapeSizes() {
     if (isPortraitMode()) return;
-    setClockFontSize(CLOCK_BASELINE * clockScale);
-    setTallyFontSize(TALLY_BASELINE * tallyScale);
-    setSchFontSize(SCH_BASELINE * schScale);
+    const f = vpFactor();
+    setClockFontSize(CLOCK_BASELINE * clockScale * f);
+    setTallyFontSize(TALLY_BASELINE * tallyScale * f);
+    setSchFontSize(SCH_BASELINE * schScale * f);
   }
   function applyPortraitSizes() {
     if (!isPortraitMode()) return;
-    setClockFontSize(P_CLOCK_BASELINE * pClockScale);
-    setTallyFontSize(P_TALLY_BASELINE * pTallyScale);
-    setSchFontSize(P_SCH_BASELINE * pSchScale);
+    const f = vpFactor();   // 가로 모드와 같은 이유 — 위 vpFactor 주석 참고
+    setClockFontSize(P_CLOCK_BASELINE * pClockScale * f);
+    setTallyFontSize(P_TALLY_BASELINE * pTallyScale * f);
+    setSchFontSize(P_SCH_BASELINE * pSchScale * f);
     // 위(탈리)·아래(일정 또는 생방송) 패널은 시계가 정중앙에 오도록 항상 같은
     // 높이를 유지해야 해서, 세 요소 모두에 같은 배율을 건다(개별 배율을 쓰면
     // 위아래 높이가 달라져 시계가 한쪽으로 치우친다).
@@ -2006,7 +2043,32 @@
   }
 
   let cdTrackWidthPx = 0;
-  window.addEventListener('resize', () => { cdTrackWidthPx = 0; });
+
+  /* 시계·탈리 글자는 "일단 슬라이더 값대로 키운 뒤 실제 렌더 폭을 재서 화면을
+     넘치면 그만큼 줄이는" 방식인데(setClockFontSize 참고), 그 측정이 딱 한 번
+     — 설정을 처음 받은 직후 — 만 일어나는 게 문제였다.
+
+     1) 웹폰트(SUIT)는 font-display:swap이라 처음엔 폴백 폰트로 그려진다.
+        폴백이 더 좁아서 "안 넘친다"고 판단해버리고, 잠시 뒤 SUIT로 바뀌면서
+        실제로는 넘치는데 다시 재지 않는다. (1920x1080에서 시계 좌우가 잘려
+        나가던 실제 원인 — 2560x1440에선 여유가 있어 안 드러났다.)
+     2) 창 크기가 바뀌어도 다시 맞추지 않는다.
+
+     그래서 폰트 로드 완료 시점과 창 크기 변경 시에 다시 맞춰준다. 재측정은
+     항상 슬라이더 원래 값에서 다시 시작하므로(위 함수들이 매번 rem을 새로
+     세팅함) 반복해도 계속 작아지지 않는다. */
+  function refitScaledText() {
+    if (isPortraitMode()) applyPortraitSizes(); else applyLandscapeSizes();
+  }
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(refitScaledText).catch(() => {});
+  }
+  let refitTimer = null;
+  window.addEventListener('resize', () => {
+    cdTrackWidthPx = 0;
+    clearTimeout(refitTimer);
+    refitTimer = setTimeout(refitScaledText, 150);
+  });
 
   /* ── 스톱워치 + 타이머 (서버 상태 기준 — 컨트롤 페이지와 공유) ─── */
   let swRunning = false, swElapsedMs = 0, swStartedAt = null;
