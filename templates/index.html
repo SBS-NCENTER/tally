@@ -263,11 +263,11 @@
       align-items: center;
       justify-content: center;
       min-height: calc(
-        clamp(120px, calc(var(--cd-box-scale, 1) * 14vh), 254px) +
-        clamp(54px, calc(var(--cd-text-scale, 1) * 6vh), 107px) +
-        clamp(50px, calc(var(--cd-text-scale, 1) * 5vh), 95px)
+        clamp(120px, calc(var(--cd-box-scale, 1) * 14vh), calc(300px * var(--vpf, 1))) +
+        clamp(54px, calc(var(--cd-text-scale, 1) * 6vh), calc(132px * var(--vpf, 1))) +
+        clamp(50px, calc(var(--cd-text-scale, 1) * 5vh), calc(140px * var(--vpf, 1)))
       );
-      padding: clamp(16px, calc(var(--cd-text-scale, 1) * 1.8vh), 43px) clamp(20px, 4vw, 40px);
+      padding: clamp(16px, calc(var(--cd-text-scale, 1) * 1.8vh), calc(50px * var(--vpf, 1))) clamp(20px, 4vw, 40px);
       gap: clamp(0px, 0.4vh, 4px);
       transition: background 0.2s ease, min-height 0.2s ease;
     }
@@ -377,21 +377,21 @@
          별개로 마커용 여유를 고정 px로 따로 빼서 항상 안전하게 안에
          들어오도록 계산한다. */
       width: min(calc(100% - 90px), 2200px);
-      height: clamp(67px, calc(var(--s) * 7vh), 147px);
+      height: clamp(67px, calc(var(--s) * 7.7vh), calc(166px * var(--vpf, 1)));
       /* 위: 프로그램명/시작·종료 시각 라벨이 트랙 위로 뜨는 공간.
          아래: 러너를 따라다니는 카운트다운 알약이 트랙 아래로 뜨는 공간
          (참조 시안처럼 러너 위 말풍선 대신 트랙 아래 알약으로 옮기면서 추가). */
       /* 위쪽 여백은 프로그램명+시작/종료 라벨(.cd-marker-label) 몫이라
          그걸 키우는 --cd-label-scale을 따른다(스크린샷 실측 후 보강). */
-      margin-top: clamp(80px, calc(var(--cd-label-scale, 1) * 6vh), 170px);
-      margin-bottom: clamp(50px, calc(var(--cd-text-scale, 1) * 5vh), 95px);
+      margin-top: clamp(80px, calc(var(--cd-label-scale, 1) * 8.4vh), calc(215px * var(--vpf, 1)));
+      margin-bottom: clamp(50px, calc(var(--cd-text-scale, 1) * 5vh), calc(140px * var(--vpf, 1)));
       display: none;
     }
     #cd-track.show { display: block; }
     #cd-track-line {
       position: absolute;
       left: 0; right: 0; top: 30%;
-      height: clamp(9px, calc(var(--s) * 1.1vh), 26px);
+      height: clamp(9px, calc(var(--s) * 1.1vh), calc(32px * var(--vpf, 1)));
       transform: translateY(-50%);
       background: var(--oneui-surface-2);
       border-radius: 5px;
@@ -399,7 +399,7 @@
     #cd-fill {
       position: absolute;
       left: 0; top: 30%;
-      height: clamp(9px, calc(var(--s) * 1.1vh), 26px);
+      height: clamp(9px, calc(var(--s) * 1.1vh), calc(32px * var(--vpf, 1)));
       transform: translateY(-50%);
       background: var(--accent);
       border-radius: 5px;
@@ -419,8 +419,8 @@
     #cd-marker-end { left: 100%; }
     .cd-marker-dot {
       display: block;
-      width: clamp(22px, calc(var(--s) * 2.3vh), 56px);
-      height: clamp(22px, calc(var(--s) * 2.3vh), 56px);
+      width: clamp(22px, calc(var(--s) * 2.3vh), calc(62px * var(--vpf, 1)));
+      height: clamp(22px, calc(var(--s) * 2.3vh), calc(62px * var(--vpf, 1)));
       border-radius: 50%;
       background: #48484a;
       border: 3px solid var(--oneui-bg);
@@ -468,7 +468,7 @@
     .cd-marker-label {
       position: absolute;
       bottom: 100%;
-      margin-bottom: clamp(10px, calc(var(--cd-label-scale, 1) * 1.1vh), 30px);
+      margin-bottom: clamp(10px, calc(var(--cd-label-scale, 1) * 1.1vh), calc(36px * var(--vpf, 1)));
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -476,9 +476,14 @@
       align-items: center;
       /* 실제 스크린샷(2560x1440, cdLabelScale=1.95 기준)으로 직접 재보고
          고친 값 — 이전 두 번의 시도(vw 기준, 그다음 clockBaseline 기준
-         rem)는 전부 계산만으로 추측하다 실측과 안 맞았음. 지금 값은 시계
-         대비 25% 비율이 실제로 나오는 걸 스크린샷으로 확인한 수치. */
-      font-size: clamp(1rem, calc(var(--cd-label-scale, 1) * 2.05rem), 4.6rem);
+         rem)는 전부 계산만으로 추측하다 실측과 안 맞았음.
+
+         이후 실측에서 시계(높이 265px) 대비 이 라벨이 66px밖에 안 돼
+         4:1까지 벌어져 하단 타임라인이 너무 작아 보인다는 피드백을 받아
+         기준값과 상한을 같이 올렸다(상한에 이미 닿아 있어서 슬라이더만으론
+         못 키웠음). rem은 화면 크기를 안 따라가는 절대값이라 --vpf를 곱해
+         카드 안의 나머지 요소들과 같은 비율로 축소되게 한다. */
+      font-size: clamp(1rem, calc(var(--cd-label-scale, 1) * 3.05rem * var(--vpf, 1)), calc(6.4rem * var(--vpf, 1)));
       font-weight: 800;
       color: var(--text-primary);
       white-space: nowrap;
@@ -541,7 +546,10 @@
       background: var(--accent);
       color: #ffffff;
       font-weight: 900;
-      font-size: clamp(0.65rem, calc(var(--cd-label-scale, 1) * 1rem), 2.1rem);
+      /* 라벨 글자 크기를 키울 때마다 이 체크도 따로 맞춰야 했는데(사용자가
+         한 번 "조금 더 작아도 될 듯"이라고 준 비율 그대로), em으로 묶어두면
+         라벨을 어떻게 조절하든 항상 그 비율이 유지된다. */
+      font-size: 0.49em;
       vertical-align: middle;
       margin-left: 0.1em;
     }
@@ -570,7 +578,7 @@
        (아래 renderBoundedTrack() 안 추가 코드 참고). */
     .cd-runner-tag {
       position: absolute;
-      top: calc(30% + clamp(14px, calc(var(--s) * 1.6vh), 38px));
+      top: calc(30% + clamp(14px, calc(var(--s) * 1.6vh), calc(44px * var(--vpf, 1))));
       left: 0;
       display: flex;
       flex-direction: column;
@@ -599,8 +607,8 @@
          비율 그대로 — cqw는 컨테이너 "폭" 기준이라 세로 여백도 vh가 아니라
          vw로 맞춰야 같은 비율이 나온다(예전 값은 vh를 써서 실제보다 납작하고
          모서리도 덜 둥글어 참조 시안보다 투박해 보였음). */
-      padding: clamp(9px, calc(var(--cd-text-scale, 1) * 0.6vw), 20px) clamp(20px, calc(var(--cd-text-scale, 1) * 1.6vw), 48px) clamp(10px, calc(var(--cd-text-scale, 1) * 0.65vw), 22px);
-      border-radius: clamp(24px, calc(var(--cd-text-scale, 1) * 1.9vw), 56px);
+      padding: clamp(9px, calc(var(--cd-text-scale, 1) * 0.6vw), calc(24px * var(--vpf, 1))) clamp(20px, calc(var(--cd-text-scale, 1) * 1.6vw), calc(58px * var(--vpf, 1))) clamp(10px, calc(var(--cd-text-scale, 1) * 0.65vw), calc(26px * var(--vpf, 1)));
+      border-radius: clamp(24px, calc(var(--cd-text-scale, 1) * 1.9vw), calc(68px * var(--vpf, 1)));
       white-space: nowrap;
       transition: background 0.2s ease, color 0.2s ease;
     }
@@ -612,7 +620,7 @@
       color: inherit;
       font-weight: 800;
       letter-spacing: 0.02em;
-      font-size: clamp(1.75rem, calc(var(--cd-text-scale, 1) * 3.3vw), 4.5rem);
+      font-size: clamp(1.75rem, calc(var(--cd-text-scale, 1) * 3.3vw), calc(5.6rem * var(--vpf, 1)));
       line-height: 1.15;
     }
     .cd-tag-sub {
@@ -621,7 +629,7 @@
       opacity: 0.8;
       font-weight: 700;
       letter-spacing: 0.01em;
-      font-size: clamp(0.9rem, calc(var(--cd-text-scale, 1) * 1.65vw), 2.1rem);
+      font-size: clamp(0.9rem, calc(var(--cd-text-scale, 1) * 1.65vw), calc(2.65rem * var(--vpf, 1)));
       line-height: 1.15;
       margin-top: 2px;
       width: 100%;
@@ -678,8 +686,8 @@
       position: absolute;
       top: 50%;
       right: 100%;
-      width: clamp(80px, calc(var(--s) * 9vw), 267px);
-      height: clamp(5px, calc(var(--s) * 0.7vh), 16px);
+      width: clamp(80px, calc(var(--s) * 9vw), calc(300px * var(--vpf, 1)));
+      height: clamp(5px, calc(var(--s) * 0.7vh), calc(20px * var(--vpf, 1)));
       transform: translateY(-50%);
       background: var(--accent);
       opacity: 0.35;
@@ -697,8 +705,8 @@
       position: absolute;
       top: 50%;
       left: 0;
-      width: clamp(14px, calc(var(--s) * 1.5vh), 38px);
-      height: clamp(14px, calc(var(--s) * 1.5vh), 38px);
+      width: clamp(14px, calc(var(--s) * 1.5vh), calc(44px * var(--vpf, 1)));
+      height: clamp(14px, calc(var(--s) * 1.5vh), calc(44px * var(--vpf, 1)));
       border-radius: 50%;
       transform: translate(-50%, -50%);
       border: 2px solid var(--accent);
@@ -715,8 +723,8 @@
       position: absolute;
       top: 50%;
       left: 0;
-      width: clamp(14px, calc(var(--s) * 1.5vh), 38px);
-      height: clamp(14px, calc(var(--s) * 1.5vh), 38px);
+      width: clamp(14px, calc(var(--s) * 1.5vh), calc(44px * var(--vpf, 1)));
+      height: clamp(14px, calc(var(--s) * 1.5vh), calc(44px * var(--vpf, 1)));
       border-radius: 50%;
       transform: translate(-50%, -50%);
       background: var(--accent);
@@ -734,7 +742,7 @@
     #cd-runner.running .cd-runner-trail {
       background: var(--accent);
       opacity: 0.4;
-      width: clamp(27px, calc(var(--s) * 2.6vw), 93px);
+      width: clamp(27px, calc(var(--s) * 2.6vw), calc(105px * var(--vpf, 1)));
     }
     #cd-runner.running .cd-runner-head {
       background: var(--accent);
@@ -1539,6 +1547,13 @@
   // 개별 값들을 그대로 쓴다. isPortraitMode()를 그때그때 다시 확인하므로 방향
   // 전환 직후에 호출해도 항상 맞는 값이 적용된다.
   function applyCdSize() {
+    /* 카운트다운 카드 안의 값들은 vh/vw로 적혀 있지만 실제로는 거의 전부
+       clamp() 상한(px)에 걸려 있어서, 키오스크(1440p)보다 작은 화면에서도
+       거의 그대로 남아 카드가 화면 밖으로 잘렸다(1920x1080 실측). 시계에
+       쓰는 것과 같은 화면 높이 계수를 상한과 rem 기준값에도 곱해서, 어떤
+       해상도에서도 키오스크와 같은 비율의 축소판이 되게 한다.
+       1440p에서는 정확히 1이라 키오스크 화면은 바뀌지 않는다. */
+    countdownEl.style.setProperty('--vpf', vpFactor().toFixed(4));
     if (isPortraitMode()) {
       countdownEl.style.setProperty('--cd-box-scale', pCdScale.toFixed(3));
       countdownEl.style.setProperty('--cd-text-scale', pCdScale.toFixed(3));
@@ -2059,6 +2074,7 @@
      세팅함) 반복해도 계속 작아지지 않는다. */
   function refitScaledText() {
     if (isPortraitMode()) applyPortraitSizes(); else applyLandscapeSizes();
+    applyCdSize();   // --vpf도 화면 높이에 따라 다시 계산돼야 한다
   }
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(refitScaledText).catch(() => {});
