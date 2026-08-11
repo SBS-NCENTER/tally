@@ -2120,10 +2120,26 @@
      세팅함) 반복해도 계속 작아지지 않는다. */
   function refitScaledText() {
     if (isPortraitMode()) applyPortraitSizes(); else applyLandscapeSizes();
-    applyCdSize();   // --vpf도 화면 높이에 따라 다시 계산돼야 한다
+    applyCdSize();       // --vpf도 화면 높이에 따라 다시 계산돼야 한다
+    cdTrackWidthPx = 0;  // 글자 크기가 바뀌면 카드 여백도 바뀌어 트랙 폭이 달라진다
   }
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(refitScaledText).catch(() => {});
+  }
+
+  /* 트랙 폭은 러너의 가로 위치를 픽셀로 환산하는 기준이라, 낡은 값을 쓰면
+     러너가 타임라인 위 엉뚱한 지점에 선다(실측: 경과 48.8%인 방송에서 러너가
+     30.9% 자리에 있었다 — 폭을 좁던 시절 값으로 캐시해둔 탓).
+
+     예전엔 resize 이벤트로만 무효화했는데 그걸로는 놓치는 경우가 많다.
+     - resize가 아예 안 오는 환경이 있다(--vpf가 0.9035에 갇혔던 것과 같은 원인)
+     - 퀵 설정 패널이 열리면 body padding이 바뀌어 카드가 좁아지는데 resize는 안 뜬다
+     - 웹폰트가 늦게 적용되면서 라벨 크기가 변해도 마찬가지다
+
+     ResizeObserver는 이유를 가리지 않고 "이 요소의 크기가 실제로 바뀌었을 때"
+     알려주므로 위 경우를 한 번에 덮는다. resize 리스너는 구형 폴백으로 남긴다. */
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => { cdTrackWidthPx = 0; }).observe(cdTrack);
   }
   window.addEventListener('resize', () => { cdTrackWidthPx = 0; });
 
