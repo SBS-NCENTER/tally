@@ -305,6 +305,100 @@ SPS_FINAL_HOLD_SEC = 15    # 방송이 실제로 꺼진 직후, 바로 다음 �
                            # 붙어 있는 핸드오프에서는 결과 화면이 뜰 틈도 없이 넘어가버림).
 
 
+# ── SPS 연동 상태 감시 ────────────────────────────────────────────────
+# 토큰이 만료되면(30일) SPS 조회가 401로 죽는데, 예전엔 예외를 로그에 한 줄
+# 찍고 지나갔다. 그 사이 화면은 마지막으로 받아둔 캐시(=며칠 전 운행표)를
+# 그대로 붙들고 "정상"인 얼굴로 계속 돌아간다 — 실제로 이틀 묵은 일요일 편성
+# (프로야구)을 오늘 것처럼 띄우고 있었다(2026-08-25 실측).
+# 부조가 이 화면을 믿고 쓰는 걸 생각하면, 틀린 값을 자신 있게 보여주는 게
+# 값이 없는 것보다 나쁘다. 그래서 실패를 상태로 남기고 화면·설정창에 드러낸다.
+SPS_DOWN_GRACE = timedelta(minutes=10)   # 이만큼 연속 실패해야 "끊김" — 순간적인 네트워크 끊김은 무시
+SPS_TOKEN_WARN_DAYS = 7                  # 토큰 만료 이 날짜 전부터 미리 표시
+
+SPS_HEALTH = {
+    'ok': None,             # True / False / None(아직 판정 전)
+    'last_ok_at': None,     # 마지막으로 조회에 성공한 시각
+    'last_ok_date': None,   # 그때 읽은 운행표의 방송일(YYYY-MM-DD)
+    'error': None,
+    'error_since': None,    # 연속 실패가 시작된 시각
+}
+
+
+def sps_token_expiry():
+    try:
+        with open(SPS_TOKEN_FILE, encoding='utf-8') as f:
+            raw = json.load(f).get('expires_at')
+        return datetime.fromisoformat(raw).astimezone(KST) if raw else None
+    except Exception:
+        return None
+
+
+def sps_health_snapshot():
+    """화면·설정창용 상태 요약.
+
+    state 의미:
+      ok       — 정상
+      degraded — 방금 실패했지만 아직 유예 시간 안(화면엔 안 띄운다)
+      down     — SPS_DOWN_GRACE 넘게 연속 실패
+      stale    — 조회는 되는데 들고 있는 운행표가 오늘 날짜가 아님
+      unknown  — 아직 한 번도 판정 안 됨
+    """
+    if not get_sps_settings()['enabled']:
+        # 사용자가 자동연동을 끈 상태 — 실패가 아니므로 경고를 띄우면 안 된다
+        return {'state': 'off'}
+    now = datetime.now(KST)
+    h = SPS_HEALTH
+    err_since = h['error_since']
+    down_sec = int((now - err_since).total_seconds()) if err_since else 0
+
+    # 운행표 '방송일'이 오늘이 아니면 지금 들고 있는 값은 확실히 남의 날 데이터다.
+    today = sps_broadcast_date(now)
+    stale_days = None
+    if h['last_ok_date'] and h['last_ok_date'] != today.strftime('%Y-%m-%d'):
+        try:
+            d0 = datetime.strptime(h['last_ok_date'], '%Y-%m-%d').date()
+            stale_days = (today - d0).days
+        except Exception:
+            stale_days = None
+
+    if h['ok'] is None:
+        state = 'unknown'
+    elif err_since and (now - err_since) >= SPS_DOWN_GRACE:
+        state = 'down'
+    elif stale_days:
+        state = 'stale'
+    elif h['ok']:
+        state = 'ok'
+    else:
+        state = 'degraded'
+
+    exp = sps_token_expiry()
+    days_left = (exp - now).days if exp else None
+    return {
+        'state': state,
+        'error': h['error'],
+        'downSeconds': down_sec,
+        'downMinutes': down_sec // 60,
+        'lastOkAt': h['last_ok_at'].strftime('%Y-%m-%d %H:%M:%S') if h['last_ok_at'] else None,
+        'lastOkDate': h['last_ok_date'],
+        'staleDays': stale_days,
+        'tokenExpiresAt': exp.strftime('%Y-%m-%d %H:%M:%S') if exp else None,
+        'tokenDaysLeft': days_left,
+        'tokenWarn': bool(days_left is not None and days_left <= SPS_TOKEN_WARN_DAYS),
+    }
+
+
+def sps_note_ok(date_str):
+    SPS_HEALTH.update(ok=True, last_ok_at=datetime.now(KST), last_ok_date=date_str,
+                      error=None, error_since=None)
+
+
+def sps_note_fail(msg):
+    if SPS_HEALTH['error_since'] is None:
+        SPS_HEALTH['error_since'] = datetime.now(KST)
+    SPS_HEALTH.update(ok=False, error=msg)
+
+
 def get_sps_settings():
     try:
         with open(SETTINGS_FILE, encoding='utf-8') as f:
@@ -615,6 +709,7 @@ def sps_listener():
                 today = sps_broadcast_date(now)
                 date_str = today.strftime('%Y-%m-%d')
                 repos = sps_fetch_repos(date_str, token)
+                sps_note_ok(date_str)   # 조회 성공 — 연동 상태 갱신
 
                 on_air_event_id = None
                 try:
@@ -809,6 +904,7 @@ def sps_listener():
             last_error = None
         except Exception as e:
             msg = str(e)
+            sps_note_fail(msg)   # 실패도 상태로 남긴다 — 로그 한 줄로는 아무도 모른다
             if msg != last_error:
                 print(f"[SPS] 오류: {msg}", flush=True)
                 last_error = msg
@@ -1018,6 +1114,12 @@ def sps_live_schedule():
             item['wasLive'] = bool(rec.get('wasLive'))
         items.append(item)
     return jsonify(items)
+
+
+@app.route('/sps/health')
+def sps_health():
+    """SPS 운행표 연동이 살아있는지 — 화면과 설정창이 3초마다 확인한다."""
+    return jsonify(sps_health_snapshot())
 
 
 @app.route('/sps/studios')

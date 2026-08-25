@@ -472,7 +472,25 @@
       text-decoration: none;
     }
     #display-link:hover { color: var(--text-primary); }
-  </style>
+  
+    #sps-health-top { margin: 0 0 14px; }
+    /* SPS 연동 상태 배지 — 정상일 땐 조용히, 문제일 땐 확실히 보이게 */
+    .sps-health { margin-top: 8px; font-size: 13px; line-height: 1.5; display: none; }
+    .sps-health.show { display: block; }
+    .sps-health .bar {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 9px 12px; border-radius: 8px; border: 1px solid transparent;
+    }
+    .sps-health .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; margin-top: 6px; }
+    .sps-health .txt { flex: 1; }
+    .sps-health .sub { opacity: .75; font-size: 12px; margin-top: 2px; }
+    .sps-health.ok    .bar { background: rgba(46,200,120,.10); border-color: rgba(46,200,120,.35); color: #2ec878; }
+    .sps-health.ok    .dot { background: #2ec878; }
+    .sps-health.warn  .bar { background: rgba(255,180,0,.10);  border-color: rgba(255,180,0,.40);  color: #ffb400; }
+    .sps-health.warn  .dot { background: #ffb400; }
+    .sps-health.bad   .bar { background: rgba(255,60,50,.12);  border-color: rgba(255,60,50,.45);  color: #ff6b5e; }
+    .sps-health.bad   .dot { background: #ff5722; }
+</style>
 </head>
 <body>
 {% macro icon(name) -%}
@@ -518,6 +536,9 @@
     </span>
     <span id="save-flash">저장됨</span>
   </h1>
+
+  <!-- 연동 문제는 모드와 상관없이 알아야 한다 — 생방송 패널을 안 열어봐도 보이게 위에도 띄운다 -->
+  <div id="sps-health-top" class="sps-health"></div>
 
   <!-- 참조 시안(Direction 3)의 상단 방송 상태 요약 카드 — 지금 추적 중인
        방송명/스튜디오와 경과·남은 시간을 컨트롤 페이지에서도 한눈에. -->
@@ -572,6 +593,8 @@
           <label class="toggle"><input type="checkbox" id="sps-auto-toggle" checked /><span class="toggle-track"></span></label>
         </div>
         <div class="setting-hint">켜면 SPS 운행표에서 생방송 시작·종료 시각과 방송명을 실시간으로 가져와 채웁니다. 끄면 아래에 직접 입력한 값을 사용합니다.</div>
+        <!-- 연동이 죽어도 화면은 옛 캐시로 멀쩡해 보인다 — 여기서 상태를 직접 보여준다 -->
+        <div id="sps-health" class="sps-health"></div>
       </div>
 
       <div id="sps-studio-row" class="setting-row">
@@ -1111,6 +1134,80 @@
       saveSettings();
     });
   });
+
+
+  /* ── SPS 연동 상태 표시 ─────────────────────────────────────────────
+     토큰이 만료되면 조회가 401로 죽는데, 화면은 마지막으로 받아둔 운행표를
+     그대로 붙들고 정상인 것처럼 계속 돌아간다(실제로 이틀 묵은 일요일 편성을
+     오늘 것처럼 띄운 적이 있다). 그래서 연동이 살아있는지를 여기서 직접
+     보여준다 — 정상일 땐 조용히, 문제일 땐 확실히. */
+  const spsHealthBox = document.getElementById('sps-health');
+  const spsHealthTop = document.getElementById('sps-health-top');
+
+  function renderSpsHealth(h) {
+    if (!spsHealthBox) return;
+    let cls = '', title = '', sub = '';
+
+    if (h.state === 'off' || h.state === 'unknown') {
+      spsHealthBox.className = 'sps-health';   // 숨김
+      spsHealthBox.innerHTML = '';
+      if (spsHealthTop) { spsHealthTop.className = 'sps-health'; spsHealthTop.innerHTML = ''; }
+      return;
+    }
+    if (h.state === 'down') {
+      cls = 'bad';
+      title = '운행표 연동 끊김 (' + h.downMinutes + '분째)';
+      sub = '지금 보이는 편성은 마지막으로 받아둔 값이라 실제와 다를 수 있습니다.';
+      if (h.error) sub += ' · ' + h.error;
+    } else if (h.state === 'stale') {
+      cls = 'bad';
+      title = '운행표가 ' + h.staleDays + '일 지난 데이터입니다';
+      sub = '받아둔 운행표 날짜: ' + (h.lastOkDate || '알 수 없음') + ' · 지금 화면은 실제 편성과 다릅니다.';
+    } else if (h.tokenWarn) {
+      cls = 'warn';
+      const d = h.tokenDaysLeft;
+      title = d < 0 ? ('SPS 토큰이 ' + (-d) + '일 전에 만료됐습니다')
+                    : ('SPS 토큰 만료 ' + d + '일 전');
+      sub = '만료: ' + (h.tokenExpiresAt || '-') + ' · setup/sps_authorize.py 로 재발급이 필요합니다.';
+    } else if (h.state === 'ok') {
+      cls = 'ok';
+      title = '운행표 연동 정상';
+      sub = '마지막 확인 ' + (h.lastOkAt || '-');
+    } else {
+      // degraded — 잠깐 실패했지만 아직 유예 시간 안. 굳이 알리지 않는다.
+      spsHealthBox.className = 'sps-health';
+      spsHealthBox.innerHTML = '';
+      if (spsHealthTop) { spsHealthTop.className = 'sps-health'; spsHealthTop.innerHTML = ''; }
+      return;
+    }
+
+    const html =
+      '<div class="bar"><span class="dot"></span><span class="txt">' +
+      '<strong>' + title + '</strong>' +
+      (sub ? '<div class="sub">' + sub + '</div>' : '') +
+      '</span></div>';
+    spsHealthBox.className = 'sps-health show ' + cls;
+    spsHealthBox.innerHTML = html;
+    // 위쪽 전역 자리는 '문제일 때만' 띄운다 — 정상일 때 상시 배너는 잔소리가 된다
+    if (spsHealthTop) {
+      if (cls === 'ok') {
+        spsHealthTop.className = 'sps-health';
+        spsHealthTop.innerHTML = '';
+      } else {
+        spsHealthTop.className = 'sps-health show ' + cls;
+        spsHealthTop.innerHTML = html;
+      }
+    }
+  }
+
+  function pollSpsHealth() {
+    fetch('/sps/health')
+      .then(r => r.json())
+      .then(renderSpsHealth)
+      .catch(() => {});
+  }
+  pollSpsHealth();
+  setInterval(pollSpsHealth, 10000);
 
   /* ── 자동 운행표 연동(SPS) ──────────────────────────────────────── */
   function applySpsAutoUI() {

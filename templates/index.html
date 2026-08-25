@@ -1177,6 +1177,24 @@
     body.portrait-right #quick-panel, body.portrait-left #quick-panel,
     body.portrait-right #qp-catcher, body.portrait-left #qp-catcher { display: none; }
     body.portrait-right, body.portrait-left { padding-right: 0 !important; }
+
+    /* 운행표를 못 받았을 때 카드 내용을 대신하는 자리 — 위 renderSpsStale 참고 */
+    #cd-nodata { display: none; text-align: center; padding: 0 4vw; }
+    #countdown.no-schedule > *:not(#cd-nodata) { display: none !important; }
+    #countdown.no-schedule #cd-nodata { display: block; }
+    #cd-nodata .nd-title {
+      font-weight: 800;
+      color: var(--text-secondary);
+      font-size: clamp(20px, calc(3.4vh * var(--vpf, 1)), 60px);
+      letter-spacing: -0.01em;
+    }
+    #cd-nodata .nd-sub {
+      margin-top: 0.5em;
+      font-weight: 600;
+      color: var(--text-secondary);
+      opacity: 0.65;
+      font-size: clamp(13px, calc(1.7vh * var(--vpf, 1)), 30px);
+    }
   </style>
 </head>
 <body>
@@ -1222,6 +1240,8 @@
 
   <!-- 방송 시작 카운트다운 -->
   <div id="countdown">
+    <!-- 운행표가 다른 날 데이터일 때 카드 내용을 대신한다 (평소엔 숨김) -->
+    <div id="cd-nodata"></div>
     <div id="cd-track">
       <div id="cd-track-line"></div>
       <div id="cd-fill"></div>
@@ -1626,6 +1646,37 @@
       stopwatchEl.style.setProperty('--sw-text-scale', swTextScale.toFixed(3));
     }
   }
+
+  /* ── 운행표가 '남의 날' 데이터일 때 (stale) ─────────────────────────
+     SPS 조회가 하루 넘게 끊기면 화면은 마지막으로 받아둔 운행표를 그대로
+     붙들고 돈다 — 화요일에 일요일 프로야구 편성이 떠 있었다(2026-08-25 실측).
+     이때는 카드의 모든 값이 확실히 틀렸다.
+
+     경고 문구를 덧붙이는 대신 카드 내용을 아예 치운다. 사람은 큰 숫자를
+     먼저 읽고 작은 경고는 나중에 읽어서, 경고만 무시하고 틀린 시각을
+     믿게 되기 때문이다. 없는 건 오해할 수가 없다.
+
+     단순 연동 끊김(down)에는 손대지 않는다 — 그때 표시된 시각은 아직
+     오늘 것이라 대체로 맞고, 부조 모니터에 상시 경고를 띄우는 부작용이
+     더 크다. 하루 넘게 완전히 끊겨야 여기까지 온다. */
+  const cdNoData = document.getElementById('cd-nodata');
+
+  function renderSpsStale(h) {
+    const stale = (h.state === 'stale');
+    countdownEl.classList.toggle('no-schedule', stale);
+    if (stale && cdNoData) {
+      cdNoData.innerHTML =
+        '<div class="nd-title">운행표를 받지 못했습니다</div>' +
+        '<div class="nd-sub">마지막 수신 ' + (h.lastOkDate || '알 수 없음') +
+        ' · 표시할 편성 정보가 없습니다</div>';
+    }
+  }
+
+  function pollSpsStale() {
+    fetch('/sps/health').then(r => r.json()).then(renderSpsStale).catch(() => {});
+  }
+  pollSpsStale();
+  setInterval(pollSpsStale, 30000);
 
   /* ── 시계 & 날짜 ─────────────────────────────────────────────── */
   function updateClock() {
