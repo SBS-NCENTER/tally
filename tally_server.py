@@ -333,6 +333,25 @@ def sps_token_expiry():
         return None
 
 
+def sps_cached_schedule_date():
+    """디스크에 남아 있는 운행표 캐시 중 가장 최근 날짜.
+
+    SPS_HEALTH['last_ok_date']는 '이번 프로세스에서 성공한' 날짜라, 서비스가
+    재시작되면 None이 된다 — 그런데 재시작 직후야말로 이 판정이 필요한
+    순간이다(설정과 캐시에는 며칠 전 편성이 그대로 남아 화면에 계속 뜬다).
+    캐시 파일명은 프로세스와 무관하게 남으므로 이걸 보조 기준으로 쓴다."""
+    try:
+        best = None
+        for name in os.listdir(SPS_DATA_DIR):
+            if name.startswith('sps_schedule_') and name.endswith('.json'):
+                d = name[len('sps_schedule_'):-len('.json')]
+                if best is None or d > best:
+                    best = d
+        return best
+    except Exception:
+        return None
+
+
 def sps_health_snapshot():
     """화면·설정창용 상태 요약.
 
@@ -353,20 +372,25 @@ def sps_health_snapshot():
 
     # 운행표 '방송일'이 오늘이 아니면 지금 들고 있는 값은 확실히 남의 날 데이터다.
     today = sps_broadcast_date(now)
+    # 재시작 직후엔 last_ok_date가 없으므로 디스크 캐시 날짜로 대신 판단한다
+    data_date = h['last_ok_date'] or sps_cached_schedule_date()
     stale_days = None
-    if h['last_ok_date'] and h['last_ok_date'] != today.strftime('%Y-%m-%d'):
+    if data_date and data_date != today.strftime('%Y-%m-%d'):
         try:
-            d0 = datetime.strptime(h['last_ok_date'], '%Y-%m-%d').date()
+            d0 = datetime.strptime(data_date, '%Y-%m-%d').date()
             stale_days = (today - d0).days
         except Exception:
             stale_days = None
 
-    if h['ok'] is None:
+    if h['ok'] is None and not stale_days:
         state = 'unknown'
+    elif stale_days:
+        # 끊김(down)보다 먼저 본다 — 둘 다 참일 때 더 위험한 쪽이 이겨야 한다.
+        # '연동이 끊겼다'는 아직 오늘 값일 수 있다는 여지를 남기지만, '운행표
+        # 날짜가 다르다'는 화면의 모든 값이 확실히 틀렸다는 뜻이다.
+        state = 'stale'
     elif err_since and (now - err_since) >= SPS_DOWN_GRACE:
         state = 'down'
-    elif stale_days:
-        state = 'stale'
     elif h['ok']:
         state = 'ok'
     else:
@@ -380,7 +404,7 @@ def sps_health_snapshot():
         'downSeconds': down_sec,
         'downMinutes': down_sec // 60,
         'lastOkAt': h['last_ok_at'].strftime('%Y-%m-%d %H:%M:%S') if h['last_ok_at'] else None,
-        'lastOkDate': h['last_ok_date'],
+        'lastOkDate': data_date,
         'staleDays': stale_days,
         'tokenExpiresAt': exp.strftime('%Y-%m-%d %H:%M:%S') if exp else None,
         'tokenDaysLeft': days_left,
