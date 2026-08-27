@@ -76,7 +76,7 @@
       margin: clamp(14px, 2vh, 30px) clamp(24px, 5vw, 90px) clamp(12px, 1.6vh, 22px);
       /* 글자 없는 '선 램프' — 마이크 탈리는 색으로만 알린다. 꺼지면 어두운 선,
          켜지면 빨갛게 빛나는 선. 세로 공간을 최대한 아껴 하단 상황판에 넘긴다. */
-      height: clamp(10px, calc(var(--tally-box-scale, 1) * 1.4vh), 24px);
+      height: clamp(14px, calc(var(--tally-box-scale, 1) * 2vh), 34px);
       padding: 0;
       border-radius: 999px;
       overflow: hidden;
@@ -87,7 +87,7 @@
       background: var(--accent);
       /* 아래로만 치우쳐 번지던 글로우를 위아래로 고르게 — 참조 시안처럼
          "램프가 은은하게 사방으로 퍼지는" 느낌으로(사용자 피드백). */
-      box-shadow: 0 0 3.2vh rgba(255,87,34,0.7), 0 0 1.2vh rgba(255,87,34,0.5);
+      box-shadow: 0 0 5vh rgba(255,87,34,0.9), 0 0 1.8vh rgba(255,130,70,0.75);
     }
 
     #status-text {
