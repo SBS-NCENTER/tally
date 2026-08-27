@@ -362,6 +362,14 @@ def sps_health_snapshot():
       stale    — 조회는 되는데 들고 있는 운행표가 오늘 날짜가 아님
       unknown  — 아직 한 번도 판정 안 됨
     """
+    try:
+        with open(SETTINGS_FILE, encoding='utf-8') as f:
+            if json.load(f).get('testModeActive'):
+                # 테스트 모드는 SPS 조회를 일부러 건너뛴다 — 이때 stale로 판정하면
+                # 카드가 '운행표 없음'으로 덮여서 정작 테스트 화면을 못 본다.
+                return {'state': 'test'}
+    except Exception:
+        pass
     if not get_sps_settings()['enabled']:
         # 사용자가 자동연동을 끈 상태 — 실패가 아니므로 경고를 띄우면 안 된다
         return {'state': 'off'}
