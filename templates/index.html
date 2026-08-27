@@ -604,7 +604,7 @@
       flex-direction: row;
       align-items: baseline;
       justify-content: center;
-      gap: clamp(14px, calc(var(--cd-text-scale, 1) * 1.6vw), calc(48px * var(--vpf, 1)));
+      gap: 0;
       /* 카드 배경(--oneui-surface)과 완전히 같은 색이면 알약 모양 자체가 안
          보여서(방송전/종료 상태에서 확인됨) 한 단계 밝은 회색을 써서 카드
          위에 뜬 알약으로 보이게 한다 — 참조 시안도 tag-idle-bg가 module-bg
@@ -636,7 +636,7 @@
     .cd-tag-sep {
       opacity: 0.35;
       font-weight: 500;
-      margin: 0 0.12em;
+      margin: 0 0.3em;
     }
     /* 남음(-)은 민트, 초과(+)는 노랑으로 구분. 경과(+)는 기본색. */
     .cd-tag-main.neg, .cd-tag-sub.neg { color: var(--standby); }
