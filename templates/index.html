@@ -73,9 +73,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: clamp(14px, 2vh, 28px) clamp(14px, 2vw, 28px) clamp(16px, 2.2vh, 32px);
-      padding: clamp(30px, calc(var(--tally-box-scale, 1) * 4vh), 92px) clamp(20px, 4vw, 60px) clamp(24px, calc(var(--tally-box-scale, 1) * 3vh), 70px);
-      border-radius: clamp(24px, 3vw, 44px);
+      margin: clamp(14px, 2vh, 30px) clamp(24px, 5vw, 90px) clamp(12px, 1.6vh, 22px);
+      /* 글자 없는 '선 램프' — 마이크 탈리는 색으로만 알린다. 꺼지면 어두운 선,
+         켜지면 빨갛게 빛나는 선. 세로 공간을 최대한 아껴 하단 상황판에 넘긴다. */
+      height: clamp(10px, calc(var(--tally-box-scale, 1) * 1.4vh), 24px);
+      padding: 0;
+      border-radius: 999px;
       overflow: hidden;
       transition: background 0.2s ease, padding 0.2s ease;
       background: var(--oneui-surface);
@@ -84,13 +87,14 @@
       background: var(--accent);
       /* 아래로만 치우쳐 번지던 글로우를 위아래로 고르게 — 참조 시안처럼
          "램프가 은은하게 사방으로 퍼지는" 느낌으로(사용자 피드백). */
-      box-shadow: 0 0 4.5vh rgba(255,87,34,0.55), 0 -0.6vh 2.4vh rgba(255,87,34,0.25);
+      box-shadow: 0 0 3.2vh rgba(255,87,34,0.7), 0 0 1.2vh rgba(255,87,34,0.5);
     }
 
     #status-text {
-      font-size: clamp(3rem, 8vw, 7rem);
-      font-weight: 900;
-      letter-spacing: 0.06em;
+      display: none;   /* 선 램프 — 색으로만 알린다 */
+      font-size: clamp(0.85rem, calc(2.1vh * var(--vpf, 1)), 2.2rem);
+      font-weight: 800;
+      letter-spacing: 0.28em;
       color: var(--text-tertiary);
       text-transform: uppercase;
       transition: color 0.2s ease;
@@ -263,9 +267,9 @@
       align-items: center;
       justify-content: center;
       min-height: calc(
-        clamp(120px, calc(var(--cd-box-scale, 1) * 14vh), calc(300px * var(--vpf, 1))) +
-        clamp(54px, calc(var(--cd-text-scale, 1) * 6vh), calc(132px * var(--vpf, 1))) +
-        clamp(60px, calc(var(--cd-text-scale, 1) * 5.6vw), calc(190px * var(--vpf, 1)))
+        clamp(120px, calc(var(--cd-box-scale, 1) * 17vh), calc(360px * var(--vpf, 1))) +
+        clamp(54px, calc(var(--cd-text-scale, 1) * 7vh), calc(160px * var(--vpf, 1))) +
+        clamp(60px, calc(var(--cd-text-scale, 1) * 6.8vw), calc(235px * var(--vpf, 1)))
       );
       padding: clamp(16px, calc(var(--cd-text-scale, 1) * 1.8vh), calc(50px * var(--vpf, 1))) clamp(20px, 4vw, 40px);
       gap: clamp(0px, 0.4vh, 4px);
@@ -377,13 +381,13 @@
          별개로 마커용 여유를 고정 px로 따로 빼서 항상 안전하게 안에
          들어오도록 계산한다. */
       width: min(calc(100% - 90px), 2200px);
-      height: clamp(67px, calc(var(--s) * 7.7vh), calc(166px * var(--vpf, 1)));
+      height: clamp(67px, calc(var(--s) * 9.2vh), calc(205px * var(--vpf, 1)));
       /* 위: 프로그램명/시작·종료 시각 라벨이 트랙 위로 뜨는 공간.
          아래: 러너를 따라다니는 카운트다운 알약이 트랙 아래로 뜨는 공간
          (참조 시안처럼 러너 위 말풍선 대신 트랙 아래 알약으로 옮기면서 추가). */
       /* 위쪽 여백은 프로그램명+시작/종료 라벨(.cd-marker-label) 몫이라
          그걸 키우는 --cd-label-scale을 따른다(스크린샷 실측 후 보강). */
-      margin-top: clamp(80px, calc(var(--cd-label-scale, 1) * 8.4vh), calc(215px * var(--vpf, 1)));
+      margin-top: clamp(80px, calc(var(--cd-label-scale, 1) * 9.6vh), calc(255px * var(--vpf, 1)));
       /* 트랙 아래는 카운트다운 알약이 걸리는 자리다. 알약은 방송 중/초과/종료
          상태에서 두 줄이 되면서 키가 커지는데, 이 여백이 vh 기준이라 가로로
          넓은 화면에서는 알약(vw 기준)만 커지고 여백은 안 따라왔다. 게다가
@@ -391,14 +395,14 @@
          — 실측(1920x1080, cdTextScale 0.9)에서 알약 아래 둥근 모서리가
          카드 overflow:hidden 경계에 직선으로 잘렸다.
          알약과 같은 vw 기준으로 바꿔서 두 줄 알약이 항상 들어오게 한다. */
-      margin-bottom: clamp(60px, calc(var(--cd-text-scale, 1) * 5.6vw), calc(190px * var(--vpf, 1)));
+      margin-bottom: clamp(60px, calc(var(--cd-text-scale, 1) * 6.8vw), calc(235px * var(--vpf, 1)));
       display: none;
     }
     #cd-track.show { display: block; }
     #cd-track-line {
       position: absolute;
       left: 0; right: 0; top: 30%;
-      height: clamp(9px, calc(var(--s) * 1.1vh), calc(32px * var(--vpf, 1)));
+      height: clamp(9px, calc(var(--s) * 1.7vh), calc(50px * var(--vpf, 1)));
       transform: translateY(-50%);
       background: var(--oneui-surface-2);
       border-radius: 5px;
@@ -406,7 +410,7 @@
     #cd-fill {
       position: absolute;
       left: 0; top: 30%;
-      height: clamp(9px, calc(var(--s) * 1.1vh), calc(32px * var(--vpf, 1)));
+      height: clamp(9px, calc(var(--s) * 1.7vh), calc(50px * var(--vpf, 1)));
       transform: translateY(-50%);
       background: var(--accent);
       border-radius: 5px;
@@ -490,7 +494,7 @@
          기준값과 상한을 같이 올렸다(상한에 이미 닿아 있어서 슬라이더만으론
          못 키웠음). rem은 화면 크기를 안 따라가는 절대값이라 --vpf를 곱해
          카드 안의 나머지 요소들과 같은 비율로 축소되게 한다. */
-      font-size: clamp(1rem, calc(var(--cd-label-scale, 1) * 3.05rem * var(--vpf, 1)), calc(6.4rem * var(--vpf, 1)));
+      font-size: clamp(1rem, calc(var(--cd-label-scale, 1) * 3.85rem * var(--vpf, 1)), calc(8.0rem * var(--vpf, 1)));
       font-weight: 800;
       color: var(--text-primary);
       white-space: nowrap;
@@ -627,7 +631,7 @@
       color: inherit;
       font-weight: 800;
       letter-spacing: 0.02em;
-      font-size: clamp(1.75rem, calc(var(--cd-text-scale, 1) * 3.3vw), calc(5.6rem * var(--vpf, 1)));
+      font-size: clamp(1.75rem, calc(var(--cd-text-scale, 1) * 4.1vw), calc(7.0rem * var(--vpf, 1)));
       line-height: 1.15;
     }
     .cd-tag-sub {
@@ -636,7 +640,7 @@
       opacity: 0.8;
       font-weight: 700;
       letter-spacing: 0.01em;
-      font-size: clamp(0.9rem, calc(var(--cd-text-scale, 1) * 1.65vw), calc(2.65rem * var(--vpf, 1)));
+      font-size: clamp(0.9rem, calc(var(--cd-text-scale, 1) * 2.05vw), calc(3.3rem * var(--vpf, 1)));
       line-height: 1.15;
       margin-top: 2px;
       width: 100%;
