@@ -629,34 +629,27 @@
        알약이 흰색으로 뒤집히는(#cd-runner-tag.is-live) 상태 변화 자체론 "왜
        색이 바뀌었는지" 설명이 없어서, 같은 자리에 짧은 텍스트 칩으로 이유를
        바로 알려준다. */
-    .cd-tag-cell {
-      display: inline-flex;
-      align-items: baseline;
-      gap: clamp(4px, calc(var(--cd-text-scale, 1) * 0.5vw), 14px);
-      white-space: nowrap;
+    /* 라벨 없이 +경과 / -남음 만. 구분선(/)과 색으로 구분한다. */
+    .cd-tag-sep, .cd-tag-sub { display: none; }
+    .cd-runner-tag-pill.two .cd-tag-sep,
+    .cd-runner-tag-pill.two .cd-tag-sub { display: inline; }
+    .cd-tag-sep {
+      opacity: 0.35;
+      font-weight: 500;
+      margin: 0 0.12em;
     }
-    #cd-tag-cell-sub { display: none; }
-    #cd-tag-cell-sub.show { display: inline-flex; }
-    .cd-tag-label {
-      /* '경과 / 남음' 구분용 작은 라벨 — 값보다 확 작고 흐리게 */
-      font-size: 0.42em;
-      font-weight: 700;
-      opacity: 0.6;
-      letter-spacing: 0;
-    }
-    .cd-tag-main, .cd-tag-sub {
+    /* 남음(-)은 민트, 초과(+)는 노랑으로 구분. 경과(+)는 기본색. */
+    .cd-tag-main.neg, .cd-tag-sub.neg { color: var(--standby); }
+    .cd-tag-sub.overrun, .cd-tag-main.overrun { color: var(--warning); }
+    /* 라이브 알약(흰 배경)에선 민트가 흐려 보여 살짝 진한 톤으로 */
+    #cd-runner-tag.is-live .cd-tag-main.neg,
+    #cd-runner-tag.is-live .cd-tag-sub.neg { color: #0f766e; }
+    .cd-tag-main, .cd-tag-sub, .cd-tag-sep {
       color: inherit;
       font-weight: 800;
       letter-spacing: 0.02em;
       font-size: clamp(1.6rem, calc(var(--cd-text-scale, 1) * 3.4vw), calc(5.8rem * var(--vpf, 1)));
       line-height: 1.15;
-    }
-    /* 초과 상태에서 '남음'칸이 '초과'로 바뀌면 노랑으로 구분 */
-    /* 예정종료시각을 넘겨 아직도 방송 중이면 '-00:00'에 멈춰있는 대신 얼마나
-       초과됐는지 세어 보여준다 — LIVE 중엔 말풍선이 이미 붉게 물들어 있어서
-       빨강 계열 대신 그 위에서 잘 튀는 노랑(warning)으로 구분한다. */
-    .cd-tag-sub.overrun {
-      color: var(--warning);
     }
     @keyframes tag-overrun-flash {
       0%   { transform: scale(1); }
@@ -1277,14 +1270,9 @@
            매 틱 갱신한다(트랙 폭 안으로 clamp, renderBoundedTrack() 참고). -->
       <div class="cd-runner-tag" id="cd-runner-tag">
         <span class="cd-runner-tag-pill" id="cd-runner-tag-text">
-          <span class="cd-tag-cell">
-            <span class="cd-tag-label" id="cd-tag-label-main"></span>
-            <span class="cd-tag-main" id="cd-tag-main">--:--</span>
-          </span>
-          <span class="cd-tag-cell" id="cd-tag-cell-sub">
-            <span class="cd-tag-label" id="cd-tag-label-sub"></span>
-            <span class="cd-tag-sub" id="cd-tag-sub"></span>
-          </span>
+          <span class="cd-tag-main" id="cd-tag-main">--:--</span>
+          <span class="cd-tag-sep" id="cd-tag-sep">/</span>
+          <span class="cd-tag-sub" id="cd-tag-sub"></span>
         </span>
       </div>
     </div>
@@ -1407,9 +1395,7 @@
   const weatherText = document.getElementById('weather-text');
   const cdTagMain   = document.getElementById('cd-tag-main');
   const cdTagSub    = document.getElementById('cd-tag-sub');
-  const cdTagLabelMain = document.getElementById('cd-tag-label-main');
-  const cdTagLabelSub  = document.getElementById('cd-tag-label-sub');
-  const cdTagCellSub   = document.getElementById('cd-tag-cell-sub');
+
   const cdTrack     = document.getElementById('cd-track');
   const cdFill      = document.getElementById('cd-fill');
   const cdRunner    = document.getElementById('cd-runner');
@@ -1929,9 +1915,9 @@
     const now = getNow();
 
     if (!startVal) {
-      cdTagLabelMain.textContent = '';
       cdTagMain.textContent = '--:--';
-      cdTagCellSub.classList.remove('show');
+      cdTagMain.classList.remove('neg', 'overrun');
+      cdRunnerTagPill.classList.remove('two');
       countdownEl.classList.remove('elapsed');
       cdTrack.classList.remove('show');
       cdTickLastSec = null;
@@ -1950,24 +1936,25 @@
     checkTickContinuity(Math.round(rawDiffMs / 1000), fromPoll, start.getTime() + ':' + end.getTime());
 
     if (rawDiffMs > 0) {
-      cdTagLabelMain.textContent = '시작까지';
       cdTagMain.textContent = '-' + formatDuration(Math.floor(rawDiffMs / 1000));
-      cdTagCellSub.classList.remove('show');
+      cdTagMain.classList.add('neg');
+      cdTagMain.classList.remove('overrun');
+      cdRunnerTagPill.classList.remove('two');
       countdownEl.classList.remove('elapsed');
     } else {
-      cdTagLabelMain.textContent = '경과';
       cdTagMain.textContent = '+' + formatDuration(Math.floor(-rawDiffMs / 1000));
+      cdTagMain.classList.remove('neg', 'overrun');
       countdownEl.classList.add('elapsed');
     }
 
     if (!endVal || !end) {
-      cdTagCellSub.classList.remove('show');
+      cdRunnerTagPill.classList.remove('two');
       cdTrack.classList.remove('show');
       return;
     }
     const durationSec = (end - start) / 1000;
     if (durationSec <= 0) {
-      cdTagCellSub.classList.remove('show');
+      cdRunnerTagPill.classList.remove('two');
       cdTrack.classList.remove('show');
       return;
     }
@@ -2094,17 +2081,16 @@
       // 한 줄로 보여준다. 처음 이 상태가 된 순간만 10초간 반짝여서 알리고,
       // 이후엔 계속 깜빡이지 않고 고정 표시(전환 대기 동안 계속 깜빡이면 방해가 됨).
       const sign = finalDiffSec > 0 ? '+' : '-';
-      cdTagLabelMain.textContent = '종료';
       cdTagMain.textContent = sign + formatDuration(Math.abs(finalDiffSec));
+      cdTagMain.classList.remove('neg', 'overrun');
       cdTagMain.classList.toggle('final-over', finalDiffSec > 0);
       cdTagMain.classList.toggle('final-under', finalDiffSec < 0);
       // 참조 시안(Direction 3)의 종료 상태 알약처럼 아랫줄엔 총 제작(실제
       // 방송) 시간을 보여준다 — end는 방송이 실제로 꺼진 순간의 실제값이라
       // (end - start)가 곧 실제 방송 길이다.
-      cdTagLabelSub.textContent = '제작';
       cdTagSub.textContent = formatDuration(Math.max(0, Math.round((end - start) / 1000)));
-      cdTagCellSub.classList.add('show');
-      cdTagSub.classList.remove('overrun');
+      cdRunnerTagPill.classList.add('two');
+      cdTagSub.classList.remove('overrun', 'neg');
       if (!cdWasFinalEnded) {
         cdRunnerTagPill.classList.add('final-blink');
         clearTimeout(cdFinalBlinkTimer);
@@ -2123,21 +2109,21 @@
         const isOverrun = broadcastIsLive && now > scheduledEnd;
         if (isOverrun) {
           const overrunSec = Math.floor((now - scheduledEnd) / 1000);
-          cdTagLabelSub.textContent = '초과';
           cdTagSub.textContent = '+' + formatDuration(overrunSec);
           cdTagSub.classList.add('overrun');
+          cdTagSub.classList.remove('neg');
           if (!cdWasOverrun) triggerOverrunHit();
         } else {
           const remainSec = Math.max(0, Math.floor((end - now) / 1000));
-          cdTagLabelSub.textContent = '남음';
           cdTagSub.textContent = '-' + formatDuration(remainSec);
+          cdTagSub.classList.add('neg');
           cdTagSub.classList.remove('overrun');
         }
         cdWasOverrun = isOverrun;
-        cdTagCellSub.classList.add('show');
+        cdRunnerTagPill.classList.add('two');
       } else {
-        cdTagCellSub.classList.remove('show');
-        cdTagSub.classList.remove('overrun');
+        cdRunnerTagPill.classList.remove('two');
+        cdTagSub.classList.remove('overrun', 'neg');
         cdWasOverrun = false;
       }
     }
