@@ -135,6 +135,13 @@
     }
     /* 12시간제일 때만 채워지는 AM/PM 배지 — 큰 시계 옆에 작게 분리해서 표시.
        24시간제(빈 문자열)일 땐 :empty로 완전히 접혀서 자리도 안 차지한다. */
+    /* SUIT Heavy는 tabular-nums가 실제로 안 먹혀서(실측: 초마다 시계 폭이
+       ~12px 변해 좌우로 떨림) 숫자마다 폭이 다르다. 각 글자를 고정폭 칸에
+       넣어 폰트와 무관하게 시계 전체 폭을 항상 일정하게 만든다. */
+    #clock-time { display: inline-flex; align-items: baseline; }
+    #clock-time .clk-d { display: inline-block; width: 0.62em; text-align: center; }
+    #clock-time .clk-sep { display: inline-block; width: 0.28em; text-align: center; }
+
     #clock-meridiem {
       font-size: 0.26em;
       font-weight: 800;
@@ -1683,16 +1690,23 @@
   setInterval(pollSpsStale, 30000);
 
   /* ── 시계 & 날짜 ─────────────────────────────────────────────── */
+  function clockDigits(str) {
+    let out = '';
+    for (const c of str) out += (c === ':')
+      ? '<span class="clk-sep">:</span>'
+      : '<span class="clk-d">' + c + '</span>';
+    return out;
+  }
   function updateClock() {
     const n = getNow();
     const pad = v => String(v).padStart(2, '0');
     if (clock12Hour) {
       let h12 = n.getHours() % 12;
       if (h12 === 0) h12 = 12;
-      clockTimeEl.textContent = `${pad(h12)}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+      clockTimeEl.innerHTML = clockDigits(`${pad(h12)}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`);
       clockMeridiemEl.textContent = n.getHours() < 12 ? 'AM' : 'PM';
     } else {
-      clockTimeEl.textContent = `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+      clockTimeEl.innerHTML = clockDigits(`${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`);
       clockMeridiemEl.textContent = '';
     }
     dateEl.textContent =
