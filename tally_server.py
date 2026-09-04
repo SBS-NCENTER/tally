@@ -744,9 +744,11 @@ def sps_listener():
                 sps_note_ok(date_str)   # 조회 성공 — 연동 상태 갱신
 
                 on_air_event_id = None
+                on_air_idx = None
                 try:
                     idx = sps_api_get(f'/daily-schedule/onairdate?date={date_str}', token).get('onAirIndex')
                     if idx is not None and 0 <= idx < len(repos):
+                        on_air_idx = idx
                         on_air_event_id = repos[idx].get('eventId')
                 except Exception:
                     pass
@@ -795,8 +797,27 @@ def sps_listener():
                     # 이미 정해진 길이라 캐스케이드로 밀릴 일이 없다 — 확정으로 본다.
                     # 반대로 그게 이 방송 자신이 아닌 "다른 생방송"이면, 실제로 끝나기
                     # 전까지는(늦게 끝나거나 순서가 바뀌면 밀릴 수 있으니) 여전히 예정이다.
-                    on_air_is_live = any(e['eventId'] == on_air_event_id for e in all_live_today)
-                    start_confirmed = (not on_air_is_live) or on_air_event_id == picked['eventId']
+                    # picked 진입시각 확정 여부. 채널은 하나라 모든 생방송이 이
+                    # 단일 onAirIndex 순서 위에 직렬로 놓인다 — picked보다 앞서
+                    # 편성된 '생방송'이 아직 하나라도 안 끝났으면(현재 송출 위치와
+                    # picked 사이에 생방송이 남아 있으면) 그게 길어질 때 picked가
+                    # 밀린다 → 아직 예정. 사이가 전부 서버플레이(고정 길이)면 밀
+                    # 일이 없다 → 확정.
+                    # 예전엔 '지금 송출 중인 항목' 하나만 봐서, 부조 필터로 picked가
+                    # 먼 미래일 때 사이에 낀 다른 부조 생방송을 놓쳤다(예: TS-4만
+                    # 볼 때 8뉴스가, 앞의 TS-1 헌터스가 진행 중인데도 확정으로 뜨던
+                    # 버그).
+                    picked_idx = next((i for i, r in enumerate(repos)
+                                       if r.get('eventId') == picked['eventId']), None)
+                    if on_air_idx is None or picked_idx is None:
+                        # onAirIndex를 못 받았으면 보수적으로: 지금 송출이 생방송이면 미확정
+                        on_air_is_live = any(e['eventId'] == on_air_event_id for e in all_live_today)
+                        start_confirmed = (not on_air_is_live) or on_air_event_id == picked['eventId']
+                    else:
+                        start_confirmed = not any(
+                            repos[i].get('liveOrVcr') and repos[i].get('eventId') != picked['eventId']
+                            for i in range(on_air_idx, picked_idx)
+                        )
 
                     with open(SETTINGS_FILE, encoding='utf-8') as f:
                         s = json.load(f)
