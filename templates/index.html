@@ -828,6 +828,9 @@
       transition: transform 0.4s ease, box-shadow 0.4s ease, background 0.4s ease;
     }
     #countdown.imminent .cd-tag-main.neg { color: var(--accent); }
+    /* 임박 줌엔 러너가 트랙 우측 끝까지 질주하므로 종료 마커는 흐리게 접어
+       겹침을 막고 '다가오는 시작'에 집중시킨다. */
+    #countdown.imminent #cd-marker-end { opacity: 0.12; transition: opacity 0.6s ease; }
 
     @keyframes imminent-pulse {
       0%, 100% { transform: scale(1.20); }
@@ -1836,7 +1839,8 @@
   // 진입 임박 줌: 확정된 방송이 시작 FINAL_ZOOM_SEC 안으로 들어오면 시작 마커를
   // FINAL_ZOOM_MAX_PCT까지 밀어 러너가 큰 거리를 질주하게 만든다(긴박감).
   const FINAL_ZOOM_SEC = 60;
-  const FINAL_ZOOM_MAX_PCT = 82;
+  const FINAL_ZOOM_MAX_PCT = 99;
+  const FINAL_ZOOM_SETTLE_SEC = 2;   // 시작 이만큼 전에 이미 끝(마커)에 도착해 대기
   const FINAL_PULSE_SEC = 10;   // 마지막 10초는 강한 펄스
   let cdWasBeforeStart = null;
   let cdWasOverrun = false;
@@ -2082,7 +2086,10 @@
       // 각자 CSS transition이 있어 미끄러지듯 확대된다.
       const remToStartSec = (start - now) / 1000;
       if (broadcastStartConfirmed && remToStartSec > 0 && remToStartSec <= FINAL_ZOOM_SEC) {
-        const zp = 1 - remToStartSec / FINAL_ZOOM_SEC;   // 0 → 1
+        // remToStartSec: FINAL_ZOOM_SEC(대기 끝)→0. SETTLE초 전에 zp=1이 되게
+        // 스케일해서, 러너가 트랜지션 지연을 감안해도 시작 전에 끝(마커)에
+        // 확실히 도착해 잠깐 머문 뒤 방송 모드로 넘어가게 한다.
+        const zp = Math.min(1, (FINAL_ZOOM_SEC - remToStartSec) / (FINAL_ZOOM_SEC - FINAL_ZOOM_SETTLE_SEC));
         const eased = zp * zp;                            // ease-in (다가올수록 가속)
         startPct = startPct + (FINAL_ZOOM_MAX_PCT - startPct) * eased;
         cdImminent = true;
