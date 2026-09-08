@@ -511,7 +511,7 @@
          벌어졌다(사용자 피드백) — 한 덩어리로 읽히게 촘촘히 고정한다. */
       line-height: 1.06;
     }
-    #cd-marker-start .cd-marker-label {
+    #cd-marker-start-cap .cd-marker-label {
       left: 0;
       transform: none;
       align-items: flex-start;
@@ -828,14 +828,6 @@
       transition: transform 0.4s ease, box-shadow 0.4s ease, background 0.4s ease;
     }
     #countdown.imminent .cd-tag-main.neg { color: var(--accent); }
-    /* 임박 줌 동안 시작 라벨(프로그램명+시각)은 마커를 따라 밀려 종료시각과
-       겹치므로 흐리게 접는다 — 이 구간엔 카운트다운 알약과 질주하는 러너가
-       핵심 정보다. 종료 마커도 같이 흐리게. */
-    #countdown.imminent #cd-marker-start .cd-marker-label,
-    #countdown.imminent #cd-marker-end {
-      opacity: 0.12;
-      transition: opacity 0.6s ease;
-    }
 
     @keyframes imminent-pulse {
       0%, 100% { transform: scale(1.20); }
@@ -1294,6 +1286,8 @@
       <div id="cd-fill"></div>
       <div class="cd-marker" id="cd-marker-start">
         <span class="cd-marker-dot"></span>
+      </div>
+      <div class="cd-marker cd-marker-cap" id="cd-marker-start-cap">
         <span class="cd-marker-label">
           <span class="cd-marker-program" id="cd-marker-start-program"></span>
           <span id="cd-marker-start-label">시작</span>
@@ -1445,6 +1439,7 @@
   const cdFill      = document.getElementById('cd-fill');
   const cdRunner    = document.getElementById('cd-runner');
   const cdMarkerStart      = document.getElementById('cd-marker-start');
+  const cdMarkerStartCap   = document.getElementById('cd-marker-start-cap');
   const cdMarkerStartLabel = document.getElementById('cd-marker-start-label');
   const cdMarkerEndLabel   = document.getElementById('cd-marker-end-label');
   const cdMarkerStartProgram = document.getElementById('cd-marker-start-program');
@@ -2056,7 +2051,7 @@
 
     // 시작점을 지나면 트랙 좌표계를 '시작~종료'로 재구성 — 리드인 구간이 차지하던 공간을
     // 되찾아 트랙이 화면 전체 폭으로 길어진다 (크로싱 순간에만 cross-anim으로 부드럽게 전환).
-    let startPct, pct;
+    let startPct, pct, startPctLabel = 0;
     // 리드인(CD_LEAD_SEC)에도 아직 안 들어와서 "먼 대기" 곡선을 타고 있는지 —
     // 이 값이 트레일 숨김/숨쉬기 펄스(.parked)를 계속 켤지 판단하는 기준이 된다.
     let cdFarWaiting = false;
@@ -2075,6 +2070,7 @@
       // 그대로 14~15% 근방 유지, 회귀 없음).
       const LAYOUT_MIN_DURATION_SEC = 60 * 60;
       startPct = (leadSec / (leadSec + Math.max(durationSec, LAYOUT_MIN_DURATION_SEC))) * 100;
+      startPctLabel = startPct;   // 라벨은 성장 전 위치에 고정(러너 따라가지 않게)
 
       // ── 진입 임박 줌 ──────────────────────────────────────────────
       // 앞 방송이 끝나 '확정'된 상태에서만(broadcastStartConfirmed) 켠다 —
@@ -2117,6 +2113,7 @@
       pct = Math.max(0, Math.min(startPct, pct));
     } else {
       startPct = 0;
+      startPctLabel = 0;
       pct = Math.max(0, Math.min(1, (now - start) / (end - start))) * 100;
     }
     // cross-anim 클래스는 반드시 left/width 값을 바꾸기 '전'에 붙여야 함 — 나중에 붙이면
@@ -2134,7 +2131,8 @@
 
     if (!cdTrackWidthPx) cdTrackWidthPx = cdTrack.getBoundingClientRect().width;
 
-    cdMarkerStart.style.left = startPct + '%';
+    cdMarkerStart.style.left = startPct + '%';               // 점은 줌 위치로 질주
+    if (cdMarkerStartCap) cdMarkerStartCap.style.left = startPctLabel + '%';  // 라벨은 고정
     cdRunner.style.transform = 'translateX(' + (pct / 100 * cdTrackWidthPx) + 'px)';
 
     // [ADDED] .cd-runner-tag는 이제 #cd-runner 안이 아니라 #cd-track의 형제로
