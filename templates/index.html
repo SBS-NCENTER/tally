@@ -149,6 +149,15 @@
       letter-spacing: 0.04em;
     }
     #clock-meridiem:empty { display: none; }
+    /* 좌측 AM이 큰 숫자를 오른쪽으로 밀지 않도록, 우측에 같은 폭의 투명
+       스페이서를 둬서 시간 숫자가 화면 정중앙에 오게 한다(좌우 밸런스). */
+    #clock-meridiem-r {
+      font-size: 0.26em;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      visibility: hidden;
+    }
+    #clock-meridiem-r:empty { display: none; }
 
     #info-row {
       display: flex;
@@ -1250,7 +1259,7 @@
 
   <!-- 시계 + 날짜 + 날씨 -->
   <div id="center">
-    <div id="clock"><span id="clock-meridiem"></span><span id="clock-time">--:--:--</span></div>
+    <div id="clock"><span id="clock-meridiem"></span><span id="clock-time">--:--:--</span><span id="clock-meridiem-r" aria-hidden="true"></span></div>
     <div id="info-row">
       <div id="date">----년 --월 --일 (--)</div>
       <div class="divider"></div>
@@ -1430,6 +1439,7 @@
   const clockEl     = document.getElementById('clock');
   const clockTimeEl = document.getElementById('clock-time');
   const clockMeridiemEl = document.getElementById('clock-meridiem');
+  const clockMeridiemR = document.getElementById('clock-meridiem-r');
   let clock12Hour = true; // 기본값 12시간제(AM/PM) — settings.json에 값이 아직 없어도 이게 기본
   const infoRow     = document.getElementById('info-row');
   const dateEl      = document.getElementById('date');
@@ -1741,9 +1751,11 @@
       if (h12 === 0) h12 = 12;
       clockTimeEl.innerHTML = clockDigits(`${pad(h12)}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`);
       clockMeridiemEl.textContent = n.getHours() < 12 ? 'AM' : 'PM';
+      clockMeridiemR.textContent = clockMeridiemEl.textContent;
     } else {
       clockTimeEl.innerHTML = clockDigits(`${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`);
       clockMeridiemEl.textContent = '';
+      clockMeridiemR.textContent = '';
     }
     dateEl.textContent =
       `${n.getFullYear()}년 ${pad(n.getMonth()+1)}월 ${pad(n.getDate())}일 (${DAYS[n.getDay()]})`;
