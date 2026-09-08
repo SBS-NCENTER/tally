@@ -828,12 +828,14 @@
       transition: transform 0.4s ease, box-shadow 0.4s ease, background 0.4s ease;
     }
     #countdown.imminent .cd-tag-main.neg { color: var(--accent); }
-    /* 시작 라벨은 마커가 밀려도 제자리(왼쪽)에 — 마커 left와 같은 transition */
-    #countdown.imminent #cd-marker-start .cd-marker-label {
-      transition: transform 0.8s cubic-bezier(0.4,0,0.2,1);
+    /* 임박 줌 동안 시작 라벨(프로그램명+시각)은 마커를 따라 밀려 종료시각과
+       겹치므로 흐리게 접는다 — 이 구간엔 카운트다운 알약과 질주하는 러너가
+       핵심 정보다. 종료 마커도 같이 흐리게. */
+    #countdown.imminent #cd-marker-start .cd-marker-label,
+    #countdown.imminent #cd-marker-end {
+      opacity: 0.12;
+      transition: opacity 0.6s ease;
     }
-    /* 임박 줌 동안 종료 마커/라벨은 흐리게 — 밀려오는 시작에 집중, 겹침 방지 */
-    #countdown.imminent #cd-marker-end { opacity: 0.15; transition: opacity 0.6s ease; }
 
     @keyframes imminent-pulse {
       0%, 100% { transform: scale(1.20); }
@@ -1444,7 +1446,6 @@
   const cdRunner    = document.getElementById('cd-runner');
   const cdMarkerStart      = document.getElementById('cd-marker-start');
   const cdMarkerStartLabel = document.getElementById('cd-marker-start-label');
-  const cdMarkerStartLabelBox = document.querySelector('#cd-marker-start .cd-marker-label');
   const cdMarkerEndLabel   = document.getElementById('cd-marker-end-label');
   const cdMarkerStartProgram = document.getElementById('cd-marker-start-program');
   const cdRunnerTagEl        = document.getElementById('cd-runner-tag');
@@ -2134,19 +2135,6 @@
     if (!cdTrackWidthPx) cdTrackWidthPx = cdTrack.getBoundingClientRect().width;
 
     cdMarkerStart.style.left = startPct + '%';
-    // 진입 임박 줌 동안 시작 마커(점)는 오른쪽으로 밀리지만, 거기 붙은
-    // 라벨(프로그램명+시작시각)까지 같이 밀면 종료시각과 겹치고 화면 밖으로
-    // 넘친다 — 라벨만 마커 이동량만큼 되돌려 트랙 왼쪽에 고정한다(점·러너·
-    // 채움만 줌). 마커의 left transition(0.8s)과 맞춰 라벨도 같은 transition을
-    // 줘서 되돌림이 매끄럽게 상쇄되게 한다(CSS .imminent 규칙).
-    if (cdMarkerStartLabelBox) {
-      if (cdImminent && cdTrackWidthPx) {
-        const offPx = -(startPct / 100) * cdTrackWidthPx;
-        cdMarkerStartLabelBox.style.transform = 'translateX(' + offPx.toFixed(1) + 'px)';
-      } else {
-        cdMarkerStartLabelBox.style.transform = '';
-      }
-    }
     cdRunner.style.transform = 'translateX(' + (pct / 100 * cdTrackWidthPx) + 'px)';
 
     // [ADDED] .cd-runner-tag는 이제 #cd-runner 안이 아니라 #cd-track의 형제로
