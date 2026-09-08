@@ -814,6 +814,36 @@
     #cd-track.pending .cd-runner-head { background: var(--standby); }
     #cd-track.pending .cd-runner-ring { border-color: var(--standby); }
 
+    /* ── 진입 임박 줌 상태 ────────────────────────────────────────────
+       확정된 방송이 시작 1분 안으로 들어오면: 색을 민트→주황으로 warm,
+       시작 마커를 키우고 글로우, 카운트다운 숫자도 주황으로. 마지막 10초엔
+       심장박동 펄스. (줌 자체는 JS가 startPct를 키워서 러너가 질주하게 함) */
+    #countdown.imminent #cd-track.pending #cd-fill { background: var(--accent); }
+    #countdown.imminent #cd-track.pending .cd-runner-head { background: var(--accent); }
+    #countdown.imminent #cd-track.pending .cd-runner-ring { border-color: var(--accent); }
+    #countdown.imminent #cd-marker-start .cd-marker-dot {
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(255,87,34,0.22), 0 0 26px rgba(255,87,34,0.65);
+      transform: scale(1.25);
+      transition: transform 0.4s ease, box-shadow 0.4s ease, background 0.4s ease;
+    }
+    #countdown.imminent .cd-tag-main.neg { color: var(--accent); }
+
+    @keyframes imminent-pulse {
+      0%, 100% { transform: scale(1.20); }
+      50%      { transform: scale(1.34); }
+    }
+    @keyframes imminent-pill-pulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.05); }
+    }
+    #countdown.imminent-final #cd-marker-start .cd-marker-dot {
+      animation: imminent-pulse 0.7s ease-in-out infinite;
+    }
+    #countdown.imminent-final #cd-runner-tag-text {
+      animation: imminent-pill-pulse 0.7s ease-in-out infinite;
+    }
+
     /* ── 세로 모드 (전체 화면 90도 회전) ───────────────────────── */
     body.portrait-right, body.portrait-left {
       position: fixed;
@@ -1800,6 +1830,11 @@
   //   절반 지점에 위치하도록 곡선을 조정하는 반감기.
   const FAR_ZONE_PCT = 6;
   const FAR_ZONE_HALFLIFE_SEC = 3600;
+  // 진입 임박 줌: 확정된 방송이 시작 FINAL_ZOOM_SEC 안으로 들어오면 시작 마커를
+  // FINAL_ZOOM_MAX_PCT까지 밀어 러너가 큰 거리를 질주하게 만든다(긴박감).
+  const FINAL_ZOOM_SEC = 60;
+  const FINAL_ZOOM_MAX_PCT = 82;
+  const FINAL_PULSE_SEC = 10;   // 마지막 10초는 강한 펄스
   let cdWasBeforeStart = null;
   let cdWasOverrun = false;
   let cdWasFinalEnded = false;
@@ -2017,6 +2052,7 @@
     // 리드인(CD_LEAD_SEC)에도 아직 안 들어와서 "먼 대기" 곡선을 타고 있는지 —
     // 이 값이 트레일 숨김/숨쉬기 펄스(.parked)를 계속 켤지 판단하는 기준이 된다.
     let cdFarWaiting = false;
+    let cdImminent = false, cdImminentFinal = false;
     if (isBeforeStart) {
       const leadSec    = Math.min(CD_LEAD_SEC, durationSec);
       const trackStart = new Date(start.getTime() - leadSec * 1000);
@@ -2031,6 +2067,23 @@
       // 그대로 14~15% 근방 유지, 회귀 없음).
       const LAYOUT_MIN_DURATION_SEC = 60 * 60;
       startPct = (leadSec / (leadSec + Math.max(durationSec, LAYOUT_MIN_DURATION_SEC))) * 100;
+
+      // ── 진입 임박 줌 ──────────────────────────────────────────────
+      // 앞 방송이 끝나 '확정'된 상태에서만(broadcastStartConfirmed) 켠다 —
+      // 확정 안 됐으면 진짜 진입시각을 모르니 가짜 긴박감을 주면 안 된다.
+      // 시작까지 남은 시간이 FINAL_ZOOM_SEC 안으로 들어오면 시작 마커를
+      // startPct(원래 ~14~25%) → FINAL_ZOOM_MAX_PCT 로 서서히 밀어(easeIn),
+      // 러너가 그만큼 큰 거리를 빠르게 지나오며 긴박해 보이게 한다. 경계에서
+      // easeIn(0)=0 이라 끊김 없이 원래 값에서 이어진다. 마커·러너·채움은
+      // 각자 CSS transition이 있어 미끄러지듯 확대된다.
+      const remToStartSec = (start - now) / 1000;
+      if (broadcastStartConfirmed && remToStartSec > 0 && remToStartSec <= FINAL_ZOOM_SEC) {
+        const zp = 1 - remToStartSec / FINAL_ZOOM_SEC;   // 0 → 1
+        const eased = zp * zp;                            // ease-in (다가올수록 가속)
+        startPct = startPct + (FINAL_ZOOM_MAX_PCT - startPct) * eased;
+        cdImminent = true;
+        cdImminentFinal = remToStartSec <= FINAL_PULSE_SEC;
+      }
 
       // "먼 대기" 몫은 트랙 0%부터 farPct까지 — 프로그램이 아주 길어서(durationSec가
       // 커서) startPct 자체가 작을 때, 이 몫이 리드인(정밀 구간) 몫을 잠식하지
@@ -2171,18 +2224,22 @@
       // 방송 시작 전이면(먼 대기든 리드인 구간이든 전부) 민트 — 실제로
       // 방송이 시작해야만(running) 원래 강조색(주황)으로 바뀐다.
       cdTrack.classList.add('pending');
+      countdownEl.classList.toggle('imminent', cdImminent);
+      countdownEl.classList.toggle('imminent-final', cdImminentFinal);
     } else if (now < end) {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = Math.max(0, pct - startPct) + '%';
       cdRunner.classList.remove('walking', 'finished', 'parked');
       cdRunner.classList.add('running');
       cdTrack.classList.remove('parked', 'pending');
+      countdownEl.classList.remove('imminent', 'imminent-final');
     } else {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = (100 - startPct) + '%';
       cdRunner.classList.remove('walking', 'running', 'parked');
       cdRunner.classList.add('finished');
       cdTrack.classList.remove('parked', 'pending');
+      countdownEl.classList.remove('imminent', 'imminent-final');
     }
 
   }
