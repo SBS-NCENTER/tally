@@ -109,7 +109,7 @@
     #status-text { font-weight: 800; font-size: calc(2.9 * var(--u)); line-height: 1.15; letter-spacing: 0.02em; white-space: nowrap; }
 
     #info-row {
-      margin-left: auto; display: flex; align-items: center; gap: calc(1.2 * var(--u));
+      display: flex; align-items: center; gap: calc(1.2 * var(--u));
       font-weight: 700; font-size: calc(2 * var(--u)); color: var(--text-dim); white-space: nowrap;
     }
     #info-row .divider { width: 1px; height: calc(1.6 * var(--u)); background: var(--hairline); }
@@ -135,23 +135,26 @@
     .clk-d { display: inline-block; width: 0.62em; text-align: center; }
     .clk-sep { display: inline-block; width: 0.3em; text-align: center; color: var(--primary); }
 
-    #side { width: 26%; flex: none; display: flex; flex-direction: column; gap: calc(1.4 * var(--u)); min-height: 0; }
-    .tile {
-      flex: 1; min-height: 0; overflow: hidden;
-      display: flex; flex-direction: column; justify-content: center; gap: calc(0.4 * var(--u));
-      padding: calc(1.2 * var(--u)) calc(2.2 * var(--u));
+    /* 부조정실 + 방송 박스 — 상단 바 우측, 한 박스 안에 두 칸 */
+    #side {
+      margin-left: auto; min-width: 0; display: flex; align-items: stretch;
+      background: var(--surface); border-radius: calc(1.6 * var(--u)); overflow: hidden;
     }
-    .tile .cap { font-size: calc(calc(1.9 * var(--u)) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); }
-    .tile .val { font-size: calc(calc(3.8 * var(--u)) * var(--sch-scale, 1)); line-height: 1.05; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
-    .tile.prog { background: var(--primary); color: var(--on-primary); }
+    .tile {
+      min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(0.15 * var(--u));
+      padding: calc(0.6 * var(--u)) calc(1.8 * var(--u));
+    }
+    .tile .cap { font-size: calc(1.45 * var(--u) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
+    .tile .val { font-size: calc(2.8 * var(--u) * var(--sch-scale, 1)); line-height: 1.1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+    .tile.prog { background: var(--primary); color: var(--on-primary); max-width: calc(48 * var(--u)); }
     .tile.prog .cap { color: var(--on-primary-dim); }
     .tile.prog .val { color: var(--on-primary); display: flex; align-items: center; }
     .tile.prog .val #tile-prog-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .tile .ok {
       display: inline-flex; align-items: center; justify-content: center; flex: none;
-      width: calc(3.6 * var(--u)); height: calc(3.6 * var(--u)); border-radius: 50%; margin-left: calc(1 * var(--u));
+      width: calc(2.6 * var(--u)); height: calc(2.6 * var(--u)); border-radius: 50%; margin-left: calc(0.8 * var(--u));
       background: var(--on-primary); color: var(--primary);
-      font-size: calc(2.4 * var(--u)); font-weight: 900;
+      font-size: calc(1.7 * var(--u)); font-weight: 900;
     }
 
     /* ══════════ 일반 모드 하단: 이전 / 현재 / 다음 일정 ══════════ */
@@ -322,7 +325,6 @@
     body.portrait-right { transform: rotate(90deg); }
     body.portrait-left  { transform: rotate(-90deg); }
     body.portrait-right #center, body.portrait-left #center { flex-direction: column; }
-    body.portrait-right #side, body.portrait-left #side { width: auto; flex: none; flex-direction: row; }
     body.portrait-right #status-box, body.portrait-left #status-box { flex: 0 0 auto; }
 
     /* 전체화면 토글 — 원격/터치 환경에서 F11 대신 */
@@ -641,6 +643,17 @@
         <span id="weather-text">날씨 불러오는 중…</span>
       </div>
     </div>
+    <!-- 부조정실 + 현재/다음 방송: 한 박스로 상단 우측 -->
+    <div id="side">
+      <div class="tile" id="tile-studio">
+        <span class="cap">부조정실</span>
+        <span class="val" id="tile-studio-val">—</span>
+      </div>
+      <div class="tile prog" id="tile-prog">
+        <span class="cap" id="tile-prog-cap">현재 방송</span>
+        <span class="val"><span id="tile-prog-name">—</span><span class="ok" id="tile-prog-ok" title="확정된 시작 시각" style="display:none">✓</span></span>
+      </div>
+    </div>
   </header>
 
   <!-- 가운데: 시계 카드 + 부조정실 / 현재 방송 타일 -->
@@ -648,16 +661,6 @@
     <div class="card" id="clock-card">
       <div id="clock"><span id="clock-meridiem"></span><span id="clock-time">--:--:--</span></div>
     </div>
-    <aside id="side">
-      <div class="card tile" id="tile-studio">
-        <span class="cap">부조정실</span>
-        <span class="val" id="tile-studio-val">—</span>
-      </div>
-      <div class="card tile prog" id="tile-prog">
-        <span class="cap" id="tile-prog-cap">현재 방송</span>
-        <span class="val"><span id="tile-prog-name">—</span><span class="ok" id="tile-prog-ok" title="확정된 시작 시각" style="display:none">✓</span></span>
-      </div>
-    </aside>
   </main>
 
   <!-- 일반 모드: 캘린더 이전/현재/다음 -->
