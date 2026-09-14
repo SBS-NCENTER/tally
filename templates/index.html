@@ -281,6 +281,10 @@
     .cd-chip.rem.blink { animation: chip-blink 0.8s ease-in-out 12; }
     @keyframes chip-blink { 50% { opacity: 0.35; } }
 
+    /* 접근 창(진입 5분 전~): 마커가 오른쪽 끝에 서므로 라벨은 마커 왼쪽으로 붙이고 종료 마커는 접는다 */
+    #countdown.approach .cd-marker-cap .cd-marker-label { transform: translateX(-100%); }
+    #countdown.approach #cd-marker-end { opacity: 0.15; transition: opacity 0.6s ease; }
+
     /* 진입 임박 줌: 확정된 방송 시작 1분 전 — 색을 앰버로 데우고 마지막 10초는 펄스 */
     #countdown.imminent #cd-track.pending #cd-fill { background: var(--amber); }
     #countdown.imminent .cd-runner-cap { border-top-color: var(--amber); }
@@ -1523,7 +1527,7 @@
     // 리드인(CD_LEAD_SEC)에도 아직 안 들어와서 "먼 대기" 곡선을 타고 있는지 —
     // 이 값이 트레일 숨김/숨쉬기 펄스(.parked)를 계속 켤지 판단하는 기준이 된다.
     let cdFarWaiting = false;
-    let cdImminent = false, cdImminentFinal = false;
+    let cdImminent = false, cdImminentFinal = false, cdApproach = false;
     if (isBeforeStart) {
       const leadSec    = CD_LEAD_SEC;   // (5007) 방송 길이와 무관하게 항상 60분 — 리드인 구간 폭이 고정이라 짧은 방송도 같은 눈금
       const trackStart = new Date(start.getTime() - leadSec * 1000);
@@ -1583,6 +1587,17 @@
         cdFarWaiting = remainingToTrackStartSec > FAR_ZONE_HALFLIFE_SEC;
       }
       pct = Math.max(0, Math.min(startPct, pct));
+      // (5007) 진입 10분 전부터 트랙을 '10분 창'으로 재척도 — 60분 창에선 마지막 몇 분 동안 러너가
+      // 마커와 겹쳐 진행이 안 보였다. 마커를 오른쪽 끝(FINAL_ZOOM_MAX_PCT)에 두고 러너는 5분 중
+      // 경과 비율로 다시 건너간다(1분 = 트랙 약 10%). 마지막 1분 앰버·펄스(cdImminent)는 그대로.
+      const FINAL_APPROACH_SEC = 10 * 60;
+      if (remToStartSec > 0 && remToStartSec <= FINAL_APPROACH_SEC) {
+        startPct = FINAL_ZOOM_MAX_PCT;
+        startPctLabel = FINAL_ZOOM_MAX_PCT;
+        const eff = Math.max(0, remToStartSec - FINAL_ZOOM_SETTLE_SEC);
+        pct = FINAL_ZOOM_MAX_PCT * Math.min(1, 1 - eff / FINAL_APPROACH_SEC);
+        cdApproach = true;
+      }
     } else {
       startPct = 0;
       startPctLabel = 0;
@@ -1719,6 +1734,7 @@
       // 방송 시작 전이면(먼 대기든 리드인 구간이든 전부) 민트 — 실제로
       // 방송이 시작해야만(running) 원래 강조색(주황)으로 바뀐다.
       cdTrack.classList.add('pending');
+      countdownEl.classList.toggle('approach', cdApproach);
       countdownEl.classList.toggle('imminent', cdImminent);
       countdownEl.classList.toggle('imminent-final', cdImminentFinal);
     } else if (now < end) {
@@ -1727,7 +1743,7 @@
       cdRunner.classList.remove('walking', 'finished', 'parked');
       cdRunner.classList.add('running');
       cdTrack.classList.remove('parked', 'pending');
-      countdownEl.classList.remove('imminent', 'imminent-final');
+      countdownEl.classList.remove('imminent', 'imminent-final', 'approach');
     } else {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = (100 - startPct) + '%';
