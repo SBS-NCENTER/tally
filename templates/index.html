@@ -1,938 +1,341 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="purple">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SBS Web Tally</title>
   <style>
-    @font-face {
-      font-family: 'SUIT';
-      src: url('/static/fonts/SUIT-SemiBold.woff2') format('woff2');
-      font-weight: 600;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: 'SUIT';
-      src: url('/static/fonts/SUIT-Bold.woff2') format('woff2');
-      font-weight: 700;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: 'SUIT';
-      src: url('/static/fonts/SUIT-ExtraBold.woff2') format('woff2');
-      font-weight: 800;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: 'SUIT';
-      src: url('/static/fonts/SUIT-Heavy.woff2') format('woff2');
-      font-weight: 900;
-      font-display: swap;
-    }
+    /* Pretendard — 저장소에 동봉(자체 호스팅). 외부 폰트 CDN에 의존하지 않아
+       망 상태와 무관하게 항상 같은 글꼴로 뜬다. */
+    @font-face { font-family: 'Pretendard'; src: url('/static/fonts/Pretendard-SemiBold.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+    @font-face { font-family: 'Pretendard'; src: url('/static/fonts/Pretendard-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+    @font-face { font-family: 'Pretendard'; src: url('/static/fonts/Pretendard-ExtraBold.woff2') format('woff2'); font-weight: 800; font-display: swap; }
+    @font-face { font-family: 'Pretendard'; src: url('/static/fonts/Pretendard-Black.woff2') format('woff2'); font-weight: 900; font-display: swap; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ══════════ 테마 토큰 (Material 3 다크) ══════════
+       기본은 보라(M3 baseline). 컨트롤 페이지 "테마" 설정이 mint면
+       <html data-theme="mint">로 바뀌고 아래 민트 세트가 덮어쓴다.
+       구성 요소는 전부 이 토큰만 참조하므로 색 교체는 여기서만 한다. */
     :root {
-      /* One UI 6 — true black + one confident accent (tally-lamp red).
-         Warning(amber)/success(green) are reused, pre-existing semantic
-         colors (over/under, confirmed) — not competing "accents". */
-      --oneui-bg: #000000;
-      --oneui-surface: #1c1c1e;
-      --oneui-surface-2: #2c2c2e;
-      --oneui-hairline: rgba(255,255,255,0.08);
-      --accent: #ff5722;
-      --accent-tint: rgba(255,87,34,0.14);
-      --success: #30d158;
-      --warning: #ff9f0a;
-      --warning-tint: rgba(255,159,10,0.14);
-      /* 다음 방송까지 한참 남아 "대기 중"임을 강조색(주황, 임박/생방송용)과
-         구분해서 보여주는 민트 — 트랙/러너가 회색 일색이 되지 않게 하면서도
-         "지금 급한 건 아니다"라는 의미까지 색으로 전달한다. */
-      --standby: #2dd4bf;
-      --standby-tint: rgba(45,212,191,0.14);
-      --text-primary: #ffffff;
-      --text-secondary: rgba(235,235,245,0.6);
-      --text-tertiary: rgba(235,235,245,0.3);
+      --bg: #141218;
+      --surface: #211F26;
+      --surface-hi: #2B2930;
+      --surface-var: #4A4458;
+      --hairline: rgba(255,255,255,0.08);
+      --primary: #D0BCFF;
+      --on-primary: #21005D;
+      --on-primary-dim: #4F378B;
+      --primary-glow: rgba(208,188,255,0.12);
+      --rem-bg: #4A4458;
+      --text: #F2ECF4;
+      --text-dim: #CAC4D0;
+      --text-faint: rgba(235,235,245,0.35);
+      --red: #E8453C;
+      --green: #9CF2B8;
+      --amber: #FFB95A;
+      --amber-tint: rgba(255,185,90,0.16);
+      --red-tint: rgba(232,69,60,0.16);
+
+      /* 5006 퀵 패널 CSS가 쓰는 이름들 — 새 토큰의 별칭 */
+      --oneui-bg: var(--bg);
+      --oneui-surface: var(--surface);
+      --oneui-surface-2: var(--surface-hi);
+      --oneui-hairline: var(--hairline);
+      --accent: var(--primary);
+      --accent-tint: var(--primary-glow);
+      --success: var(--green);
+      --warning: var(--amber);
+      --warning-tint: var(--amber-tint);
+      --standby: var(--primary);
+      --standby-tint: var(--primary-glow);
+      --text-primary: var(--text);
+      --text-secondary: var(--text-dim);
+      --text-tertiary: var(--text-faint);
+    }
+    :root[data-theme="mint"] {
+      --surface-var: #3A4F4B;
+      --primary: #7FE3D3;
+      --on-primary: #00332C;
+      --on-primary-dim: #0B5A50;
+      --primary-glow: rgba(127,227,211,0.12);
+      --rem-bg: #1F4A44;
+      --green: #C6F59A;
     }
 
+    html, body { height: 100%; }
     body {
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      background: var(--oneui-bg);
-      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      gap: var(--gap);
+      padding: var(--pad);
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-feature-settings: 'tnum' 1;
       user-select: none;
       overflow: hidden;
       cursor: none;
+      --u: 1vw;          /* 길이 단위 — 가로는 화면 폭 기준, 세로(회전)는 화면 높이 기준(아래 portrait 참고) */
+      --pad: calc(2 * var(--u));
+      --gap: calc(1.6 * var(--u));
+      --radius: calc(2.8 * var(--u));
     }
+    body::before {   /* M3 톤 글로우 — 우상단에 프라이머리 색 살짝 */
+      content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: radial-gradient(60% 70% at 100% 0%, var(--primary-glow), transparent 70%);
+    }
+    body > * { position: relative; z-index: 1; }
+    .card { background: var(--surface); border-radius: var(--radius); }
 
-    /* ── 상태 박스 (아날로그 탈리 램프) ───────────────────────────── */
+    /* ══════════ 상단 바: 탈리 배지 + (옵션) 날짜/날씨 ══════════ */
+    #topbar { flex: none; display: flex; align-items: center; gap: calc(1.4 * var(--u)); min-height: 0; }
     #status-box {
-      position: relative;
-      align-self: stretch; /* body는 align-items:center라 stretch를 명시해야 폭 전체를 채움 */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: clamp(14px, 2vh, 30px) clamp(24px, 5vw, 90px) clamp(12px, 1.6vh, 22px);
-      /* 글자 없는 '선 램프' — 마이크 탈리는 색으로만 알린다. 꺼지면 어두운 선,
-         켜지면 빨갛게 빛나는 선. 세로 공간을 최대한 아껴 하단 상황판에 넘긴다. */
-      height: clamp(14px, calc(var(--tally-box-scale, 1) * 2vh), 34px);
-      padding: 0;
-      border-radius: 999px;
-      overflow: hidden;
-      transition: background 0.2s ease, padding 0.2s ease;
-      background: var(--oneui-surface);
+      display: inline-flex; align-items: center; gap: calc(1.1 * var(--u));
+      padding: calc(calc(0.9 * var(--u)) * var(--tally-box-scale, 1)) calc(calc(2.4 * var(--u)) * var(--tally-box-scale, 1));
+      border-radius: calc(1.4 * var(--u));
+      background: var(--surface-var);
+      color: var(--text-dim);
+      transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
     }
-    #status-box.on-air {
-      background: var(--accent);
-      /* 아래로만 치우쳐 번지던 글로우를 위아래로 고르게 — 참조 시안처럼
-         "램프가 은은하게 사방으로 퍼지는" 느낌으로(사용자 피드백). */
-      box-shadow: 0 0 5vh rgba(255,87,34,0.9), 0 0 1.8vh rgba(255,130,70,0.75);
+    #status-box::before {
+      content: ''; width: calc(1.2 * var(--u)); height: calc(1.2 * var(--u)); border-radius: 50%;
+      background: currentColor; opacity: 0.5;
     }
-
-    #status-text {
-      display: none;   /* 선 램프 — 색으로만 알린다 */
-      font-size: clamp(0.85rem, calc(2.1vh * var(--vpf, 1)), 2.2rem);
-      font-weight: 800;
-      letter-spacing: 0.28em;
-      color: var(--text-tertiary);
-      text-transform: uppercase;
-      transition: color 0.2s ease;
-      position: relative;
-      z-index: 3;
-      white-space: nowrap;
-    }
-    #status-box.on-air #status-text {
-      color: var(--text-primary);
-    }
-
-    /* ── 시계 영역 ──────────────────────────────────────────────── */
-    #center {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: clamp(6px, 1.5vh, 18px);
-    }
-
-    #clock {
-      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-      font-variant-numeric: tabular-nums;
-      font-weight: 900;
-      color: var(--text-primary);
-      /* 굵은 웨이트는 이 정도 큰 사이즈에선 자간을 아주 살짝 더 줘야
-         답답해 보이지 않는다(사용자 피드백, Pretendard 시절부터 유지). */
-      letter-spacing: 0.035em;
-      line-height: 1;
-      transition: font-size 0.2s ease, padding 0.2s ease;
-      padding: clamp(8px, calc(var(--clock-box-scale, 1) * 1.4vh), 56px) 0;
-      text-align: center;
-      display: flex;
-      align-items: baseline;
-      justify-content: center;
-      gap: 0.22em;
-    }
-    /* 12시간제일 때만 채워지는 AM/PM 배지 — 큰 시계 옆에 작게 분리해서 표시.
-       24시간제(빈 문자열)일 땐 :empty로 완전히 접혀서 자리도 안 차지한다. */
-    /* SUIT Heavy는 tabular-nums가 실제로 안 먹혀서(실측: 초마다 시계 폭이
-       ~12px 변해 좌우로 떨림) 숫자마다 폭이 다르다. 각 글자를 고정폭 칸에
-       넣어 폰트와 무관하게 시계 전체 폭을 항상 일정하게 만든다. */
-    #clock-time { display: inline-flex; align-items: baseline; }
-    #clock-time .clk-d { display: inline-block; width: 0.62em; text-align: center; }
-    #clock-time .clk-sep { display: inline-block; width: 0.28em; text-align: center; }
-
-    #clock-meridiem {
-      font-size: 0.26em;
-      font-weight: 800;
-      color: var(--text-secondary);
-      letter-spacing: 0.04em;
-    }
-    #clock-meridiem:empty { display: none; }
+    #status-box.on-air { background: var(--red); color: #fff; box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45); }
+    #status-box.on-air::before { opacity: 1; animation: lamp-blink 1.5s steps(1) infinite; }
+    @keyframes lamp-blink { 50% { opacity: 0.3; } }
+    #status-text { font-weight: 800; font-size: calc(2.9 * var(--u)); line-height: 1.15; letter-spacing: 0.02em; white-space: nowrap; }
 
     #info-row {
-      display: flex;
-      align-items: center;
-      gap: clamp(16px, 3vw, 36px);
-      padding: clamp(8px, 1.5vh, 16px) clamp(20px, 4vw, 48px);
-      border-radius: clamp(14px, 1.6vw, 22px);
-      background: var(--oneui-surface);
+      margin-left: auto; display: flex; align-items: center; gap: calc(1.2 * var(--u));
+      font-weight: 700; font-size: calc(2 * var(--u)); color: var(--text-dim); white-space: nowrap;
     }
-    #date {
-      font-size: clamp(1.1rem, 2.8vw, 2rem);
-      font-weight: 700;
-      color: var(--text-secondary);
-      letter-spacing: 0.12em;
-    }
-    .divider {
-      width: 1px;
-      height: clamp(18px, 3vh, 28px);
-      background: var(--oneui-hairline);
-      flex-shrink: 0;
-    }
-    #weather {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: clamp(1.1rem, 2.8vw, 2rem);
-      font-weight: 700;
-      color: var(--text-secondary);
-      letter-spacing: 0.08em;
-      min-height: 2rem;
-    }
-    #weather-icon { font-size: 1.2em; line-height: 1; }
+    #info-row .divider { width: 1px; height: calc(1.6 * var(--u)); background: var(--hairline); }
+    #weather { display: inline-flex; align-items: center; gap: calc(0.5 * var(--u)); }
 
-    /* ── 캘린더 하단 타임라인 ───────────────────────────────────── */
+    /* ══════════ 가운데: 시계 카드 + 우측 타일(부조정실 / 현재 방송) ══════════ */
+    #center { flex: 1; min-height: 0; display: flex; gap: var(--gap); align-items: stretch; overflow: hidden; }
+    #clock-card {
+      flex: 1; min-width: 0; min-height: 0;
+      background: var(--surface-hi);
+      display: flex; align-items: center; justify-content: center;
+      padding: calc(calc(1.2 * var(--u)) * var(--clock-box-scale, 1)) calc(2 * var(--u));
+    }
+    #clock {
+      display: inline-flex; align-items: baseline; justify-content: center;
+      font-weight: 800; line-height: 0.84; letter-spacing: -0.035em;
+      color: #fff; white-space: nowrap;
+      transition: font-size 0.2s ease;
+    }
+    #clock-meridiem { font-size: 0.3em; font-weight: 800; color: var(--text-dim); margin-right: 0.25em; letter-spacing: 0; }
+    #clock-meridiem:empty { display: none; }
+    /* 고정폭 숫자 칸 — 초가 바뀔 때 좌우로 흔들리지 않는다 */
+    .clk-d { display: inline-block; width: 0.62em; text-align: center; }
+    .clk-sep { display: inline-block; width: 0.3em; text-align: center; color: var(--primary); }
+
+    #side { width: 26%; flex: none; display: flex; flex-direction: column; gap: calc(1.4 * var(--u)); min-height: 0; }
+    .tile {
+      flex: 1; min-height: 0; overflow: hidden;
+      display: flex; flex-direction: column; justify-content: center; gap: calc(0.4 * var(--u));
+      padding: calc(1.2 * var(--u)) calc(2.2 * var(--u));
+    }
+    .tile .cap { font-size: calc(calc(1.9 * var(--u)) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); }
+    .tile .val { font-size: calc(calc(3.8 * var(--u)) * var(--sch-scale, 1)); line-height: 1.05; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+    .tile.prog { background: var(--primary); color: var(--on-primary); }
+    .tile.prog .cap { color: var(--on-primary-dim); }
+    .tile.prog .val { color: var(--on-primary); display: flex; align-items: center; }
+    .tile.prog .val #tile-prog-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .tile .ok {
+      display: inline-flex; align-items: center; justify-content: center; flex: none;
+      width: calc(3.6 * var(--u)); height: calc(3.6 * var(--u)); border-radius: 50%; margin-left: calc(1 * var(--u));
+      background: var(--on-primary); color: var(--primary);
+      font-size: calc(2.4 * var(--u)); font-weight: 900;
+    }
+
+    /* ══════════ 일반 모드 하단: 이전 / 현재 / 다음 일정 ══════════ */
     #schedule {
-      width: 100%;
-      border-top: 1px solid var(--oneui-hairline);
-      background: var(--oneui-bg);
-      display: grid;
-      grid-template-columns: 1fr 1.5fr 1fr;
-      min-height: clamp(134px, calc(var(--sch-box-scale, 1) * 17vh), 347px);
-      transition: min-height 0.2s ease;
+      flex: none; display: none;
+      grid-template-columns: 1fr 1.3fr 1fr; gap: calc(1.4 * var(--u));
+      --sch-h: calc(calc(9.5 * var(--u)) * var(--sch-box-scale, 1));
     }
     .sch-slot {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: clamp(12px, 2vh, 24px) clamp(12px, 2vw, 28px);
-      gap: 6px;
-      position: relative;
+      min-height: var(--sch-h); padding: calc(1.3 * var(--u)) calc(2.2 * var(--u)); border-radius: calc(2.2 * var(--u)); background: var(--surface);
+      display: flex; flex-direction: column; justify-content: center; gap: calc(0.3 * var(--u)); min-width: 0;
     }
-    .sch-slot.prev  { border-right: 1px solid var(--oneui-hairline); opacity: 0.55; }
-    .sch-slot.current {
-      border-right: 1px solid var(--oneui-hairline);
-      background: var(--accent-tint);
-    }
-    .sch-slot.next  { opacity: 0.55; }
+    .sch-slot.current { background: var(--surface-hi); box-shadow: inset 0 0 0 calc(0.2 * var(--u)) var(--primary); }
+    .sch-label { font-size: calc(calc(1.7 * var(--u)) * var(--sch-scale, 1)); font-weight: 700; color: var(--text-dim); }
+    .sch-slot.current .sch-label { color: var(--primary); }
+    .sch-timerange { font-size: calc(calc(1.9 * var(--u)) * var(--sch-scale, 1)); font-weight: 700; color: var(--text-dim); }
+    .sch-name { font-size: calc(calc(2.9 * var(--u)) * var(--sch-scale, 1)); font-weight: 800; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sch-slot.current .sch-name { font-size: calc(calc(3.4 * var(--u)) * var(--sch-scale, 1)); }
+    .sch-none { color: var(--text-faint); font-weight: 700; }
 
-    .sch-label {
-      font-size: clamp(1.33rem, calc(var(--sch-scale, 1) * 2vw), 3.2rem);
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      color: var(--text-primary);
-      background: var(--oneui-surface-2);
-      padding: 2px 12px;
-      border-radius: 20px;
-    }
-    .sch-slot.current .sch-label {
-      color: #000000;
-      background: var(--accent);
-    }
-
-    .sch-timerange {
-      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-      font-size: clamp(1.2rem, 2.2vw, 1.8rem);
-      font-weight: 700;
-      color: var(--text-secondary);
-      letter-spacing: 0.06em;
-      white-space: nowrap;
-    }
-    .sch-slot.current .sch-timerange { color: var(--accent); }
-
-    .sch-name {
-      font-size: clamp(1rem, 2.2vw, 1.7rem);
-      font-weight: 700;
-      color: var(--text-tertiary);
-      letter-spacing: 0.02em;
-      text-align: center;
-      line-height: 1.2;
-    }
-    .sch-slot.current .sch-name {
-      font-size: clamp(1.3rem, 2.8vw, 2.2rem);
-      color: var(--text-primary);
-    }
-
-    .sch-none {
-      font-size: clamp(0.8rem, 1.4vw, 1rem);
-      color: rgba(235,235,245,0.18);
-      letter-spacing: 0.08em;
-    }
-
-    /* ── 방송 시작 카운트다운 ───────────────────────────────────── */
-    /* One UI 참조 시안(Direction 3)처럼 화면 하단에 딱 붙는 바가 아니라, 상태
-       박스(#status-box)와 같은 방식의 "떠 있는" 단일 다크 카드로 감싼다 —
-       프로그램명/시작·종료 시각/트랙이 모두 이 카드 하나 안에 들어간다. */
+    /* ══════════ 생방송 모드 하단: 타임라인 + 진입/남음/종료 칩 ══════════ */
     #countdown {
-      width: auto;
-      align-self: stretch;
-      margin: 0 clamp(14px, 2vw, 28px) clamp(16px, 2.2vh, 32px);
-      border-top: none;
-      background: var(--oneui-surface);
-      border-radius: clamp(24px, 3vw, 44px);
-      /* 러너 뒤 트레일(.cd-runner-trail)은 러너 기준 왼쪽으로 최대 267px*배율
-         만큼 뻗어나가는 장식 요소라, 러너가 트랙 맨 앞(0%)에 있을 때 카드
-         padding을 훨씬 넘어 카드 밖으로 삐져나감(실제 화면에서 확인됨) —
-         트랙 폭 계산으로 여백을 아무리 늘려도 트레일 자체 길이가 더 크면
-         또 넘친다. 카드 자체에서 확실하게 잘라내는 게 유일하게 항상 맞는
-         방법이라 overflow:hidden으로 카드 경계를 진짜 경계로 만든다. */
-      overflow: hidden;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: calc(
-        clamp(120px, calc(var(--cd-box-scale, 1) * 17vh), calc(360px * var(--vpf, 1))) +
-        clamp(54px, calc(var(--cd-text-scale, 1) * 7vh), calc(160px * var(--vpf, 1))) +
-        clamp(40px, calc(var(--cd-text-scale, 1) * 4vw), calc(140px * var(--vpf, 1)))
-      );
-      padding: clamp(16px, calc(var(--cd-text-scale, 1) * 1.8vh), calc(50px * var(--vpf, 1))) clamp(20px, 4vw, 40px);
-      gap: clamp(0px, 0.4vh, 4px);
-      transition: background 0.2s ease, min-height 0.2s ease;
+      flex: none; display: none; flex-direction: column; position: relative;
+      --cb: var(--cd-box-scale, 1);    /* 트랙 굵기·러너 */
+      --ct: var(--cd-text-scale, 1);   /* 남음 숫자 */
+      --cl: var(--cd-label-scale, 1);  /* 진입·종료 칩 */
     }
-    /* 참조 시안(Direction 3)의 카드 배경은 방송 전/중/후 상태와 무관하게 항상
-       동일한 중립 회색(--oneui-surface) — 여기서도 상태별로 카드 배경 자체를
-       물들이지 않고 그대로 맞춘다(상태 표시는 알약/트랙 색으로 이미 충분히 됨). */
+    #countdown.no-schedule #cd-track, #countdown.no-schedule #cd-ends { visibility: hidden; }
+    #cd-nodata { display: none; }
+    #countdown.no-schedule #cd-nodata {
+      display: block; position: absolute; inset: 0; z-index: 3;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(0.6 * var(--u));
+      background: var(--surface); border-radius: var(--radius);
+    }
+    #cd-nodata .nd-title { font-size: calc(3 * var(--u)); font-weight: 800; }
+    #cd-nodata .nd-sub { font-size: calc(1.8 * var(--u)); font-weight: 700; color: var(--text-dim); }
 
-    /* ── 타이머 + 스톱워치 (좌: 타이머 / 우: 스톱워치) ─────────────── */
-    #stopwatch {
-      width: 100%;
-      border-top: 1px solid var(--oneui-hairline);
-      background: var(--oneui-bg);
-      display: none;
-      flex-direction: row;
-      align-items: stretch;
-      justify-content: center;
-      min-height: clamp(174px, calc(var(--sw-box-scale, 1) * 20vh), 360px);
-      position: relative;
-      overflow: hidden;
-      transition: min-height 0.2s ease;
-    }
-    #stopwatch.show { display: flex; }
-    .tm-col {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: clamp(4px, 1vh, 10px);
-      padding: 0 clamp(10px, 2vw, 24px);
-      position: relative;
-    }
-    .tm-col::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: var(--tm-accent, #3a3a3c);
-      opacity: 0.35;
-      transition: opacity 0.2s ease;
-    }
-    .tm-col.running::before, .tm-col.finished::before { opacity: 1; }
-    #timer-col   { --tm-accent: var(--accent); }
-    #stopwatch-col { --tm-accent: var(--accent); }
-
-    .tm-divider {
-      width: 1px;
-      align-self: center;
-      height: 60%;
-      background: var(--oneui-hairline);
-      flex-shrink: 0;
-    }
-    .tm-label-row {
-      display: flex;
-      align-items: center;
-      gap: 0.6em;
-    }
-    .tm-dot {
-      width: 0.55em;
-      height: 0.55em;
-      border-radius: 50%;
-      background: #3a3a3c;
-      flex-shrink: 0;
-      transition: background 0.2s ease;
-    }
-    .tm-col.running .tm-dot, .tm-col.finished .tm-dot {
-      background: var(--tm-accent);
-      animation: sw-dot-pulse 1.4s ease-in-out infinite;
-    }
-    @keyframes sw-dot-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.35; transform: scale(0.7); }
-    }
-    .tm-label {
-      font-size: clamp(1.13rem, calc(var(--sw-text-scale, 1) * 1.7vw), 2.8rem);
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      color: var(--text-tertiary);
-      text-transform: uppercase;
-      transition: color 0.2s ease;
-    }
-    .tm-col.running .tm-label, .tm-col.finished .tm-label { color: var(--tm-accent); }
-    .tm-value {
-      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-      font-variant-numeric: tabular-nums;
-      font-size: clamp(2.4rem, calc(var(--sw-text-scale, 1) * 4.6vw), 7.2rem);
-      font-weight: 900;
-      letter-spacing: 0.02em;
-      color: var(--text-primary);
-      line-height: 1;
-      transition: color 0.2s ease;
-    }
-    /* 참조 시안처럼 타이머(카운트다운) 숫자는 항상 강조색, 스톱워치는 항상
-       중립 흰색 — 진행 중 여부와 무관하게 고정(둘 다 진행 중임을 보여주는
-       점은 위의 --tm-accent 펄스로 이미 충분히 표현됨). */
-    #timer-col .tm-value { color: var(--accent); }
-
-    /* ── 카운트다운 타임라인 (말 트랙) ───────────────────────────── */
     #cd-track {
-      --s: var(--cd-box-scale, 1);
       position: relative;
-      /* 카드 좌우로 빈 공간이 너무 많고, 그 탓에 시작/종료 라벨 사이 거리가
-         좁아서(특히 라벨을 키운 뒤로) 가운데서 겹치는 문제가 있었음 —
-         트랙을 카드 폭에 가깝게 넓혀서 라벨 사이 거리를 확보한다.
-         단, 94%는 시작/종료 마커 원(반지름 최대 24px + 링 효과)이 카드
-         밖으로 삐져나가는 문제가 있었음(실측 확인) — 카드 padding과는
-         별개로 마커용 여유를 고정 px로 따로 빼서 항상 안전하게 안에
-         들어오도록 계산한다. */
-      width: min(calc(100% - 90px), 2200px);
-      height: clamp(67px, calc(var(--s) * 9.2vh), calc(205px * var(--vpf, 1)));
-      /* 위: 프로그램명/시작·종료 시각 라벨이 트랙 위로 뜨는 공간.
-         아래: 러너를 따라다니는 카운트다운 알약이 트랙 아래로 뜨는 공간
-         (참조 시안처럼 러너 위 말풍선 대신 트랙 아래 알약으로 옮기면서 추가). */
-      /* 위쪽 여백은 프로그램명+시작/종료 라벨(.cd-marker-label) 몫이라
-         그걸 키우는 --cd-label-scale을 따른다(스크린샷 실측 후 보강). */
-      margin-top: clamp(80px, calc(var(--cd-label-scale, 1) * 9.6vh), calc(255px * var(--vpf, 1)));
-      /* 트랙 아래는 카운트다운 알약이 걸리는 자리다. 알약은 방송 중/초과/종료
-         상태에서 두 줄이 되면서 키가 커지는데, 이 여백이 vh 기준이라 가로로
-         넓은 화면에서는 알약(vw 기준)만 커지고 여백은 안 따라왔다. 게다가
-         cdTextScale이 1보다 작으면 vh 항이 하한 50px에 걸려 더는 안 늘어난다
-         — 실측(1920x1080, cdTextScale 0.9)에서 알약 아래 둥근 모서리가
-         카드 overflow:hidden 경계에 직선으로 잘렸다.
-         알약과 같은 vw 기준으로 바꿔서 두 줄 알약이 항상 들어오게 한다. */
-      margin-bottom: clamp(40px, calc(var(--cd-text-scale, 1) * 4vw), calc(140px * var(--vpf, 1)));
-      display: none;
+      height: calc(calc(4.6 * var(--u)) * var(--cb));
+      margin: calc(calc(4.2 * var(--u)) * var(--cb)) 0 calc(calc(2.6 * var(--u)) * var(--cb));
+      border-radius: 99px;
+      background: var(--surface-var);
+      opacity: 0; transition: opacity 0.4s ease;
     }
-    #cd-track.show { display: block; }
-    #cd-track-line {
-      position: absolute;
-      left: 0; right: 0; top: 30%;
-      height: clamp(9px, calc(var(--s) * 1.7vh), calc(50px * var(--vpf, 1)));
-      transform: translateY(-50%);
-      background: var(--oneui-surface-2);
-      border-radius: 5px;
-    }
+    #cd-track.show { opacity: 1; }
+    #cd-track-line { display: none; }
     #cd-fill {
-      position: absolute;
-      left: 0; top: 30%;
-      height: clamp(9px, calc(var(--s) * 1.7vh), calc(50px * var(--vpf, 1)));
-      transform: translateY(-50%);
-      background: var(--accent);
-      border-radius: 5px;
-      width: 0%;
-      transition: width 1.05s linear, background 0.3s ease;
+      position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+      border-radius: 99px; background: var(--primary);
+      transition: width 0.9s linear, left 0.9s linear, background 0.4s ease;
     }
-    #cd-fill.cross-anim { transition: width 0.8s cubic-bezier(0.4,0,0.2,1), background 0.3s ease, left 0.8s cubic-bezier(0.4,0,0.2,1); }
+    #cd-track.pending #cd-fill { background: color-mix(in srgb, var(--primary) 45%, var(--surface-var)); }
+    #cd-runner.finished ~ #cd-fill, #cd-track:has(#cd-runner.finished) #cd-fill { background: color-mix(in srgb, var(--primary) 70%, var(--surface-var)); }
 
-    .cd-marker {
-      position: absolute;
-      top: 30%;
-      left: 0%;
-      transform: translate(-50%, -50%);
-      z-index: 3;
-      transition: left 0.8s cubic-bezier(0.4,0,0.2,1);
+    /* 시작/종료 마커 — 시작 마커는 대기 중 리드인 지점(임박 줌 때 오른쪽으로 질주)에,
+       종료 마커는 항상 트랙 오른쪽 끝에 선다. 시작을 지나면(crossed) 시작 마커는 접는다. */
+    .cd-marker { position: absolute; top: 50%; left: 0; width: 0; height: 0; transition: left 0.9s linear; }
+    .cd-marker-dot {
+      position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
+      width: calc(calc(0.7 * var(--u)) * var(--cb)); height: calc(calc(7 * var(--u)) * var(--cb)); border-radius: 99px;
+      background: var(--text-dim); box-shadow: 0 0 0 calc(calc(0.5 * var(--u)) * var(--cb)) var(--bg);
+      transition: transform 0.4s ease, background 0.4s ease, box-shadow 0.4s ease, opacity 0.4s ease;
     }
     #cd-marker-end { left: 100%; }
-    .cd-marker-dot {
-      display: block;
-      width: clamp(22px, calc(var(--s) * 2.3vh), calc(62px * var(--vpf, 1)));
-      height: clamp(22px, calc(var(--s) * 2.3vh), calc(62px * var(--vpf, 1)));
-      border-radius: 50%;
-      background: #48484a;
-      border: 3px solid var(--oneui-bg);
+    #cd-marker-end .cd-marker-dot { background: var(--text-faint); height: calc(calc(6 * var(--u)) * var(--cb)); }
+    #cd-marker-start.crossed .cd-marker-dot { opacity: 0; }
+    .cd-marker-cap { top: 0; }
+    .cd-marker-cap .cd-marker-label {
+      position: absolute; left: 0; bottom: calc(100% + calc(0.9 * var(--u))); transform: translateX(-50%);
+      font-size: calc(calc(1.9 * var(--u)) * var(--cl)); font-weight: 800; color: var(--text-dim); white-space: nowrap;
+      opacity: 0; transition: opacity 0.4s ease;
     }
-    #cd-marker-start .cd-marker-dot,
-    #cd-marker-end   .cd-marker-dot {
-      background: var(--text-primary);
-    }
-    .cd-marker-dot {
-      position: relative;
-      opacity: 1;
-      transition: opacity 0.3s ease;
-    }
-    #cd-marker-start.crossed .cd-marker-dot {
-      opacity: 0.16;
-      transition: opacity 0.6s ease 0.45s;
-    }
-    .cd-marker-dot::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      border: 3px solid var(--text-primary);
-      opacity: 0;
-    }
-    .cd-marker-dot.hit {
-      animation: marker-hit-scale 0.55s ease-out;
-    }
-    .cd-marker-dot.hit::after {
-      animation: marker-hit-ring 0.65s ease-out;
-    }
-    @keyframes marker-hit-scale {
-      0%   { transform: scale(1); }
-      30%  { transform: scale(1.7); }
-      65%  { transform: scale(0.92); }
-      100% { transform: scale(1); }
-    }
-    @keyframes marker-hit-ring {
-      0%   { transform: scale(0.7); opacity: 0.95; }
-      100% { transform: scale(3); opacity: 0; }
-    }
-    /* One UI 참조 시안의 "프로그램명 좌상단 / 시작 시각+길이+체크 좌측 / 종료
-       시각 우측, 그 아래 트랙" 배치를 따르기 위해 라벨을 트랙 위쪽으로 올리고
-       (예전엔 점 아래였음), 시작 라벨은 좌측, 종료 라벨은 우측에 붙인다. */
-    .cd-marker-label {
-      position: absolute;
-      bottom: 100%;
-      margin-bottom: clamp(10px, calc(var(--cd-label-scale, 1) * 1.1vh), calc(36px * var(--vpf, 1)));
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      /* 실제 스크린샷(2560x1440, cdLabelScale=1.95 기준)으로 직접 재보고
-         고친 값 — 이전 두 번의 시도(vw 기준, 그다음 clockBaseline 기준
-         rem)는 전부 계산만으로 추측하다 실측과 안 맞았음.
+    #cd-track.pending .cd-marker-cap .cd-marker-label { opacity: 1; }
+    .cd-marker-program { display: none; }    /* 프로그램명은 우측 타일이 담당 */
+    .cd-marker-dot.hit { animation: marker-hit 0.9s ease-out; }
+    @keyframes marker-hit { 0% { transform: translate(-50%,-50%) scale(1); } 30% { transform: translate(-50%,-50%) scale(1.5); } 100% { transform: translate(-50%,-50%) scale(1); } }
 
-         이후 실측에서 시계(높이 265px) 대비 이 라벨이 66px밖에 안 돼
-         4:1까지 벌어져 하단 타임라인이 너무 작아 보인다는 피드백을 받아
-         기준값과 상한을 같이 올렸다(상한에 이미 닿아 있어서 슬라이더만으론
-         못 키웠음). rem은 화면 크기를 안 따라가는 절대값이라 --vpf를 곱해
-         카드 안의 나머지 요소들과 같은 비율로 축소되게 한다. */
-      font-size: clamp(1rem, calc(var(--cd-label-scale, 1) * 3.85rem * var(--vpf, 1)), calc(8.0rem * var(--vpf, 1)));
-      font-weight: 800;
-      color: var(--text-primary);
-      white-space: nowrap;
-      letter-spacing: 0.03em;
-      /* line-height를 안 정하면 기본값(≈1.2)의 leading이 프로그램명과 시각
-         사이에 위아래로 붙어, 실측상 글자 높이 56px에 줄 간격이 40px까지
-         벌어졌다(사용자 피드백) — 한 덩어리로 읽히게 촘촘히 고정한다. */
-      line-height: 1.06;
-    }
-    #cd-marker-start-cap .cd-marker-label {
-      left: 0;
-      transform: none;
-      align-items: flex-start;
-    }
-    #cd-marker-end .cd-marker-label {
-      left: auto;
-      right: 0;
-      transform: none;
-      align-items: flex-end;
-    }
-    /* 종료 지점엔 시작과 같은 프로그램명이 중복이라 지저분해 보인다는
-       피드백으로 다시 시작 쪽에만 표시 — 어차피 방송 중 프로그램이 바뀌는
-       경우가 없어 종료 시각만 봐도 충분히 유추 가능. */
-    /* 프로그램명은 바로 밑 시작/종료 시각(.cd-marker-label)과 같은 크기로
-       맞춘다(font-size: inherit — 예전엔 더 작아서 시각보다 덜 눈에 띔,
-       사용자 피드백). 색은 강조색을 써봤다가 원래 흰색이 더 낫다는
-       피드백을 받아 되돌림. */
-    .cd-marker-program {
-      color: var(--text-primary);
-      font-size: inherit;
-      font-weight: 900;
-      letter-spacing: -0.005em;
-      margin-bottom: 0.1em;
-    }
-    .cd-marker-program:empty { display: none; margin-bottom: 0; }
-    /* 스튜디오 태그("(TS-4)")는 참조 시안의 .bc-studio처럼 연한 회색·중간
-       굵기로 — 프로그램명이랑 색을 나눠서 "제목 vs 부가정보" 위계를 준다. */
-    .cd-marker-studio {
-      color: var(--text-secondary);
-      font-weight: 600;
-      letter-spacing: 0;
-      margin-left: 0.2em;
-    }
-    /* LIVE 표시는 프로그램명 옆 별도 뱃지도, 카운트다운 알약 안 텍스트 칩도
-       아니고 — 알약 자체가 흰색으로 뒤집히면서 은은하게 숨쉬는 주황 테두리
-       글로우로 표현한다(아래 #cd-runner-tag.is-live 섹션). 텍스트 라벨은
-       화면 크기 설정에 맞춰 계속 손봐야 했고, 숫자가 매초 바뀌는 알약
-       안에서 별도로 튀어 보이기도 했다(사용자 피드백) — 색과 모션만으로
-       "지금 방송 중"을 전달하는 쪽이 더 단순하고 확실하다. */
-    /* 체크(✓) 글자만으로는 획이 가늘어서 멀리서 잘 안 보인다는 피드백 —
-       LIVE 뱃지랑 같은 언어(강조색 배경+흰 글자)로 작은 원형 뱃지를 깔아서
-       존재감을 키운다. */
-    .cd-confirmed-mark {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.5em;
-      height: 1.5em;
-      border-radius: 50%;
-      background: var(--accent);
-      color: #ffffff;
-      font-weight: 900;
-      /* 라벨 글자 크기를 키울 때마다 이 체크도 따로 맞춰야 했는데(사용자가
-         한 번 "조금 더 작아도 될 듯"이라고 준 비율 그대로), em으로 묶어두면
-         라벨을 어떻게 조절하든 항상 그 비율이 유지된다. */
-      font-size: 0.49em;
-      vertical-align: middle;
-      margin-left: 0.1em;
-    }
-    .cd-marker-assigned {
-      font-size: inherit;
-      font-weight: 700;
-      color: var(--text-secondary);
-      margin: 0 0.05em;
-    }
+    /* 러너 — 흰 막대 + 트랙 위 ▼ 캡. JS가 translateX(px)로 등속 이동시킨다. */
     #cd-runner {
-      position: absolute;
-      top: 30%;
-      left: 0;
-      width: 1px;
-      height: 1px;
-      transform: translateX(0px);
-      transition: transform 1.05s linear;
-      z-index: 2;
+      position: absolute; top: 50%; left: 0; width: 0; height: 0; z-index: 2;
+      transition: transform 0.9s linear;
     }
-    #cd-runner.cross-anim { transition: transform 0.8s cubic-bezier(0.4,0,0.2,1); }
-    /* 참조 시안(Direction 3)처럼 러너 위 말풍선(화살표 포함)이 아니라, 트랙
-       아래에 러너를 따라 이동하는 납작한 알약으로. #cd-runner의 1px짜리 박스
-       기준 transform:translateX(-50%) 중앙정렬은 러너가 트랙 양끝 근처에 있을
-       때 알약이 트랙 밖으로 넘치는 문제가 있어, #cd-track의 직계 자식으로 옮겨
-       (러너와 형제 관계) JS가 매 틱 clamp된 절대 left 픽셀값을 직접 넣어준다
-       (아래 renderBoundedTrack() 안 추가 코드 참고). */
-    .cd-runner-tag {
-      position: absolute;
-      top: calc(30% + clamp(14px, calc(var(--s) * 1.6vh), calc(44px * var(--vpf, 1))));
-      left: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      pointer-events: none;
-      z-index: 4;
-      transition: left 1.05s linear;
-    }
-    .cd-runner-tag.cross-anim { transition: left 0.8s cubic-bezier(0.4,0,0.2,1); }
-    .cd-runner-tag-pill {
-      display: flex;
-      flex-direction: row;
-      align-items: baseline;
-      justify-content: center;
-      gap: 0;
-      /* 카드 배경(--oneui-surface)과 완전히 같은 색이면 알약 모양 자체가 안
-         보여서(방송전/종료 상태에서 확인됨) 한 단계 밝은 회색을 써서 카드
-         위에 뜬 알약으로 보이게 한다 — 참조 시안도 tag-idle-bg가 module-bg
-         보다 살짝 밝다. */
-      background: var(--oneui-surface-2);
-      /* 배경은 은은한 회색으로 두되(라이브 흰 알약과 상태 구분용), 안의
-         숫자는 흰색으로 — 방송 대기 중엔 이 숫자가 화면에서 제일 중요한
-         정보인데 회색 글자라 대비가 약하다는 피드백. */
-      color: var(--text-primary);
-      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-      font-variant-numeric: tabular-nums;
-      /* 참조 시안(Direction 3)의 --travel-pad(.6/1.6/.65cqw)·--travel-radius(1.9cqw)
-         비율 그대로 — cqw는 컨테이너 "폭" 기준이라 세로 여백도 vh가 아니라
-         vw로 맞춰야 같은 비율이 나온다(예전 값은 vh를 써서 실제보다 납작하고
-         모서리도 덜 둥글어 참조 시안보다 투박해 보였음). */
-      padding: clamp(9px, calc(var(--cd-text-scale, 1) * 0.6vw), calc(24px * var(--vpf, 1))) clamp(20px, calc(var(--cd-text-scale, 1) * 1.6vw), calc(58px * var(--vpf, 1))) clamp(10px, calc(var(--cd-text-scale, 1) * 0.65vw), calc(26px * var(--vpf, 1)));
-      border-radius: clamp(24px, calc(var(--cd-text-scale, 1) * 1.9vw), calc(68px * var(--vpf, 1)));
-      white-space: nowrap;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-    /* 예전엔 프로그램명 옆에 따로 뜨던 LIVE 뱃지를 여기로 옮겨왔다 — 카운트다운
-       알약이 흰색으로 뒤집히는(#cd-runner-tag.is-live) 상태 변화 자체론 "왜
-       색이 바뀌었는지" 설명이 없어서, 같은 자리에 짧은 텍스트 칩으로 이유를
-       바로 알려준다. */
-    /* 라벨 없이 +경과 / -남음 만. 구분선(/)과 색으로 구분한다. */
-    .cd-tag-sep, .cd-tag-sub { display: none; }
-    .cd-runner-tag-pill.two .cd-tag-sep,
-    .cd-runner-tag-pill.two .cd-tag-sub { display: inline; }
-    .cd-tag-sep {
-      opacity: 0.35;
-      font-weight: 500;
-      margin: 0 0.3em;
-    }
-    /* 남음(-)은 민트, 초과(+)는 노랑으로 구분. 경과(+)는 기본색. */
-    .cd-tag-main.neg, .cd-tag-sub.neg { color: var(--standby); }
-    .cd-tag-sub.overrun, .cd-tag-main.overrun { color: var(--warning); }
-    /* 라이브 알약(흰 배경)에선 민트가 흐려 보여 살짝 진한 톤으로 */
-    #cd-runner-tag.is-live .cd-tag-main.neg,
-    #cd-runner-tag.is-live .cd-tag-sub.neg { color: #0f766e; }
-    .cd-tag-main, .cd-tag-sub, .cd-tag-sep {
-      color: inherit;
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      font-size: clamp(1.6rem, calc(var(--cd-text-scale, 1) * 3.4vw), calc(5.8rem * var(--vpf, 1)));
-      line-height: 1.15;
-    }
-    @keyframes tag-overrun-flash {
-      0%   { transform: scale(1); }
-      35%  { transform: scale(1.12); }
-      65%  { transform: scale(0.96); }
-      100% { transform: scale(1); }
-    }
-    .cd-runner-tag-pill.overrun-hit {
-      animation: tag-overrun-flash 0.5s ease-out;
-    }
-    /* 참조 시안(Direction 3)은 종료 상태 알약에 별도 색을 안 입히고 방송전과
-       같은 중립 회색 그대로 둔다(문구만 +34:00/제작 01:04:00으로 바뀜) —
-       늦게/일찍 끝남을 warning/success로 물들이던 건 참조와 다른 색이라 뺐다. */
-    @keyframes tag-final-blink {
-      0%, 49%   { opacity: 1; }
-      50%, 100% { opacity: 0.25; }
-    }
-    .cd-runner-tag-pill.final-blink {
-      animation: tag-final-blink 1s steps(1, end) infinite;
-    }
-    /* LIVE 확정되면(onAirIndex 기준) 알약을 참조 시안(Direction 3)의 One UI
-       라이브 처리 그대로 흰 배경+검정 글자로 뒤집는다 — 화면 전체가 어두운
-       상태에서 이 반전 자체가 "지금 진짜 방송 중"을 별도 뱃지 없이 강하게
-       알려준다(참조 파일의 --tag-live-bg:#fff / --tag-live-fg:#000 그대로).
-       텍스트 라벨 대신 테두리에 은은하게 숨쉬는 주황 글로우를 둘러서 "왜
-       뒤집혔는지"까지 색과 모션만으로 전달한다 — 대기 러너의 숨쉬기 펄스
-       (runner-parked-pulse, 2.6s)와 같은 리듬이라 새 모션 언어를 더하지
-       않고 기존 것을 재사용한다. 알약 안 숫자가 매초 바뀌는 것과 리듬이
-       겹치지 않게 펄스가 아니라 느린 breathing(부드럽게 커졌다 작아짐)으로. */
-    #cd-runner-tag.is-live .cd-runner-tag-pill {
-      background: #ffffff;
-      color: #000000;
-      animation: live-glow 2.6s ease-in-out infinite;
-    }
-    @keyframes live-glow {
-      0%, 100% { box-shadow: 0 0 0 clamp(1px, calc(var(--s) * 0.13vh), 2px) rgba(255,87,34,0.35); }
-      50%      { box-shadow: 0 0 0 clamp(2px, calc(var(--s) * 0.3vh), 5px) rgba(255,87,34,0.55); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      #cd-runner-tag.is-live .cd-runner-tag-pill { animation: none; box-shadow: 0 0 0 clamp(1.5px, calc(var(--s) * 0.2vh), 3px) rgba(255,87,34,0.45); }
-    }
-    .cd-runner-trail {
-      position: absolute;
-      top: 50%;
-      right: 100%;
-      width: clamp(80px, calc(var(--s) * 9vw), calc(300px * var(--vpf, 1)));
-      height: clamp(5px, calc(var(--s) * 0.7vh), calc(20px * var(--vpf, 1)));
-      transform: translateY(-50%);
-      background: var(--accent);
-      opacity: 0.35;
-      border-radius: 6px;
-      transition: background 0.2s ease, width 0.2s ease, opacity 0.2s ease;
-    }
-    /* 방송 대기(walking) 중엔 트레일을 아예 끈다 — #cd-fill이 이미 "지나온
-       만큼 하나의 색으로 칠해지는" 역할을 정확히 하고 있는데, 트레일(고정
-       픽셀 폭 반투명 꼬리)까지 같이 켜두면 채움 폭이 얇을 때 트레일이 채움
-       보다 더 길게 남아 흐린색+진한색 두 구간으로 갈라져 보였다(사용자
-       피드백). 라이브(running) 중엔 채움 폭이 보통 트레일보다 넓어서 이
-       문제가 안 보이므로 그쪽은 그대로 둔다. */
-    #cd-runner.walking .cd-runner-trail { opacity: 0; }
-    .cd-runner-ring {
-      position: absolute;
-      top: 50%;
-      left: 0;
-      width: clamp(14px, calc(var(--s) * 1.5vh), calc(44px * var(--vpf, 1)));
-      height: clamp(14px, calc(var(--s) * 1.5vh), calc(44px * var(--vpf, 1)));
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      border: 2px solid var(--accent);
-      opacity: 0.55;
-      pointer-events: none;
-    }
-    #cd-runner.walking .cd-runner-ring { animation: runner-ping 2.4s cubic-bezier(.2,.6,.35,1) infinite; }
-    #cd-runner.running .cd-runner-ring {
-      border-color: var(--accent);
-      animation: runner-ping 1.1s cubic-bezier(.2,.6,.35,1) infinite;
-    }
-    #cd-runner.finished .cd-runner-ring { display: none; }
+    #cd-runner.cross-anim, #cd-fill.cross-anim, .cd-runner-tag.cross-anim { transition-duration: 0.8s; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
     .cd-runner-head {
-      position: absolute;
-      top: 50%;
-      left: 0;
-      width: clamp(14px, calc(var(--s) * 1.5vh), calc(44px * var(--vpf, 1)));
-      height: clamp(14px, calc(var(--s) * 1.5vh), calc(44px * var(--vpf, 1)));
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      background: var(--accent);
-      /* 애니메이션(핑/펄스) 중일 때만 링이 보이던 걸, 평소에도 은은한 정적
-         글로우가 있게 해서 점이 더 또렷하고 대비되어 보이게 한다(사용자
-         피드백 — 참조 시안의 러너가 항상 대비 링이 있어 보임). */
-      box-shadow: 0 0 0 5px rgba(255,87,34,0.16), 0 0 10px rgba(255,87,34,0.4);
-      transition: background 0.2s ease, box-shadow 0.2s ease;
+      position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
+      width: calc(calc(1.5 * var(--u)) * var(--cb)); height: calc(calc(8.6 * var(--u)) * var(--cb)); border-radius: 99px;
+      background: #fff; box-shadow: 0 0 0 calc(calc(0.8 * var(--u)) * var(--cb)) var(--bg);
+      transition: background 0.4s ease, transform 0.4s ease;
     }
-    #cd-track.pending .cd-runner-head {
-      box-shadow: 0 0 0 5px rgba(45,212,191,0.16), 0 0 10px rgba(45,212,191,0.4);
+    .cd-runner-cap {
+      position: absolute; left: 0; bottom: calc(calc(4.3 * var(--u)) * var(--cb) + calc(1.2 * var(--u))); transform: translateX(-50%);
+      width: 0; height: 0; border: calc(calc(1.4 * var(--u)) * var(--cb)) solid transparent; border-bottom: 0;
+      border-top-color: var(--primary); transition: border-top-color 0.4s ease;
     }
-    #cd-runner.walking .cd-runner-head { animation: runner-glow 2.4s ease-in-out infinite; }
-    #cd-runner.running .cd-runner-head { animation: runner-glow 0.9s ease-in-out infinite; }
-    #cd-runner.running .cd-runner-trail {
-      background: var(--accent);
-      opacity: 0.4;
-      width: clamp(27px, calc(var(--s) * 2.6vw), calc(105px * var(--vpf, 1)));
-    }
-    #cd-runner.running .cd-runner-head {
-      background: var(--accent);
-    }
-    #cd-runner.finished .cd-runner-head {
-      background: var(--accent);
-      animation: none;
-    }
-    #cd-runner.finished .cd-runner-trail {
-      background: var(--accent);
-      opacity: 0.5;
-    }
+    .cd-runner-trail, .cd-runner-ring { display: none; }
+    #cd-runner.parked .cd-runner-head { animation: runner-breathe 2.6s ease-in-out infinite; }
+    @keyframes runner-breathe { 50% { opacity: 0.55; } }
+    #cd-runner.finished .cd-runner-head { background: var(--text-dim); }
 
-    @keyframes runner-ping {
-      0%   { transform: translate(-50%, -50%) scale(0.85); opacity: 0.65; }
-      100% { transform: translate(-50%, -50%) scale(2.3); opacity: 0; }
-    }
-    @keyframes runner-glow {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
-      50%      { transform: translate(-50%, -50%) scale(1.07); filter: brightness(1.15); }
-    }
-    /* 다음 방송이 한참 남아 러너가 트랙 맨 앞 근처에서 몇 시간이고 거의 안
-       보일 만큼만 움직이던 동안, 트레일을 없앴더니(비대칭 착시 해결) 이번엔
-       러너가 아예 안 움직이는 것처럼 보였다(사용자 피드백) — 실제 위치는
-       반감기 곡선을 따라 계속(아주 조금씩) 진짜로 전진하지만, 그 변화가
-       눈에 안 띄는 동안엔 "대기 중, 시스템은 살아있다"는 걸 눈에 띄게
-       알려주는 숨쉬기 펄스를 같이 얹는다(기존 walking 글로우/핑보다 더
-       뚜렷하게). 리드인 반감기 안쪽으로 들어오면(cdFarWaiting=false) 위치
-       변화 자체가 눈에 띄게 되므로 이 펄스는 꺼진다. */
-    #cd-runner.walking.parked .cd-runner-head {
-      animation: runner-parked-pulse 2.6s ease-in-out infinite;
-    }
-    #cd-runner.walking.parked .cd-runner-ring {
-      animation: runner-parked-ring 2.6s ease-in-out infinite;
-    }
-    @keyframes runner-parked-pulse {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); }
-      50%      { transform: translate(-50%, -50%) scale(1.4); }
-    }
-    @keyframes runner-parked-ring {
-      0%        { transform: translate(-50%, -50%) scale(0.9); opacity: 0.55; }
-      70%, 100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      #cd-runner.walking.parked .cd-runner-head,
-      #cd-runner.walking.parked .cd-runner-ring { animation: none; }
-    }
-    /* 방송 시작 전(#cd-track.pending, now < start 동안 전부 — "먼 대기"뿐
-       아니라 리드인 구간까지 포함) 지나온 트랙과 러너를 주황(임박/생방송
-       신호) 대신 민트로 칠해서 "아직 대기 중"임을 색으로 구분해준다.
-       실제로 방송이 시작(running)하는 순간 원래 주황으로 전환된다. */
-    #cd-track.pending #cd-fill { background: var(--standby); }
-    #cd-track.pending .cd-runner-head { background: var(--standby); }
-    #cd-track.pending .cd-runner-ring { border-color: var(--standby); }
+    /* 5006의 러너 알약(경과/남음 두 줄)은 새 디자인에선 하단 '남음' 칩이 대신한다.
+       JS가 위치·클래스를 계속 갱신하므로 DOM은 남기고 보이지만 않게 한다. */
+    .cd-runner-tag { display: none; }
 
-    /* ── 진입 임박 줌 상태 ────────────────────────────────────────────
-       확정된 방송이 시작 1분 안으로 들어오면: 색을 민트→주황으로 warm,
-       시작 마커를 키우고 글로우, 카운트다운 숫자도 주황으로. 마지막 10초엔
-       심장박동 펄스. (줌 자체는 JS가 startPct를 키워서 러너가 질주하게 함) */
-    #countdown.imminent #cd-track.pending #cd-fill { background: var(--accent); }
-    #countdown.imminent #cd-track.pending .cd-runner-head { background: var(--accent); }
-    #countdown.imminent #cd-track.pending .cd-runner-ring { border-color: var(--accent); }
-    #countdown.imminent #cd-marker-start .cd-marker-dot {
-      background: var(--accent);
-      box-shadow: 0 0 0 6px rgba(255,87,34,0.22), 0 0 26px rgba(255,87,34,0.65);
-      transform: scale(1.25);
-      transition: transform 0.4s ease, box-shadow 0.4s ease, background 0.4s ease;
+    #cd-ends { display: flex; justify-content: space-between; align-items: center; gap: calc(calc(1.4 * var(--u)) * var(--fit)); --fit: 1; }
+    .cd-chip {
+      flex: 0 0 auto; display: flex; align-items: center; gap: calc(calc(1.8 * var(--u)) * var(--fit));
+      padding: calc(calc(1.3 * var(--u)) * var(--cb)) calc(calc(2.4 * var(--u)) * var(--fit)); border-radius: calc(2 * var(--u)); background: var(--surface);
+      transition: background 0.3s ease, box-shadow 0.3s ease;
     }
-    #countdown.imminent .cd-tag-main.neg { color: var(--accent); }
-    /* 임박 줌엔 러너가 트랙 우측 끝까지 질주하므로 종료 마커는 흐리게 접어
-       겹침을 막고 '다가오는 시작'에 집중시킨다. */
-    #countdown.imminent #cd-marker-end { opacity: 0.12; transition: opacity 0.6s ease; }
+    .cd-chip .cap { font-size: calc(calc(2.6 * var(--u)) * var(--cl) * var(--fit)); line-height: 1; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
+    .cd-chip .t { font-size: calc(calc(4.6 * var(--u)) * var(--cl) * var(--fit)); line-height: 1; font-weight: 800; color: #fff; white-space: nowrap; }
+    .cd-chip.out .t { color: var(--primary); }
+    .cd-chip .cd-marker-assigned { font-size: 0.42em; color: var(--text-dim); margin-left: 0.3em; font-weight: 700; }
+    .cd-chip.rem { padding-left: calc(calc(3.2 * var(--u)) * var(--fit)); padding-right: calc(calc(3.2 * var(--u)) * var(--fit)); }
+    .cd-chip.rem .cap { color: #fff; opacity: 0.75; }
+    .cd-chip.rem .t { font-size: calc(calc(5 * var(--u)) * var(--ct) * var(--fit)); }
+    .cd-chip.rem.running { background: var(--rem-bg); }
+    .cd-chip.rem.pending { background: var(--surface); }
+    .cd-chip.rem.imminent { background: var(--amber-tint); box-shadow: inset 0 0 0 calc(0.2 * var(--u)) var(--amber); }
+    .cd-chip.rem.imminent .t { color: var(--amber); }
+    .cd-chip.rem.over { background: var(--red-tint); box-shadow: inset 0 0 0 calc(0.2 * var(--u)) var(--red); }
+    .cd-chip.rem.over .t { color: var(--red); }
+    .cd-chip.rem.final-over .t { color: var(--red); }
+    .cd-chip.rem.final-under .t { color: var(--green); }
+    .cd-chip.rem.hit { animation: chip-hit 0.6s ease-out; }
+    @keyframes chip-hit { 30% { transform: scale(1.06); } }
+    .cd-chip.rem.blink { animation: chip-blink 0.8s ease-in-out 12; }
+    @keyframes chip-blink { 50% { opacity: 0.35; } }
 
-    @keyframes imminent-pulse {
-      0%, 100% { transform: scale(1.20); }
-      50%      { transform: scale(1.34); }
-    }
-    @keyframes imminent-pill-pulse {
-      0%, 100% { transform: scale(1); }
-      50%      { transform: scale(1.05); }
-    }
-    #countdown.imminent-final #cd-marker-start .cd-marker-dot {
-      animation: imminent-pulse 0.7s ease-in-out infinite;
-    }
-    #countdown.imminent-final #cd-runner-tag-text {
-      animation: imminent-pill-pulse 0.7s ease-in-out infinite;
-    }
+    /* 진입 임박 줌: 확정된 방송 시작 1분 전 — 색을 앰버로 데우고 마지막 10초는 펄스 */
+    #countdown.imminent #cd-track.pending #cd-fill { background: var(--amber); }
+    #countdown.imminent .cd-runner-cap { border-top-color: var(--amber); }
+    #countdown.imminent #cd-marker-start .cd-marker-dot { background: var(--amber); transform: translate(-50%,-50%) scaleY(1.15); box-shadow: 0 0 0 calc(calc(0.5 * var(--u)) * var(--cb)) var(--bg), 0 0 calc(2 * var(--u)) rgba(255,185,90,0.6); }
+    #countdown.imminent #cd-marker-end { opacity: 0.15; transition: opacity 0.6s ease; }
+    #countdown.imminent-final .cd-runner-head { animation: imminent-pulse 0.7s ease-in-out infinite; }
+    #countdown.imminent-final .cd-chip.rem { animation: imminent-pill-pulse 0.7s ease-in-out infinite; }
+    @keyframes imminent-pulse { 50% { transform: translate(-50%,-50%) scaleX(1.5); } }
+    @keyframes imminent-pill-pulse { 50% { transform: scale(1.04); } }
 
-    /* ── 세로 모드 (전체 화면 90도 회전) ───────────────────────── */
+    /* ══════════ 타이머 모드 하단: 타이머 / 스톱워치 ══════════ */
+    #stopwatch {
+      flex: none; display: none; gap: calc(1.4 * var(--u));
+      --sb: var(--sw-box-scale, 1); --st: var(--sw-text-scale, 1);
+    }
+    .tm-col {
+      flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(0.6 * var(--u));
+      padding: calc(calc(1.6 * var(--u)) * var(--sb)) calc(2.4 * var(--u)); border-radius: var(--radius); background: var(--surface);
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    .tm-divider { display: none; }
+    .tm-label-row { display: flex; align-items: center; gap: calc(0.8 * var(--u)); }
+    .tm-dot { width: calc(1.2 * var(--u)); height: calc(1.2 * var(--u)); border-radius: 50%; background: var(--text-faint); transition: background 0.3s ease; }
+    .tm-label { font-size: calc(calc(2.2 * var(--u)) * var(--st)); font-weight: 700; color: var(--text-dim); }
+    .tm-value { font-size: calc(calc(6.2 * var(--u)) * var(--st)); line-height: 1; font-weight: 800; color: #fff; }
+    .tm-col.running { background: var(--surface-hi); box-shadow: inset 0 0 0 calc(0.2 * var(--u)) var(--primary); }
+    .tm-col.running .tm-dot { background: var(--primary); animation: lamp-blink 1.2s steps(1) infinite; }
+    .tm-col.finished { box-shadow: inset 0 0 0 calc(0.2 * var(--u)) var(--red); }
+    .tm-col.finished .tm-value { color: var(--red); animation: chip-blink 0.8s ease-in-out infinite; }
+
+    /* ══════════ 세로 모드 (전체 화면 90도 회전) ══════════ */
     body.portrait-right, body.portrait-left {
       position: fixed;
-      top: calc(50vh - 50vw);
-      left: calc(50vw - 50vh);
-      width: 100vh;
-      height: 100vw;
-      min-height: unset;
-      overflow: hidden;
+      top: calc(50vh - calc(50 * var(--u))); left: calc(calc(50 * var(--u)) - 50vh);
+      width: 100vh; height: calc(100 * var(--u)); min-height: unset; overflow: hidden;
+      --u: 1vh;
     }
     body.portrait-right { transform: rotate(90deg); }
     body.portrait-left  { transform: rotate(-90deg); }
+    body.portrait-right #center, body.portrait-left #center { flex-direction: column; }
+    body.portrait-right #side, body.portrait-left #side { width: auto; flex: none; flex-direction: row; }
+    body.portrait-right #status-box, body.portrait-left #status-box { flex: 0 0 auto; }
 
-    /* 세로 모드: 양쪽 패널 동일 높이 → 시계 정 중앙. 컨트롤 페이지의 "박스 높이
-       (세로)" 슬라이더 하나가 --p-box-scale로 세 요소 모두에 같이 걸려서,
-       어떤 값을 넣어도 위아래 높이가 항상 같게 유지된다. */
-    body.portrait-right #status-box,
-    body.portrait-left  #status-box {
-      flex: 0 0 clamp(90px, calc(var(--p-box-scale, 1) * 20vh), 320px);
-      padding: clamp(10px, calc(var(--p-box-scale, 1) * 3vh), 46px) clamp(16px, 3vh, 40px);
-    }
-    body.portrait-right #status-text,
-    body.portrait-left  #status-text {
-      font-size: clamp(2.5rem, 5vh, 4.5rem);
-    }
-    body.portrait-right #schedule,
-    body.portrait-left  #schedule,
-    body.portrait-right #countdown,
-    body.portrait-left  #countdown {
-      flex: 0 0 clamp(90px, calc(var(--p-box-scale, 1) * 20vh), 320px);
-      min-height: unset;
-      overflow: hidden;
-    }
-    /* 세로모드는 가로모드보다 카드 높이가 훨씬 좁은데, 알약을 트랙 아래로
-       옮기면서 위(라벨)+아래(알약) 두 곳에 여백이 필요해져 예전(위쪽 한 곳만)
-       보다 세로 공간을 더 먹는다 — 좁은 세로 화면에서 알약이 잘리지 않도록
-       라벨/알약 여백과 트랙 자체 크기를 줄여서 좁은 상자 안에 맞춘다. */
-    body.portrait-right #cd-track,
-    body.portrait-left  #cd-track {
-      margin-top: clamp(30px, calc(var(--cd-text-scale, 1) * 3.6vh), 70px);
-      margin-bottom: clamp(30px, calc(var(--cd-text-scale, 1) * 3.6vh), 70px);
-      height: clamp(40px, calc(var(--s) * 4vh), 90px);
-    }
-    body.portrait-right .cd-marker-label,
-    body.portrait-left  .cd-marker-label {
-      margin-bottom: clamp(6px, calc(var(--s) * 0.7vh), 16px);
-      font-size: clamp(0.9rem, calc(var(--cd-label-scale, 1) * 1vw), 1.9rem);
-    }
-    body.portrait-right .cd-runner-tag,
-    body.portrait-left  .cd-runner-tag {
-      top: calc(30% + clamp(8px, calc(var(--s) * 1vh), 22px));
-    }
-    body.portrait-right .cd-runner-tag-pill,
-    body.portrait-left  .cd-runner-tag-pill {
-      padding: clamp(3px, calc(var(--cd-text-scale, 1) * 0.35vh), 12px) clamp(8px, calc(var(--cd-text-scale, 1) * 0.9vw), 28px);
-    }
-
-    /* 세로 모드 시계: CSS 레벨에서 크기 초과 원천 차단.
-       90도 회전 구조라 body의 flex-column이 쌓이는 실제 축은 화면상 "가로"(vw)다 —
-       vh는 회전과 무관하게 항상 실제 뷰포트 높이를 가리키므로 여기선 예산 축이 아니다. */
-    body.portrait-right #clock,
-    body.portrait-left  #clock {
-      font-size: min(var(--clock-fs, 8rem), 38vw) !important;
-    }
-
-    /* 전체화면 토글 — 원격 데스크톱/터치 환경에서 F11을 못 누를 때를 위한 탭 버튼 */
+    /* 전체화면 토글 — 원격/터치 환경에서 F11 대신 */
     #fs-toggle {
-      position: fixed;
-      right: 10px;
-      bottom: 10px;
-      width: 40px;
-      height: 40px;
-      border: none;
-      border-radius: 50%;
-      background: var(--oneui-surface-2);
-      color: var(--text-tertiary);
-      font-size: 1.1rem;
-      line-height: 40px;
-      text-align: center;
-      cursor: pointer;
-      z-index: 9999;
+      position: fixed; right: 10px; bottom: 10px; width: 40px; height: 40px;
+      border: none; border-radius: 50%; background: var(--surface-hi); color: var(--text-faint);
+      font-size: 1.1rem; line-height: 40px; text-align: center; cursor: pointer; z-index: 9999;
       transition: background 0.2s ease, color 0.2s ease;
     }
-    #fs-toggle:hover, #fs-toggle:active {
-      background: var(--oneui-surface);
-      color: var(--text-primary);
+    #fs-toggle:hover, #fs-toggle:active { background: var(--surface); color: var(--text); }
+
+    @media (prefers-reduced-motion: reduce) {
+      #cd-runner, #cd-fill, .cd-marker { transition: none; }
     }
 
     /* ══════════ 퀵 설정 사이드 패널 ══════════════════════════════
@@ -1219,38 +622,17 @@
     body.portrait-right #quick-panel, body.portrait-left #quick-panel,
     body.portrait-right #qp-catcher, body.portrait-left #qp-catcher { display: none; }
     body.portrait-right, body.portrait-left { padding-right: 0 !important; }
-
-    /* 운행표를 못 받았을 때 카드 내용을 대신하는 자리 — 위 renderSpsStale 참고 */
-    #cd-nodata { display: none; text-align: center; padding: 0 4vw; }
-    #countdown.no-schedule > *:not(#cd-nodata) { display: none !important; }
-    #countdown.no-schedule #cd-nodata { display: block; }
-    #cd-nodata .nd-title {
-      font-weight: 800;
-      color: var(--text-secondary);
-      font-size: clamp(20px, calc(3.4vh * var(--vpf, 1)), 60px);
-      letter-spacing: -0.01em;
-    }
-    #cd-nodata .nd-sub {
-      margin-top: 0.5em;
-      font-weight: 600;
-      color: var(--text-secondary);
-      opacity: 0.65;
-      font-size: clamp(13px, calc(1.7vh * var(--vpf, 1)), 30px);
-    }
   </style>
 </head>
 <body>
 
   <button id="fs-toggle" type="button" title="전체화면 전환">⛶</button>
 
-  <!-- 상태 박스 (아날로그 탈리 램프) -->
-  <div id="status-box">
-    <span id="status-text">ON AIR</span>
-  </div>
-
-  <!-- 시계 + 날짜 + 날씨 -->
-  <div id="center">
-    <div id="clock"><span id="clock-meridiem"></span><span id="clock-time">--:--:--</span></div>
+  <!-- 상단: 탈리 배지(DM7 마이크 상태) + 날짜/날씨(옵션) -->
+  <header id="topbar">
+    <div id="status-box">
+      <span id="status-text">OFF AIR</span>
+    </div>
     <div id="info-row">
       <div id="date">----년 --월 --일 (--)</div>
       <div class="divider"></div>
@@ -1259,10 +641,27 @@
         <span id="weather-text">날씨 불러오는 중…</span>
       </div>
     </div>
-  </div>
+  </header>
 
-  <!-- 캘린더 타임라인 -->
-  <div id="schedule">
+  <!-- 가운데: 시계 카드 + 부조정실 / 현재 방송 타일 -->
+  <main id="center">
+    <div class="card" id="clock-card">
+      <div id="clock"><span id="clock-meridiem"></span><span id="clock-time">--:--:--</span></div>
+    </div>
+    <aside id="side">
+      <div class="card tile" id="tile-studio">
+        <span class="cap">부조정실</span>
+        <span class="val" id="tile-studio-val">—</span>
+      </div>
+      <div class="card tile prog" id="tile-prog">
+        <span class="cap" id="tile-prog-cap">현재 방송</span>
+        <span class="val"><span id="tile-prog-name">—</span><span class="ok" id="tile-prog-ok" title="확정된 시작 시각" style="display:none">✓</span></span>
+      </div>
+    </aside>
+  </main>
+
+  <!-- 일반 모드: 캘린더 이전/현재/다음 -->
+  <section id="schedule">
     <div class="sch-slot prev"  id="sch-prev">
       <span class="sch-label">이전</span>
       <span class="sch-timerange" id="sch-prev-time">—</span>
@@ -1278,11 +677,10 @@
       <span class="sch-timerange" id="sch-next-time">—</span>
       <span class="sch-name"      id="sch-next-name"><span class="sch-none">일정 없음</span></span>
     </div>
-  </div>
+  </section>
 
-  <!-- 방송 시작 카운트다운 -->
-  <div id="countdown">
-    <!-- 운행표가 다른 날 데이터일 때 카드 내용을 대신한다 (평소엔 숨김) -->
+  <!-- 생방송 모드: 타임라인 + 진입 / 남음 / 종료 -->
+  <section id="countdown">
     <div id="cd-nodata"></div>
     <div id="cd-track">
       <div id="cd-track-line"></div>
@@ -1292,24 +690,19 @@
       </div>
       <div class="cd-marker cd-marker-cap" id="cd-marker-start-cap">
         <span class="cd-marker-label">
-          <span class="cd-marker-program" id="cd-marker-start-program"></span>
-          <span id="cd-marker-start-label">시작</span>
+          <span class="cd-marker-program" id="cd-marker-start-program"></span>진입
         </span>
       </div>
       <div class="cd-marker" id="cd-marker-end">
         <span class="cd-marker-dot"></span>
-        <span class="cd-marker-label">
-          <span id="cd-marker-end-label">종료</span>
-        </span>
       </div>
       <div id="cd-runner" class="walking">
         <span class="cd-runner-trail"></span>
         <span class="cd-runner-ring"></span>
         <span class="cd-runner-head"></span>
+        <span class="cd-runner-cap"></span>
       </div>
-      <!-- 참조 시안(Direction 3)처럼 러너 위 말풍선이 아니라 트랙 아래 알약 —
-           #cd-runner의 형제로 두고 #cd-track 기준 absolute left(px)를 JS가
-           매 틱 갱신한다(트랙 폭 안으로 clamp, renderBoundedTrack() 참고). -->
+      <!-- 5006의 러너 알약 — 새 디자인에선 숨김(JS 호환용으로 DOM만 유지) -->
       <div class="cd-runner-tag" id="cd-runner-tag">
         <span class="cd-runner-tag-pill" id="cd-runner-tag-text">
           <span class="cd-tag-main" id="cd-tag-main">--:--</span>
@@ -1318,10 +711,15 @@
         </span>
       </div>
     </div>
-  </div>
+    <div id="cd-ends">
+      <div class="cd-chip in"><span class="cap">진입</span><span class="t" id="cd-marker-start-label">--:--:--</span></div>
+      <div class="cd-chip rem" id="cd-rem"><span class="cap" id="cd-rem-cap">남음</span><span class="t" id="cd-rem-val">--:--</span></div>
+      <div class="cd-chip out"><span class="cap">종료</span><span class="t" id="cd-marker-end-label">--:--:--</span></div>
+    </div>
+  </section>
 
-  <!-- 타이머 + 스톱워치 -->
-  <div id="stopwatch">
+  <!-- 타이머 모드: 타이머 + 스톱워치 -->
+  <section id="stopwatch">
     <div class="tm-col" id="timer-col">
       <div class="tm-label-row">
         <span class="tm-dot" id="timer-dot"></span>
@@ -1337,7 +735,7 @@
       </div>
       <span class="tm-value" id="stopwatch-timer">+00:00</span>
     </div>
-  </div>
+  </section>
 
   <!-- 퀵 설정 사이드 패널 (오른쪽 가장자리에서 왼쪽으로 스와이프하면 열림) -->
   <div id="qp-catcher"></div>
@@ -1421,6 +819,7 @@
   </aside>
   <div id="qp-toast"></div>
 
+
 <script>
   const box         = document.getElementById('status-box');
   const statusText  = document.getElementById('status-text');
@@ -1455,6 +854,54 @@
   const timerLabel = document.getElementById('timer-label');
   const timerValueEl = document.getElementById('timer-value');
 
+  /* ── (5007) 새 레이아웃 요소: 우측 타일·하단 남음 칩·시계 카드 ─────── */
+  const tileStudioVal = document.getElementById('tile-studio-val');
+  const tileProgName  = document.getElementById('tile-prog-name');
+  const tileProgCap   = document.getElementById('tile-prog-cap');
+  const tileProgOk    = document.getElementById('tile-prog-ok');
+  const cdRemEl  = document.getElementById('cd-rem');
+  const cdRemCap = document.getElementById('cd-rem-cap');
+  const cdRemVal = document.getElementById('cd-rem-val');
+  const clockCard = document.getElementById('clock-card');
+  const sideEl    = document.getElementById('side');
+  const cdEndsEl  = document.getElementById('cd-ends');
+  // 진입/남음/종료 칩 세 개가 한 줄에 못 들어가면(긴 시각·N 표시·1시간 이상 남음 등)
+  // 글자 배율(--fit)을 줄여 항상 한 줄에 맞춘다 — 잘리는 것보다 작은 게 낫다.
+  function fitEnds() {
+    if (!cdEndsEl || countdownEl.style.display === 'none') return;
+    cdEndsEl.style.setProperty('--fit', '1');
+    // 글자만 줄면 여백은 그대로라 한 번의 비례 계산으로는 부족하다 — 적용 후 다시 재서 최대 3번 조인다.
+    let fit = 1;
+    for (let i = 0; i < 3; i++) {
+      const w = cdEndsEl.scrollWidth, c = cdEndsEl.clientWidth;
+      if (!(w > c && w > 0)) break;
+      fit = Math.max(0.5, fit * c / w * 0.985);
+      cdEndsEl.style.setProperty('--fit', fit.toFixed(3));
+    }
+  }
+  let spsStudioSetting = '';
+  let calCurrentName = '';
+  const REM_STATES = ['pending', 'imminent', 'running', 'over', 'final-over', 'final-under', 'elapsed'];
+  // 하단 가운데 '남음' 칩 — 5006의 러너 알약(경과/남음)이 하던 역할을 고정 위치에서 한다.
+  function setRemChip(cap, val, cls) {
+    if (cdRemCap.textContent !== cap) cdRemCap.textContent = cap;
+    if (cdRemVal.textContent !== val) cdRemVal.textContent = val;
+    REM_STATES.forEach(c => cdRemEl.classList.toggle(c, c === cls));
+  }
+  // 우측 타일: 부조정실은 방송의 videoSource(없으면 선택된 부조), 방송명은
+  // 생방송 모드면 추적 중인 방송, 일반 모드면 캘린더의 현재 일정.
+  function renderTiles(stateCap) {
+    const studio = broadcastVideoSource || spsStudioSetting || '';
+    const studioTxt = studio || '—';
+    if (tileStudioVal.textContent !== studioTxt) tileStudioVal.textContent = studioTxt;
+    const name = (countdownModeOn ? broadcastProgramName : calCurrentName) || '—';
+    if (tileProgName.textContent !== name) tileProgName.textContent = name;
+    const cap = stateCap || (countdownModeOn ? tileProgCap.textContent : '현재 일정');
+    if (tileProgCap.textContent !== cap) tileProgCap.textContent = cap;
+    const ok = countdownModeOn && !!broadcastTime && broadcastStartConfirmed;
+    tileProgOk.style.display = ok ? '' : 'none';
+  }
+
   const DAYS = ['일','월','화','수','목','금','토'];
 
   function isPortraitMode() {
@@ -1468,10 +915,10 @@
   // 여백"이 아니라 "그냥 남는 공간"처럼 보였다(실측 스크린샷으로 확인).
   // 시계를 키워서 그 공간을 실제 콘텐츠로 채운다 — 실측 폭 제한(가로폭
   // 넘으면 자동 축소)은 그대로라 작은 화면에서도 안전하다.
-  const CLOCK_BASELINE   = 15.5;
+  const CLOCK_BASELINE   = 29;   // (5007) 카드 폭에 맞춰 자동 축소되므로 넉넉히
   const TALLY_BASELINE   = 5;
   const SCH_BASELINE     = 1.3;
-  const P_CLOCK_BASELINE = 12;
+  const P_CLOCK_BASELINE = 29;   // (5007) 가로와 동일 — 카드 폭에 맞춰 자동 축소
   const P_TALLY_BASELINE = 4;
   const P_SCH_BASELINE   = 1.2;
 
@@ -1522,7 +969,7 @@
   }
 
   function setClockFontSize(rem) {
-    if (isPortraitMode()) {
+    if (false) {   // (5007) 세로 모드도 아래 카드 기준 분기를 그대로 쓴다
       // 90도 회전 구조라 두 축이 뒤바뀐다:
       // - #clock의 '너비'(8ch, 로컬 좌표)는 화면에선 '세로' 길이가 됨 → innerHeight 기준 제한
       // - #center가 상태박스/일정과 나눠쓰는 '쌓임 축' 예산은 화면상 '가로' → innerWidth 기준 제한
@@ -1540,12 +987,14 @@
       measureWithoutTransition(clockEl, () => {
         clockEl.style.removeProperty('--clock-fs');
         clockEl.style.transform = '';
-        clockEl.style.fontSize = rem + 'rem';
-        const maxPx = window.innerWidth - 80;
+        // (5007) 시계는 카드 안에 있으므로 카드 안쪽 폭을 예산으로 잡는다 —
+        // 슬라이더 값대로 키운 뒤 넘치면 그만큼만 줄인다(항상 카드를 꽉 채움).
+        const px = rem * 16;
+        clockEl.style.fontSize = px + 'px';
+        const cs = getComputedStyle(clockCard);
+        const maxPx = clockCard.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2;
         const w = clockEl.offsetWidth;
-        if (w > maxPx) {
-          clockEl.style.fontSize = (rem * maxPx / w) + 'rem';
-        }
+        if (w > maxPx && w > 0) clockEl.style.fontSize = (px * maxPx / w) + 'px';
       });
     }
   }
@@ -1567,14 +1016,10 @@
     }
   }
   function setSchFontSize(rem) {
-    scheduleEl.style.setProperty('--sch-scale', (rem / SCH_BASELINE).toFixed(3));
-    document.querySelectorAll('.sch-name').forEach(el => el.style.fontSize = rem + 'rem');
-    document.querySelectorAll('.sch-timerange').forEach(el => {
-      const tRem = rem * 0.75;
-      el.style.fontSize = tRem + 'rem';
-      const maxPx = el.parentElement.clientWidth;
-      if (el.scrollWidth > maxPx) el.style.fontSize = (tRem * maxPx / el.scrollWidth) + 'rem';
-    });
+    // (5007) 크기는 CSS가 --sch-scale로 계산 — 일정 카드와 우측 타일이 같이 커진다
+    const k = (rem / SCH_BASELINE).toFixed(3);
+    scheduleEl.style.setProperty('--sch-scale', k);
+    if (sideEl) sideEl.style.setProperty('--sch-scale', k);
   }
 
   /* 위 BASELINE 값들은 실제 배포 대상인 2560x1440 키오스크에서 눈으로 맞춘
@@ -1810,6 +1255,8 @@
         setSlot(document.getElementById('sch-prev-time'), document.getElementById('sch-prev-name'), d.prev);
         setSlot(document.getElementById('sch-cur-time'),  document.getElementById('sch-cur-name'),  d.current);
         setSlot(document.getElementById('sch-next-time'), document.getElementById('sch-next-name'), d.next);
+        calCurrentName = d.current ? (d.current.summary || '') : '';
+        renderTiles();
       })
       .catch(() => {});
   }
@@ -1893,6 +1340,9 @@
     cdRunnerTagPill.classList.remove('overrun-hit');
     void cdRunnerTagPill.offsetWidth;
     cdRunnerTagPill.classList.add('overrun-hit');
+    cdRemEl.classList.remove('hit');
+    void cdRemEl.offsetWidth;
+    cdRemEl.classList.add('hit');
   }
 
   function formatDuration(totalSec) {
@@ -1971,6 +1421,8 @@
     const now = getNow();
 
     if (!startVal) {
+      setRemChip('남음', '--:--', '');
+      renderTiles('현재 방송');
       cdTagMain.textContent = '--:--';
       cdTagMain.classList.remove('neg', 'overrun');
       cdRunnerTagPill.classList.remove('two');
@@ -2006,6 +1458,8 @@
     if (!endVal || !end) {
       cdRunnerTagPill.classList.remove('two');
       cdTrack.classList.remove('show');
+      setRemChip(rawDiffMs > 0 ? '시작까지' : '경과', cdTagMain.textContent.replace(/^[+-]/, ''), rawDiffMs > 0 ? 'pending' : 'elapsed');
+      renderTiles(rawDiffMs > 0 ? '다음 방송' : '현재 방송');
       return;
     }
     const durationSec = (end - start) / 1000;
@@ -2022,8 +1476,7 @@
     // 캐스케이드로 흔들릴 상대가 없어 서버가 처음부터 확정으로 본다. 있으면 그
     // 앞 방송이 실제로 끝나야(서버가 onAirIndex로 판단) 확정 — 그 전까지만
     // 잠깐 체크 표시가 빠진다(모닝와이드1→2→3부, 뉴스헌터스→8뉴스 등).
-    const confirmedMark = broadcastStartConfirmed
-      ? ' <span class="cd-confirmed-mark" title="더는 안 바뀔 것으로 확인된 시작 시각">✓</span>' : '';
+    const confirmedMark = '';   // (5007) 확정 표시는 '현재 방송' 타일의 체크 배지로
     const durationMin = Math.round(durationSec / 60);
     cdMarkerStartLabel.innerHTML = (isDifferentDay(start, now) ? 'N ' : '') + hhmm(start)
       + `<span class="cd-marker-assigned">(${durationMin})</span>` + confirmedMark;
@@ -2171,16 +1624,21 @@
       cdTagSub.textContent = formatDuration(Math.max(0, Math.round((end - start) / 1000)));
       cdRunnerTagPill.classList.add('two');
       cdTagSub.classList.remove('overrun', 'neg');
+      setRemChip(finalDiffSec > 0 ? '늦게 종료' : '일찍 종료', sign + formatDuration(Math.abs(finalDiffSec)),
+                 finalDiffSec > 0 ? 'final-over' : 'final-under');
+      renderTiles('종료된 방송');
       if (!cdWasFinalEnded) {
         cdRunnerTagPill.classList.add('final-blink');
+        cdRemEl.classList.add('blink');
         clearTimeout(cdFinalBlinkTimer);
-        cdFinalBlinkTimer = setTimeout(() => cdRunnerTagPill.classList.remove('final-blink'), 10000);
+        cdFinalBlinkTimer = setTimeout(() => { cdRunnerTagPill.classList.remove('final-blink'); cdRemEl.classList.remove('blink'); }, 10000);
       }
       cdWasFinalEnded = true;
       cdWasOverrun = false;
     } else {
       if (cdWasFinalEnded) {
         cdRunnerTagPill.classList.remove('final-blink');
+        cdRemEl.classList.remove('blink');
         clearTimeout(cdFinalBlinkTimer);
       }
       cdWasFinalEnded = false;
@@ -2192,12 +1650,16 @@
           cdTagSub.textContent = '+' + formatDuration(overrunSec);
           cdTagSub.classList.add('overrun');
           cdTagSub.classList.remove('neg');
+          setRemChip('초과', '+' + formatDuration(overrunSec), 'over');
+          renderTiles('현재 방송');
           if (!cdWasOverrun) triggerOverrunHit();
         } else {
           const remainSec = Math.max(0, Math.floor((end - now) / 1000));
           cdTagSub.textContent = '-' + formatDuration(remainSec);
           cdTagSub.classList.add('neg');
           cdTagSub.classList.remove('overrun');
+          setRemChip('남음', formatDuration(remainSec), 'running');
+          renderTiles('현재 방송');
         }
         cdWasOverrun = isOverrun;
         cdRunnerTagPill.classList.add('two');
@@ -2205,12 +1667,16 @@
         cdRunnerTagPill.classList.remove('two');
         cdTagSub.classList.remove('overrun', 'neg');
         cdWasOverrun = false;
+        const toStartSec = Math.max(0, Math.floor((start - now) / 1000));
+        setRemChip(cdImminent ? '진입까지' : '시작까지', formatDuration(toStartSec), cdImminent ? 'imminent' : 'pending');
+        renderTiles('다음 방송');
       }
     }
 
     if (justCrossed) {
       triggerStartHit();
     }
+    fitEnds();
     cdWasBeforeStart = isBeforeStart;
     cdMarkerStart.classList.toggle('crossed', !isBeforeStart);
 
@@ -2276,6 +1742,7 @@
     if (isPortraitMode()) applyPortraitSizes(); else applyLandscapeSizes();
     applyCdSize();       // --vpf도 화면 높이에 따라 다시 계산돼야 한다
     cdTrackWidthPx = 0;  // 글자 크기가 바뀌면 카드 여백도 바뀌어 트랙 폭이 달라진다
+    fitEnds();
   }
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(refitScaledText).catch(() => {});
@@ -2383,6 +1850,8 @@
   /* ── 메인 탈리 (아날로그 램프) — 모든 모드에서 DM7 마이크 상태로만 구동 ─── */
   function updateMainTally() {
     box.classList.toggle('on-air', micLiveRaw);
+    const t = micLiveRaw ? 'ON AIR' : 'OFF AIR';
+    if (statusText.textContent !== t) statusText.textContent = t;
   }
 
   /* ── 마이크(DM7 페이더) — SSE ─────────────────────────────────── */
@@ -2447,6 +1916,9 @@
     broadcastScheduledEndTimeNextDay = !!s.broadcastScheduledEndTimeNextDay;
     broadcastIsLive = !!s.broadcastIsLive;
     broadcastStartConfirmed = s.broadcastStartConfirmed === undefined ? true : !!s.broadcastStartConfirmed;
+    spsStudioSetting = s.spsStudio || '';
+    document.documentElement.dataset.theme = (s.theme === 'mint') ? 'mint' : 'purple';
+    renderTiles();
     if (s.cdBoxScale !== undefined) cdBoxScale = parseFloat(s.cdBoxScale);
     if (s.cdTextScale !== undefined) cdTextScale = parseFloat(s.cdTextScale);
     if (s.cdLabelScale !== undefined) cdLabelScale = parseFloat(s.cdLabelScale);
@@ -2867,6 +2339,7 @@
   document.addEventListener('fullscreenchange', () => {
     fsToggleBtn.textContent = document.fullscreenElement ? '⤢' : '⛶';
   });
+  if (location.hash === '#qp') setTimeout(qpOpen, 400);
 </script>
 </body>
 </html>

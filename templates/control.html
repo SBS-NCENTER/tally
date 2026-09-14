@@ -719,7 +719,7 @@
         <div class="setting-row-inline"><span>시계 글자 크기</span><span class="val" id="clock-size-val">1.00x</span></div>
         <input type="range" id="clock-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
-      <div class="size-group-label">일반 모드 (일정)</div>
+      <div class="size-group-label">일정 카드 · 부조정실/현재 방송 칸</div>
       <div class="setting-row">
         <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="sch-box-size-val">1.0x</span></div>
         <input type="range" id="sch-box-size" min="0.6" max="2" step="0.05" value="1" />
@@ -731,15 +731,15 @@
 
       <div class="size-group-label">생방송 모드</div>
       <div class="setting-row">
-        <div class="setting-row-inline"><span>박스 높이</span><span class="val" id="cd-box-size-val">1.0x</span></div>
+        <div class="setting-row-inline"><span>타임라인 굵기</span><span class="val" id="cd-box-size-val">1.0x</span></div>
         <input type="range" id="cd-box-size" min="0.6" max="2" step="0.05" value="1" />
       </div>
       <div class="setting-row">
-        <div class="setting-row-inline"><span>타이머 글자 크기</span><span class="val" id="cd-text-size-val">1.0x</span></div>
+        <div class="setting-row-inline"><span>남음 시간 글자 크기</span><span class="val" id="cd-text-size-val">1.0x</span></div>
         <input type="range" id="cd-text-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
       <div class="setting-row">
-        <div class="setting-row-inline"><span>시작/종료 글자 크기</span><span class="val" id="cd-label-size-val">1.0x</span></div>
+        <div class="setting-row-inline"><span>진입/종료 칩 글자 크기</span><span class="val" id="cd-label-size-val">1.0x</span></div>
         <input type="range" id="cd-label-size" min="0.6" max="2.2" step="0.05" value="1" />
       </div>
 
@@ -802,6 +802,14 @@
       <span class="chevron">▾</span>
     </button>
     <div class="sub-panel" id="advanced-sub">
+      <div class="setting-row">
+        <span class="setting-label" style="margin-bottom:6px">{{ icon('sliders') }}화면 테마 색</span>
+        <div class="segmented" id="theme-seg">
+          <button type="button" class="seg-btn theme-btn" data-theme="purple">보라 (Material)</button>
+          <button type="button" class="seg-btn theme-btn" data-theme="mint">민트 (SBS)</button>
+        </div>
+        <div class="setting-hint">시계 콜론·현재 방송 칸·타임라인·종료 시각 등 강조색이 함께 바뀝니다.</div>
+      </div>
       <div class="setting-row">
         <div class="toggle-row">
           <span class="toggle-label">12시간제 (AM/PM)</span>
@@ -872,11 +880,11 @@
   // 여러 세션에 걸쳐 튜닝해서 시인성이 잘 맞는 걸로 확인된 기본값 — 슬라이더를
   // 이것저것 만져본 뒤 "기본값으로 초기화" 버튼 한 번으로 전부 되돌리기 위함.
   const SIZE_DEFAULTS = {
-    'tally-box-size': 1.25, 'tally-size': 1.75,
-    'clock-box-size': 1,    'clock-size': 1.55,
-    'sch-box-size': 1,      'sch-size': 1,
-    'cd-box-size': 1.5, 'cd-text-size': 2.1, 'cd-label-size': 1.95,
-    'sw-box-size': 1.45, 'sw-text-size': 1.65,
+    'tally-box-size': 1, 'tally-size': 1,
+    'clock-box-size': 1, 'clock-size': 1,
+    'sch-box-size': 1,   'sch-size': 1,
+    'cd-box-size': 1, 'cd-text-size': 1, 'cd-label-size': 1,
+    'sw-box-size': 1, 'sw-text-size': 1,
     'p-box-size': 1, 'p-tally-size': 1, 'p-clock-size': 1,
     'p-sch-size': 1, 'p-cd-size': 1, 'p-sw-size': 1,
   };
@@ -925,7 +933,7 @@
   const pSwSlider    = document.getElementById('p-sw-size');
   const pSwVal       = document.getElementById('p-sw-size-val');
 
-  const segButtons    = Array.from(document.querySelectorAll('.seg-btn'));
+  const segButtons    = Array.from(document.querySelectorAll('#bottom-mode-seg .seg-btn'));
   const scheduleSub   = document.getElementById('schedule-sub');
   const countdownSub  = document.getElementById('countdown-sub');
   const broadcastTimeInput    = document.getElementById('broadcast-time');
@@ -984,6 +992,7 @@
   let swRunning = false, swStartedAt = null, swElapsedMs = 0;
   let timerDurationSec = 300, timerRunning = false, timerStartedAt = null, timerRemainingMs = 300000;
   let bottomMode = 'schedule'; // 'schedule' | 'countdown' | 'stopwatch'
+  let currentTheme = 'purple';   // 화면 테마(보라/민트) — 세그먼트 버튼으로 저장
   let broadcastProgramName = ''; // 자동 운행표 연동이 채워주는 값 — 여기선 읽기 전용, 저장 시 그대로 되돌려보내 유실 방지
 
   function currentSettings() {
@@ -997,6 +1006,7 @@
       timeOffset:   parseFloat(timeOffsetSlider.value),
       showDateWeather: dateWeatherToggle.checked,
       clock12Hour: clock12hToggle.checked,
+      theme: currentTheme,
       scheduleVisible: scheduleVisibleToggle.checked,
       'cal-ts5':    calTs5.checked,
       'cal-ts5b':   calTs5b.checked,
@@ -1094,6 +1104,9 @@
   });
 
   dateWeatherToggle.addEventListener('change', saveSettings);
+  const themeBtns = Array.from(document.querySelectorAll('.theme-btn'));
+  function applyThemeUI() { themeBtns.forEach(b => b.classList.toggle('active', b.dataset.theme === currentTheme)); }
+  themeBtns.forEach(b => b.addEventListener('click', () => { currentTheme = b.dataset.theme; applyThemeUI(); saveSettings(); }));
   clock12hToggle.addEventListener('change', saveSettings);
 
   function refreshLiveRevert() {
@@ -1751,7 +1764,9 @@
         timeOffsetVal.textContent = (v >= 0 ? '+' : '') + v.toFixed(1) + '초';
       }
       dateWeatherToggle.checked = s.showDateWeather !== undefined ? !!s.showDateWeather : true;
-      clock12hToggle.checked = s.clock12Hour === undefined ? true : !!s.clock12Hour;
+      clock12hToggle.checked = s.clock12Hour === undefined ? false : !!s.clock12Hour;
+      currentTheme = (s.theme === 'mint') ? 'mint' : 'purple';
+      applyThemeUI();
       scheduleVisibleToggle.checked = s.scheduleVisible !== undefined ? !!s.scheduleVisible : true;
 
       if (s.liveAutoRevertMinutes !== undefined) liveRevertSlider.value = s.liveAutoRevertMinutes;

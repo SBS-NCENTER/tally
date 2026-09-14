@@ -1,11 +1,11 @@
 [[service]]
-name = "tally-oneui"
+name = "tally-5007"
 type = "web"
-description = "One UI 6 디자인 검토용 웹탈리 (포트 5006)"
+description = "Material 3 디자인 웹탈리 (포트 5007)"
 command = "bash setup/run.sh"
 host = "0.0.0.0"
-port = 5006
+port = 5007
 health_path = "/health"
-pidfile = "data/tally-oneui.pid"
+pidfile = "data/tally-5007.pid"
 # autostart_service 는 반드시 위 name 과 동일하게 유지 (systemd 유닛명)
-autostart_service = "tally-oneui"
+autostart_service = "tally-5007"
