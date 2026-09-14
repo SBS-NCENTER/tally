@@ -225,7 +225,7 @@
     #cd-track {
       position: relative;
       height: calc(calc(4.6 * var(--u)) * var(--cb));
-      margin: calc(calc(4.2 * var(--u)) * var(--cb)) 0 calc(calc(2.6 * var(--u)) * var(--cb));
+      margin: calc(calc(3 * var(--u)) * var(--cb)) 0 calc(calc(2.6 * var(--u)) * var(--cb));
       border-radius: 99px;
       background: var(--surface-var);
       opacity: 0; transition: opacity 0.4s ease;
@@ -254,7 +254,7 @@
     #cd-marker-start.crossed .cd-marker-dot { opacity: 0; }
     .cd-marker-cap { top: 0; }
     .cd-marker-cap .cd-marker-label {
-      position: absolute; left: 0; bottom: calc(100% + calc(0.9 * var(--u))); transform: translateX(-50%);
+      position: absolute; left: 0; bottom: calc(100% + calc(1.1 * var(--u))); transform: translateX(-50%);
       font-size: calc(calc(1.9 * var(--u)) * var(--cl)); font-weight: 800; color: var(--text-dim); white-space: nowrap;
       opacity: 0; transition: opacity 0.4s ease;
     }
@@ -271,14 +271,14 @@
     }
     #cd-runner.cross-anim, #cd-fill.cross-anim, .cd-runner-tag.cross-anim { transition-duration: 0.8s; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
     .cd-runner-head {
-      position: absolute; left: 0; top: 0; transform: translate(-50%, calc(-100% + 2.3 * var(--u) * var(--cb)));   /* 아래끝을 트랙 아래선에 맞춤 */
-      width: calc(calc(0.8 * var(--u)) * var(--cb)); height: calc(calc(7.4 * var(--u)) * var(--cb)); border-radius: 99px;
+      position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
+      width: calc(calc(0.8 * var(--u)) * var(--cb)); height: calc(calc(5.8 * var(--u)) * var(--cb)); border-radius: 99px;
       background: #fff; box-shadow: 0 0 0 2px rgba(20,18,24,0.6);   /* 얇은 반투명 테두리만 — 트랙과 분리되게 */
       transition: background 0.4s ease, transform 0.4s ease;
     }
     .cd-runner-cap {
-      position: absolute; left: 0; bottom: calc(5.1 * var(--u) * var(--cb) + 1 * var(--u)); transform: translateX(-50%);
-      width: 0; height: 0; border: calc(calc(1.1 * var(--u)) * var(--cb)) solid transparent; border-bottom: 0;
+      position: absolute; left: 0; bottom: calc(2.9 * var(--u) * var(--cb) + 0.5 * var(--u)); transform: translateX(-50%);
+      width: 0; height: 0; border: calc(calc(0.9 * var(--u)) * var(--cb)) solid transparent; border-bottom: 0;
       border-top-color: var(--primary); transition: border-top-color 0.4s ease;
     }
     .cd-runner-trail, .cd-runner-ring { display: none; }
@@ -345,7 +345,7 @@
     #countdown.imminent #cd-marker-end { opacity: 0.15; transition: opacity 0.6s ease; }
     #countdown.imminent-final .cd-runner-head { animation: imminent-pulse 0.7s ease-in-out infinite; }
     #countdown.imminent-final .cd-chip.rem { animation: imminent-pill-pulse 0.7s ease-in-out infinite; }
-    @keyframes imminent-pulse { 50% { transform: translate(-50%, calc(-100% + 2.3 * var(--u) * var(--cb))) scaleX(1.5); } }
+    @keyframes imminent-pulse { 50% { transform: translate(-50%, -50%) scaleX(1.5); } }
     @keyframes imminent-pill-pulse { 50% { transform: scale(1.04); } }
 
     /* ══════════ 타이머 모드 하단: 타이머 / 스톱워치 ══════════ */
