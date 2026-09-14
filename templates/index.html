@@ -164,11 +164,12 @@
     .tile.prog .cap { color: var(--on-primary-dim); }
     .tile.prog .val { color: var(--on-primary); display: flex; align-items: center; }
     .tile.prog .val #tile-prog-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-    .tile .ok {
+    /* 진입 확정 배지 — 진입 시각 칩 옆 */
+    .cd-chip .ok {
       display: inline-flex; align-items: center; justify-content: center; flex: none;
-      width: calc(2.2 * var(--u)); height: calc(2.2 * var(--u)); border-radius: 50%;
-      background: var(--on-primary); color: var(--primary);
-      font-size: calc(1.4 * var(--u)); font-weight: 900;
+      width: calc(3 * var(--u)); height: calc(3 * var(--u)); border-radius: 50%;
+      background: var(--primary); color: var(--on-primary);
+      font-size: calc(1.9 * var(--u)); font-weight: 900;
     }
 
     /* ══════════ 일반 모드 하단: 이전 / 현재 / 다음 일정 ══════════ */
@@ -589,7 +590,7 @@
         <span class="val" id="tile-studio-val">—</span>
       </div>
       <div class="tile prog" id="tile-prog">
-        <span class="cap"><span id="tile-prog-cap">현재 방송</span><span class="ok" id="tile-prog-ok" title="확정된 시작 시각" style="display:none">✓</span></span>
+        <span class="cap" id="tile-prog-cap">현재 방송</span>
         <span class="val"><span id="tile-prog-name">—</span></span>
       </div>
     </div>
@@ -657,7 +658,7 @@
       </div>
     </div>
     <div id="cd-ends">
-      <div class="cd-chip in"><span class="cap">진입</span><span class="t" id="cd-marker-start-label">--:--:--</span></div>
+      <div class="cd-chip in"><span class="cap">진입</span><span class="t" id="cd-marker-start-label">--:--:--</span><span class="ok" id="tile-prog-ok" title="확정된 진입 시각" style="display:none">✓</span></div>
       <div class="cd-chip rem" id="cd-rem"><span class="cap" id="cd-rem-cap">남음</span><span class="t" id="cd-rem-val">--:--</span></div>
       <div class="cd-chip out"><span class="cap">종료</span><span class="t" id="cd-marker-end-label">--:--:--</span></div>
     </div>
