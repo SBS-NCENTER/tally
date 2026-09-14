@@ -225,6 +225,7 @@
       opacity: 0; transition: opacity 0.4s ease;
     }
     #cd-track.pending .cd-marker-cap .cd-marker-label { opacity: 1; }
+    #cd-track.pending .cd-marker-cap.near .cd-marker-label { opacity: 0; }
     .cd-marker-program { display: none; }    /* 프로그램명은 우측 타일이 담당 */
     .cd-marker-dot.hit { animation: marker-hit 0.9s ease-out; }
     @keyframes marker-hit { 0% { transform: translate(-50%,-50%) scale(1); } 30% { transform: translate(-50%,-50%) scale(1.5); } 100% { transform: translate(-50%,-50%) scale(1); } }
@@ -1602,7 +1603,11 @@
     if (!cdTrackWidthPx) cdTrackWidthPx = cdTrack.getBoundingClientRect().width;
 
     cdMarkerStart.style.left = startPct + '%';               // 점은 줌 위치로 질주
-    if (cdMarkerStartCap) cdMarkerStartCap.style.left = startPctLabel + '%';  // 라벨은 고정
+    if (cdMarkerStartCap) {
+      cdMarkerStartCap.style.left = startPctLabel + '%';  // 라벨은 고정
+      // 러너 ▼ 캡이 라벨 자리에 오면(±5%) 또는 임박 줌 중이면 라벨을 접는다 — 겹쳐서 둘 다 안 읽히는 것보다 낫다.
+      cdMarkerStartCap.classList.toggle('near', isBeforeStart && (Math.abs(pct - startPctLabel) < 5 || cdImminent));
+    }
     cdRunner.style.transform = 'translateX(' + (pct / 100 * cdTrackWidthPx) + 'px)';
 
     // [ADDED] .cd-runner-tag는 이제 #cd-runner 안이 아니라 #cd-track의 형제로
