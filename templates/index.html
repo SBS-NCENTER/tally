@@ -361,10 +361,30 @@
     #countdown.imminent .cd-runner-cap { border-top-color: var(--amber); }
     #countdown.imminent #cd-marker-start .cd-marker-dot { background: var(--amber); transform: translate(-50%,-50%) scaleY(1.15); box-shadow: 0 0 0 calc(calc(0.5 * var(--u)) * var(--cb)) var(--bg), 0 0 calc(2 * var(--u)) rgba(255,185,90,0.6); }
     #countdown.imminent #cd-marker-end { opacity: 0.15; transition: opacity 0.6s ease; }
-    #countdown.imminent-final .cd-runner-head { animation: imminent-pulse 0.7s ease-in-out infinite; }
-    #countdown.imminent-final .cd-chip.rem { animation: imminent-pill-pulse 0.7s ease-in-out infinite; }
-    @keyframes imminent-pulse { 50% { transform: translate(-50%, -50%) scaleX(1.5); } }
-    @keyframes imminent-pill-pulse { 50% { transform: scale(1.04); } }
+    /* 마지막 10초 심장박동 — 매초 숫자가 바뀌는 순간 JS가 .beat를 다시 붙인다(초와 동기) */
+    .cd-chip.rem.beat { animation: chip-beat 0.5s cubic-bezier(0.2, 0, 0, 1); }
+    @keyframes chip-beat {
+      0%   { transform: scale(1.07); box-shadow: inset 0 0 0 calc(0.2 * var(--u)) var(--amber), 0 0 0 0 rgba(255,185,90,0.6); }
+      100% { transform: scale(1);    box-shadow: inset 0 0 0 calc(0.2 * var(--u)) var(--amber), 0 0 0 calc(1.8 * var(--u)) rgba(255,185,90,0); }
+    }
+    .cd-runner-cap.beat  { animation: cap-beat 0.5s cubic-bezier(0.2, 0, 0, 1); }
+    .cd-runner-head.beat { animation: head-beat 0.5s cubic-bezier(0.2, 0, 0, 1); }
+    @keyframes cap-beat  { 0% { transform: translateX(-50%) scale(1.8); } 100% { transform: translateX(-50%) scale(1); } }
+    @keyframes head-beat { 0% { transform: translate(-50%, -50%) scaleX(2); } 100% { transform: translate(-50%, -50%) scaleX(1); } }
+
+    /* 진입 점화 — 트랙에서 빨간 링이 퍼지고 채움이 밝게 타오르며, 시계 콜론이 한 박자 빨갛게, ON AIR 램프가 부풀며 켜진다 */
+    #countdown.start-burst #cd-track { animation: track-ignite 1.1s cubic-bezier(0.2, 0, 0, 1); }
+    @keyframes track-ignite { 0% { box-shadow: 0 0 0 0 rgba(232,69,60,0.8); } 100% { box-shadow: 0 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0); } }
+    #countdown.start-burst #cd-fill { animation: fill-ignite 1.1s ease-out; }
+    @keyframes fill-ignite { 0% { filter: brightness(2.2); } 100% { filter: brightness(1); } }
+    body.ignite .clk-sep { animation: sep-flash 1.4s ease-out; }
+    @keyframes sep-flash { 0%, 25% { color: #ff8a80; text-shadow: 0 0 0.25em rgba(232,69,60,0.7); } 100% { color: var(--primary); text-shadow: none; } }
+    #status-box.ignite { animation: lamp-ignite 1.2s cubic-bezier(0.2, 0, 0, 1); }
+    @keyframes lamp-ignite {
+      0%   { transform: scale(0.96); filter: brightness(1.7); box-shadow: 0 0 0 0 rgba(232,69,60,0.9); }
+      35%  { transform: scale(1.03); }
+      100% { transform: scale(1);    filter: brightness(1);   box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45); }
+    }
 
     /* ══════════ 타이머 모드 하단: 타이머 / 스톱워치 ══════════ */
     #stopwatch {
@@ -864,6 +884,13 @@
   }
   let spsStudioSetting = '';
   let calCurrentName = '';
+  let lampWasOn = null;       // ON AIR 램프 직전 상태 (false→true 순간 점화 연출)
+  let cdBeatSec = null;       // 마지막 10초 심장박동: 마지막으로 박동한 초
+  function cdBeat() {
+    [cdRemEl, document.querySelector('.cd-runner-cap'), document.querySelector('.cd-runner-head')].forEach(el => {
+      if (!el) return; el.classList.remove('beat'); void el.offsetWidth; el.classList.add('beat');
+    });
+  }
   const REM_STATES = ['pending', 'imminent', 'running', 'over', 'final-over', 'final-under', 'elapsed'];
   // 시작 전 카운트다운은 항상 HH:MM:SS (-00:00:00 형식) — formatDuration은 1시간 미만이면 MM:SS라 따로 둔다
   function fmtHMS(totalSec) {
@@ -1562,6 +1589,8 @@
     if (justCrossed) {
       countdownEl.classList.add('start-burst');
       setTimeout(() => countdownEl.classList.remove('start-burst'), 1800);
+      document.body.classList.add('ignite');                       // 시계 콜론 한 박자 빨갛게
+      setTimeout(() => document.body.classList.remove('ignite'), 1600);
       cdRunner.classList.add('cross-anim');
       cdFill.classList.add('cross-anim');
       setTimeout(() => {
@@ -1693,6 +1722,10 @@
       cdTrack.classList.add('pending');
       countdownEl.classList.toggle('imminent', cdImminent);
       countdownEl.classList.toggle('imminent-final', cdImminentFinal);
+      if (cdImminentFinal) {
+        const s = Math.ceil((start - now) / 1000);
+        if (s !== cdBeatSec) { cdBeatSec = s; cdBeat(); }
+      } else cdBeatSec = null;
     } else if (now < end) {
       cdFill.style.left = startPct + '%';
       cdFill.style.width = Math.max(0, pct - startPct) + '%';
@@ -1840,7 +1873,13 @@
   function updateMainTally() {
     // (5007) 마이크(DM7) ON 또는 운행표상 방송 중(SPS onAirIndex) — 진입 순간 램프가 바로 켜진다
     // (5007) 마이크 탈리는 쓰지 않는다 — 운행표(SPS onAirIndex)상 방송 중일 때만 점등
-    box.classList.toggle('on-air', countdownModeOn && broadcastIsLive);
+    const lampOn = countdownModeOn && broadcastIsLive;
+    box.classList.toggle('on-air', lampOn);
+    if (lampOn && lampWasOn === false) {   // 꺼짐→켜짐 순간만(첫 렌더 제외) 부풀며 점화
+      box.classList.remove('ignite'); void box.offsetWidth; box.classList.add('ignite');
+      setTimeout(() => box.classList.remove('ignite'), 1300);
+    }
+    lampWasOn = lampOn;
   }
 
   /* ── 마이크(DM7 페이더) — SSE ─────────────────────────────────── */
