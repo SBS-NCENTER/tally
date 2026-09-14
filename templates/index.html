@@ -93,19 +93,13 @@
     #topbar { flex: none; display: flex; align-items: stretch; gap: calc(1.4 * var(--u)); min-height: 0; }
     #status-box {
       display: inline-flex; align-items: center; justify-content: center; gap: calc(1.2 * var(--u));
-      min-width: calc(24 * var(--u) * var(--tally-box-scale, 1));
       padding: calc(0.9 * var(--u) * var(--tally-box-scale, 1)) calc(3 * var(--u) * var(--tally-box-scale, 1));
       border-radius: calc(1.6 * var(--u));
       background: var(--surface-var);
       color: var(--text-dim);
       transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
     }
-    #status-box::before {
-      content: ''; width: calc(1.2 * var(--u)); height: calc(1.2 * var(--u)); border-radius: 50%;
-      background: currentColor; opacity: 0.5;
-    }
     #status-box.on-air { background: var(--red); color: #fff; box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45); }
-    #status-box.on-air::before { opacity: 1; animation: lamp-blink 1.5s steps(1) infinite; }
     @keyframes lamp-blink { 50% { opacity: 0.3; } }
     #status-text { font-weight: 800; font-size: calc(2.9 * var(--u)); line-height: 1.15; letter-spacing: 0.06em; white-space: nowrap; }
 
@@ -143,12 +137,12 @@
     }
     .tile {
       min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(0.15 * var(--u));
-      padding: calc(0.6 * var(--u)) calc(1.8 * var(--u));
+      padding: calc(0.6 * var(--u)) calc(2.2 * var(--u));
     }
     .tile .cap { font-size: calc(1.45 * var(--u) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
     .tile .val { font-size: calc(2.8 * var(--u) * var(--sch-scale, 1)); line-height: 1.1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
     /* 긴 프로그램명을 위해 넉넉하게 — 짧아도 최소 폭 유지, 그 이상은 말줄임 */
-    .tile.prog { background: var(--primary); color: var(--on-primary); min-width: calc(24 * var(--u)); max-width: calc(46 * var(--u)); }
+    .tile.prog { background: var(--primary); color: var(--on-primary); max-width: calc(40 * var(--u)); }
     .tile.prog .cap { color: var(--on-primary-dim); }
     .tile.prog .val { color: var(--on-primary); display: flex; align-items: center; }
     .tile.prog .val #tile-prog-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
