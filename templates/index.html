@@ -294,6 +294,8 @@
       transition: background 0.3s ease, box-shadow 0.3s ease;
     }
     .cd-chip .cap:empty { display: none; }
+    /* 문구 없이 자리로 읽는다: 왼쪽 = 진입, 가운데 = 카운트다운, 오른쪽 = 종료 (확정은 ✓만) */
+    .cd-chip.in .cap, .cd-chip.out .cap { display: none; }
     .cd-chip .cap { font-size: calc(calc(2.6 * var(--u)) * var(--cl) * var(--fit)); line-height: 1; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
     .cd-chip .t { font-size: calc(calc(4.6 * var(--u)) * var(--cl) * var(--fit)); line-height: 1; font-weight: 800; color: #fff; white-space: nowrap; }
     .cd-chip.out .t { color: #fff; }
@@ -1407,7 +1409,7 @@
     const now = getNow();
 
     if (!startVal) {
-      setRemChip('남음', '--:--', '');
+      setRemChip('', '--:--:--', '');
       renderTiles('현재 방송');
       cdTagMain.textContent = '--:--';
       cdTagMain.classList.remove('neg', 'overrun');
@@ -1615,7 +1617,7 @@
           cdTagSub.textContent = '+' + formatDuration(overrunSec);
           cdTagSub.classList.add('overrun');
           cdTagSub.classList.remove('neg');
-          setRemChip('초과', '+' + formatDuration(overrunSec), 'over');
+          setRemChip('', '+' + fmtHMS(overrunSec), 'over');
           renderTiles('현재 방송');
           if (!cdWasOverrun) triggerOverrunHit();
         } else {
@@ -1623,7 +1625,7 @@
           cdTagSub.textContent = '-' + formatDuration(remainSec);
           cdTagSub.classList.add('neg');
           cdTagSub.classList.remove('overrun');
-          setRemChip('남음', formatDuration(remainSec), 'running');
+          setRemChip('', '-' + fmtHMS(remainSec), 'running');
           renderTiles('현재 방송');
         }
         cdWasOverrun = isOverrun;
