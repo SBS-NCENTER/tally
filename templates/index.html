@@ -636,7 +636,6 @@
           <span class="cd-marker-program" id="cd-marker-start-program"></span>진입
         </span>
       </div>
-      <div class="cd-tick" data-pct="5" style="left:5%"><span>60분 전</span></div>
       <div class="cd-tick" data-pct="40" style="left:40%"><span>10분 전</span></div>
       <div class="cd-tick" data-pct="80" style="left:80%"><span>1분 전</span></div>
       <div class="cd-marker" id="cd-marker-end">
@@ -1472,15 +1471,16 @@
     let cdImminent = false, cdImminentFinal = false;
     if (isBeforeStart) {
       // (5007) 진입 마커는 항상 오른쪽 끝. 트랙은 남은 시간을 구간별로 다르게 늘린 눈금 —
-      //   60분→10분: 5~40%, 10분→1분: 40~80%, 1분→0: 80~99% (1시간 이상은 0~5%에 반감기 압축).
+      //   60분→10분: 0~40%, 10분→1분: 40~80%, 1분→0: 80~99%. 1시간보다 더 전엔 왼쪽 끝(0%)에 정지 —
+      //   트랙 왼쪽 끝이 곧 '60분 전'이라 별도 눈금이 필요 없다.
       // 창 전환이나 되감기 없이 한 방향으로만 가며 다가올수록 빨라진다. 러너가 마커에 닿는 순간이 곧 진입.
       startPct = FINAL_ZOOM_MAX_PCT;
       startPctLabel = FINAL_ZOOM_MAX_PCT;
       const remToStartSec = (start - now) / 1000;
       const rem = Math.max(0, remToStartSec - FINAL_ZOOM_SETTLE_SEC);   // 시작 2초 전에 마커 도착
-      const SEG = [[3600, 5], [600, 40], [60, 80], [0, FINAL_ZOOM_MAX_PCT]];
+      const SEG = [[3600, 0], [600, 40], [60, 80], [0, FINAL_ZOOM_MAX_PCT]];
       if (rem >= 3600) {
-        pct = 5 * FAR_ZONE_HALFLIFE_SEC / (FAR_ZONE_HALFLIFE_SEC + (rem - 3600));
+        pct = 0;
       } else {
         pct = FINAL_ZOOM_MAX_PCT;
         for (let i = 0; i < SEG.length - 1; i++) {
