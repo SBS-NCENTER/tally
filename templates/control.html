@@ -5,49 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SBS Web Tally Controller</title>
   <style>
-    @font-face {
-      font-family: 'SUIT';
-      src: url('/static/fonts/SUIT-SemiBold.woff2') format('woff2');
-      font-weight: 600;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: 'SUIT';
-      src: url('/static/fonts/SUIT-Bold.woff2') format('woff2');
-      font-weight: 700;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: 'SUIT';
-      src: url('/static/fonts/SUIT-ExtraBold.woff2') format('woff2');
-      font-weight: 800;
-      font-display: swap;
-    }
+    @font-face { font-family: 'Pretendard'; src: url('/static/fonts/Pretendard-SemiBold.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+    @font-face { font-family: 'Pretendard'; src: url('/static/fonts/Pretendard-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+    @font-face { font-family: 'Pretendard'; src: url('/static/fonts/Pretendard-ExtraBold.woff2') format('woff2'); font-weight: 800; font-display: swap; }
+    @font-face { font-family: 'Pretendard'; src: url('/static/fonts/Pretendard-Black.woff2') format('woff2'); font-weight: 900; font-display: swap; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* One UI 6 — true black + one confident accent (tally-lamp red).
-         Warning(amber)/success(green) are reused, pre-existing semantic
-         colors (over/under, confirmed) — not competing "accents". */
-      --oneui-bg: #000000;
-      --oneui-surface: #1c1c1e;
-      --oneui-surface-2: #2c2c2e;
+      /* Material 3 다크 — 화면(5007)과 같은 토큰. 변수명은 기존 규칙 호환용. */
+      --oneui-bg: #141218;
+      --oneui-surface: #211F26;
+      --oneui-surface-2: #2B2930;
       --oneui-hairline: rgba(255,255,255,0.08);
-      --accent: #ff5722;
-      --accent-tint: rgba(255,87,34,0.14);
-      --success: #30d158;
-      --warning: #ff9f0a;
-      --warning-tint: rgba(255,159,10,0.14);
-      --info: #0a84ff;
-      --text-primary: #ffffff;
-      --text-secondary: rgba(235,235,245,0.6);
-      --text-tertiary: rgba(235,235,245,0.35);
+      --accent: #D0BCFF;
+      --on-accent: #21005D;
+      --accent-tint: rgba(208,188,255,0.14);
+      --red: #E8453C;
+      --success: #9CF2B8;
+      --warning: #FFB95A;
+      --warning-tint: rgba(255,185,90,0.16);
+      --info: #8FDFFF;
+      --text-primary: #F2ECF4;
+      --text-secondary: #CAC4D0;
+      --text-tertiary: rgba(235,235,245,0.4);
     }
+    :root[data-theme="mint"] { --accent: #7FE3D3; --on-accent: #00332C; --accent-tint: rgba(127,227,211,0.14); --success: #C6F59A; }
 
     body {
       min-height: 100dvh;
       background: var(--oneui-bg);
-      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       color: var(--text-primary);
       padding: 20px 16px 60px;
     }
@@ -115,7 +102,7 @@
       transition: background 0.2s ease, color 0.2s ease;
     }
     .ctrl-live-card.is-live {
-      background: var(--accent);
+      background: var(--red);
       color: #ffffff;
     }
     .ctrl-live-dot {
@@ -285,7 +272,7 @@
       color: var(--text-primary);
       border-radius: 10px;
       padding: 8px 10px;
-      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
       font-size: 0.95rem;
       width: 100%;
@@ -300,7 +287,7 @@
       color: var(--text-primary);
       border-radius: 10px;
       padding: 8px 10px;
-      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-size: 0.9rem;
       width: 100%;
     }
@@ -390,10 +377,10 @@
       cursor: pointer;
     }
     button.action-btn:active { background: #3a3a3c; }
-    button.action-btn.running { background: var(--accent); color: #fff; }
+    button.action-btn.running { background: var(--accent); color: var(--on-accent); }
 
     #sw-display, #timer-display {
-      font-family: 'SUIT', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      font-family: 'Pretendard', 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
       font-variant-numeric: tabular-nums;
       font-size: 2rem;
       font-weight: 900;
@@ -441,7 +428,7 @@
        단일 강조색 — 모드별로 다른 색(amber/cyan)을 쓰지 않는다. */
     .seg-btn.active {
       background: var(--accent);
-      color: #ffffff;
+      color: var(--on-accent);
     }
 
     /* ── 고급 설정 접기/펼치기 ───────────────────────────────────── */
@@ -489,7 +476,7 @@
     .sps-health.warn  .bar { background: rgba(255,180,0,.10);  border-color: rgba(255,180,0,.40);  color: #ffb400; }
     .sps-health.warn  .dot { background: #ffb400; }
     .sps-health.bad   .bar { background: rgba(255,60,50,.12);  border-color: rgba(255,60,50,.45);  color: #ff6b5e; }
-    .sps-health.bad   .dot { background: #ff5722; }
+    .sps-health.bad   .dot { background: var(--red); }
 </style>
 </head>
 <body>
@@ -1113,7 +1100,7 @@
 
   dateWeatherToggle.addEventListener('change', saveSettings);
   const themeBtns = Array.from(document.querySelectorAll('.theme-btn'));
-  function applyThemeUI() { themeBtns.forEach(b => b.classList.toggle('active', b.dataset.theme === currentTheme)); }
+  function applyThemeUI() { themeBtns.forEach(b => b.classList.toggle('active', b.dataset.theme === currentTheme)); document.documentElement.dataset.theme = currentTheme; }
   themeBtns.forEach(b => b.addEventListener('click', () => { currentTheme = b.dataset.theme; applyThemeUI(); saveSettings(); }));
   clock12hToggle.addEventListener('change', saveSettings);
 
