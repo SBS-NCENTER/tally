@@ -27,6 +27,7 @@
       --on-primary: #21005D;
       --on-primary-dim: #4F378B;
       --primary-glow: rgba(208,188,255,0.12);
+      --primary-ring: rgba(208,188,255,0.55);   /* 확정 순간 퍼지는 링 */
       --rem-bg: #4A4458;
       --text: #F2ECF4;
       --text-dim: #CAC4D0;
@@ -59,6 +60,7 @@
       --on-primary: #00332C;
       --on-primary-dim: #0B5A50;
       --primary-glow: rgba(127,227,211,0.12);
+      --primary-ring: rgba(127,227,211,0.55);
       --rem-bg: #1F4A44;
       --green: #C6F59A;
     }
@@ -168,16 +170,32 @@
        미확정 = 점선 테두리·흐린 시각(아직 바뀔 수 있는 예정), 확정 = 실선·흰 시각 + 모서리 체크 뱃지 */
     /* 진입·종료 칩은 항상 같은 폭 — 내용(체크·(분))과 무관하게 남는 폭을 둘이 똑같이 나눈다 */
     .cd-chip.in, .cd-chip.out { flex: 0 0 auto; }   /* 폭은 JS(fitEnds)가 둘 중 넓은 쪽으로 맞춘다 */
-    .cd-chip.in { position: relative; border: 2px solid transparent; transition: border-color 0.3s ease, border-style 0.3s ease; }
+    .cd-chip.in { position: relative; overflow: hidden; border: 2px solid transparent; transition: border-color 0.35s ease, background 0.45s ease, box-shadow 0.45s ease; }
+    .cd-chip.in .t { transition: color 0.45s ease; }
     .cd-chip.in.tentative { border-color: var(--text-faint); }
     .cd-chip.in.tentative .t { color: var(--text-dim); }
-    .cd-chip.in.confirmed { border-color: var(--primary); box-shadow: 0 0 calc(1.2 * var(--u)) var(--primary-glow), inset 0 0 0 1px var(--primary-glow); }
-    .cd-chip.in.confirmed .cap { color: var(--primary); }
-    /* 확정되는 순간: 강조색으로 꽉 찼다가 튀면서 실선 테두리로 가라앉는다 */
-    .cd-chip.in.just-confirmed { animation: chip-confirm 1.2s cubic-bezier(0.2, 0, 0, 1); }
-    .cd-chip.in.just-confirmed .t, .cd-chip.in.just-confirmed .cap { animation: chip-confirm-text 1.2s cubic-bezier(0.2, 0, 0, 1); }
-    @keyframes chip-confirm { 0% { background: var(--primary); transform: scale(1); } 18% { transform: scale(1.06); } 45% { background: var(--primary); transform: scale(1); } 100% { background: var(--surface); } }
-    @keyframes chip-confirm-text { 0%, 45% { color: var(--on-primary); } 100% { } }
+    /* 확정 = 채운 칩(우측 '현재 방송' 타일과 같은 언어: 강조색 바탕에 어두운 글자) */
+    .cd-chip.in.confirmed { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 calc(1.4 * var(--u)) var(--primary-glow); }
+    .cd-chip.in.confirmed .t { color: var(--on-primary); }
+    .cd-chip.in.confirmed .cd-marker-assigned { color: var(--on-primary-dim); }
+    .cd-chip.in.confirmed .ok { background: var(--on-primary); color: var(--primary); }
+    /* 확정되는 순간(1.4s): 칩이 살짝 부풀며 링이 퍼지고, 빛이 한 번 쓸고 지나가며, 체크가 도장처럼 찍힌다 */
+    .cd-chip.in::after {
+      content: ''; position: absolute; inset: -2px; pointer-events: none; opacity: 0;
+      background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.9) 50%, transparent 62%);
+      transform: translateX(-130%);
+    }
+    .cd-chip.in.just-confirmed { animation: chip-confirm 1.4s cubic-bezier(0.2, 0, 0, 1); }
+    .cd-chip.in.just-confirmed::after { animation: chip-sweep 0.8s cubic-bezier(0.3, 0, 0.2, 1) 0.2s; }
+    .cd-chip.in.just-confirmed .ok { animation: ok-stamp 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both; }
+    @keyframes chip-confirm {
+      0%   { transform: scale(1);    box-shadow: 0 0 0 0 var(--primary-ring); }
+      22%  { transform: scale(1.05); }
+      55%  { transform: scale(1);    box-shadow: 0 0 0 calc(2.6 * var(--u)) rgba(0,0,0,0); }
+      100% { box-shadow: 0 0 calc(1.4 * var(--u)) var(--primary-glow); }
+    }
+    @keyframes chip-sweep { 0% { transform: translateX(-130%); opacity: 1; } 100% { transform: translateX(130%); opacity: 1; } }
+    @keyframes ok-stamp { 0% { transform: scale(0) rotate(-40deg); } 100% { transform: scale(1) rotate(0); } }
     /* 확정 체크 — 라벨과 시각 사이 작은 원 (칩 폭 영향 최소) */
     .cd-chip .ok {
       display: inline-flex; align-items: center; justify-content: center; flex: none;
@@ -879,7 +897,10 @@
       // 미확정→확정으로 바뀌는 순간만 한 번 튀게 (첫 렌더는 제외)
       if (renderTiles._lastOk === false && ok) {
         chipIn.classList.remove('just-confirmed'); void chipIn.offsetWidth; chipIn.classList.add('just-confirmed');
-        setTimeout(() => chipIn.classList.remove('just-confirmed'), 1400);
+        setTimeout(() => chipIn.classList.remove('just-confirmed'), 1600);
+        // 타임라인의 진입 마커도 같이 한 번 튀어 '이 시각으로 확정'을 연결해 보여준다
+        const dot = document.querySelector('#cd-marker-start .cd-marker-dot');
+        if (dot) { dot.classList.remove('hit'); void dot.offsetWidth; dot.classList.add('hit'); setTimeout(() => dot.classList.remove('hit'), 1000); }
       }
       renderTiles._lastOk = ok;
     }
