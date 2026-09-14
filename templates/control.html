@@ -649,7 +649,14 @@
         <div class="setting-hint" style="margin-bottom:8px">실제 방송을 기다리지 않고 대기→시작→LIVE→예정초과 흐름을 짧게 재현해서 화면을 미리 확인합니다. 실행 중엔 자동 운행표 연동이 잠시 멈췄다가, 테스트를 마치면 원래대로 돌아옵니다. 지난 방송 기록엔 남지 않습니다.</div>
         <div class="setting-row">
           <div class="setting-row-inline"><span>시작까지 대기</span><span class="val" id="test-start-in-val">10초</span></div>
-          <input type="range" id="test-start-in" min="0" max="1800" step="10" value="10" />
+          <input type="range" id="test-start-in" min="0" max="7200" step="10" value="10" />
+          <div class="preset-row" id="test-start-presets" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+            <button type="button" class="action-btn test-preset" data-sec="5400">90분</button>
+            <button type="button" class="action-btn test-preset" data-sec="1800">30분</button>
+            <button type="button" class="action-btn test-preset" data-sec="480">8분</button>
+            <button type="button" class="action-btn test-preset" data-sec="60">1분</button>
+            <button type="button" class="action-btn test-preset" data-sec="10">10초</button>
+          </div>
         </div>
         <div class="setting-row">
           <div class="setting-row-inline"><span>방송 길이(예정)</span><span class="val" id="test-duration-val">30초</span></div>
@@ -1498,6 +1505,11 @@
   // 대기 시간을 최대 30분까지 늘려 먼 대기(15분 리드인 이전)·리드인·임박 줌을 순서대로 볼 수 있게 함
   function fmtTestSec(v) { v = parseInt(v, 10); return v >= 60 ? Math.floor(v / 60) + '분' + (v % 60 ? ' ' + (v % 60) + '초' : '') : v + '초'; }
   testStartInSlider.addEventListener('input', () => { testStartInVal.textContent = fmtTestSec(testStartInSlider.value); });
+  document.querySelectorAll('.test-preset').forEach(b => b.addEventListener('click', () => {
+    testStartInSlider.value = b.dataset.sec;
+    testStartInVal.textContent = fmtTestSec(testStartInSlider.value);
+    refreshRangeFill(testStartInSlider);
+  }));
   testDurationSlider.addEventListener('input', () => { testDurationVal.textContent = fmtTestSec(testDurationSlider.value); });
   testModeStartBtn.addEventListener('click', () => {
     fetch('/test/countdown/start', {
