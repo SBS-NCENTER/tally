@@ -166,16 +166,11 @@
     .tile.prog .val #tile-prog-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     /* 진입 확정 — 칩 폭을 늘리지 않고 상태로 보여준다:
        미확정 = 점선 테두리·흐린 시각(아직 바뀔 수 있는 예정), 확정 = 실선·흰 시각 + 모서리 체크 뱃지 */
-    .cd-chip.in { position: relative; border: 2px solid transparent; transition: border-color 0.3s ease; }
+    .cd-chip.in { position: relative; border: 2px solid transparent; transition: border-color 0.3s ease, border-style 0.3s ease; }
     .cd-chip.in.tentative { border-color: var(--text-faint); border-style: dashed; }
     .cd-chip.in.tentative .t { color: var(--text-dim); }
-    .cd-chip .ok {
-      position: absolute; top: calc(-0.7 * var(--u)); right: calc(-0.7 * var(--u));
-      display: inline-flex; align-items: center; justify-content: center;
-      width: calc(2.6 * var(--u)); height: calc(2.6 * var(--u)); border-radius: 50%;
-      background: var(--primary); color: var(--on-primary); box-shadow: 0 0 0 3px var(--bg);
-      font-size: calc(1.6 * var(--u)); font-weight: 900;
-    }
+    .cd-chip.in.confirmed { border-color: var(--primary); }
+    .cd-chip .ok { display: none !important; }
 
     /* ══════════ 일반 모드 하단: 이전 / 현재 / 다음 일정 ══════════ */
     #schedule {
@@ -857,7 +852,10 @@
     const ok = countdownModeOn && !!broadcastTime && broadcastStartConfirmed;
     tileProgOk.style.display = ok ? '' : 'none';
     const chipIn = document.querySelector('.cd-chip.in');
-    if (chipIn) chipIn.classList.toggle('tentative', countdownModeOn && !!broadcastTime && !broadcastStartConfirmed);
+    if (chipIn) {
+      chipIn.classList.toggle('tentative', countdownModeOn && !!broadcastTime && !broadcastStartConfirmed);
+      chipIn.classList.toggle('confirmed', ok);
+    }
   }
 
   const DAYS = ['일','월','화','수','목','금','토'];
