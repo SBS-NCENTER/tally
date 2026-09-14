@@ -176,7 +176,14 @@
     .cd-chip.in.just-confirmed .t, .cd-chip.in.just-confirmed .cap { animation: chip-confirm-text 1.2s cubic-bezier(0.2, 0, 0, 1); }
     @keyframes chip-confirm { 0% { background: var(--primary); transform: scale(1); } 18% { transform: scale(1.06); } 45% { background: var(--primary); transform: scale(1); } 100% { background: var(--surface); } }
     @keyframes chip-confirm-text { 0%, 45% { color: var(--on-primary); } 100% { } }
-    .cd-chip .ok { display: none !important; }
+    /* 확정 체크 — 라벨과 시각 사이 작은 원 (칩 폭 영향 최소) */
+    .cd-chip .ok {
+      display: inline-flex; align-items: center; justify-content: center; flex: none;
+      width: calc(2.4 * var(--u)); height: calc(2.4 * var(--u)); border-radius: 50%;
+      margin: 0 calc(-0.6 * var(--u));
+      background: var(--primary); color: var(--on-primary);
+      font-size: calc(1.5 * var(--u)); font-weight: 900;
+    }
 
     /* ══════════ 일반 모드 하단: 이전 / 현재 / 다음 일정 ══════════ */
     #schedule {
@@ -663,7 +670,7 @@
       </div>
     </div>
     <div id="cd-ends">
-      <div class="cd-chip in"><span class="cap">진입</span><span class="t" id="cd-marker-start-label">--:--:--</span><span class="ok" id="tile-prog-ok" title="확정된 진입 시각" style="display:none">✓</span></div>
+      <div class="cd-chip in"><span class="cap">진입</span><span class="ok" id="tile-prog-ok" title="확정된 진입 시각" style="display:none">✓</span><span class="t" id="cd-marker-start-label">--:--:--</span></div>
       <div class="cd-chip rem" id="cd-rem"><span class="cap" id="cd-rem-cap">남음</span><span class="t" id="cd-rem-val">--:--</span></div>
       <div class="cd-chip out"><span class="cap">종료</span><span class="t" id="cd-marker-end-label">--:--:--</span></div>
     </div>
