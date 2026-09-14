@@ -886,6 +886,7 @@
   let calCurrentName = '';
   let lampWasOn = null;       // ON AIR 램프 직전 상태 (false→true 순간 점화 연출)
   let cdBeatSec = null;       // 마지막 10초 심장박동: 마지막으로 박동한 초
+  let cdPhaseBefore = null;   // 지금 방송 시작 전인가 (진입 칩 확정 강조는 시작 전에만)
   function cdBeat() {
     [cdRemEl, document.querySelector('.cd-runner-cap'), document.querySelector('.cd-runner-head')].forEach(el => {
       if (!el) return; el.classList.remove('beat'); void el.offsetWidth; el.classList.add('beat');
@@ -914,11 +915,12 @@
     if (tileProgName.textContent !== name) tileProgName.textContent = name;
     const cap = stateCap || (countdownModeOn ? tileProgCap.textContent : '현재 일정');
     if (tileProgCap.textContent !== cap) tileProgCap.textContent = cap;
-    const ok = countdownModeOn && !!broadcastTime && broadcastStartConfirmed;
+    // 확정 강조(채운 칩·✓)는 방송 시작 전에만 — 시작하면 진입 시각은 종료 칩과 같은 기본 칩으로 돌아간다
+    const ok = countdownModeOn && !!broadcastTime && broadcastStartConfirmed && cdPhaseBefore !== false;
     tileProgOk.style.display = ok ? '' : 'none';
     const chipIn = document.querySelector('.cd-chip.in');
     if (chipIn) {
-      chipIn.classList.toggle('tentative', countdownModeOn && !!broadcastTime && !broadcastStartConfirmed);
+      chipIn.classList.toggle('tentative', countdownModeOn && !!broadcastTime && !broadcastStartConfirmed && cdPhaseBefore !== false);
       chipIn.classList.toggle('confirmed', ok);
       // 미확정→확정으로 바뀌는 순간만 한 번 튀게 (첫 렌더는 제외)
       if (renderTiles._lastOk === false && ok) {
@@ -1586,6 +1588,7 @@
     // 브라우저가 이미 기본(0.9s linear) 트랜지션으로 애니메이션을 시작해버려 러너만 처지는
     // 현상이 생긴다(마커·채움바와 속도가 어긋나 보였던 원인).
     const justCrossed = cdWasBeforeStart === true && !isBeforeStart;
+    cdPhaseBefore = isBeforeStart;
     if (justCrossed) {
       countdownEl.classList.add('start-burst');
       setTimeout(() => countdownEl.classList.remove('start-burst'), 1800);
