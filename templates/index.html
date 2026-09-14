@@ -169,7 +169,7 @@
     /* 진입·종료 칩은 항상 같은 폭 — 내용(체크·(분))과 무관하게 남는 폭을 둘이 똑같이 나눈다 */
     .cd-chip.in, .cd-chip.out { flex: 0 0 auto; }   /* 폭은 JS(fitEnds)가 둘 중 넓은 쪽으로 맞춘다 */
     .cd-chip.in { position: relative; border: 2px solid transparent; transition: border-color 0.3s ease, border-style 0.3s ease; }
-    .cd-chip.in.tentative { border-color: var(--text-faint); border-style: dashed; }
+    .cd-chip.in.tentative { border-color: var(--text-faint); }
     .cd-chip.in.tentative .t { color: var(--text-dim); }
     .cd-chip.in.confirmed { border-color: var(--primary); box-shadow: 0 0 calc(1.2 * var(--u)) var(--primary-glow), inset 0 0 0 1px var(--primary-glow); }
     .cd-chip.in.confirmed .cap { color: var(--primary); }
@@ -225,7 +225,7 @@
     #cd-track {
       position: relative;
       height: calc(calc(4.6 * var(--u)) * var(--cb));
-      margin: calc(calc(3 * var(--u)) * var(--cb)) 0 calc(calc(2.6 * var(--u)) * var(--cb));
+      margin: calc(calc(2.2 * var(--u)) * var(--cb)) 0 calc(calc(2.6 * var(--u)) * var(--cb));
       border-radius: 99px;
       background: var(--surface-var);
       opacity: 0; transition: opacity 0.4s ease;
@@ -256,9 +256,8 @@
     .cd-marker-cap .cd-marker-label {
       position: absolute; left: 0; bottom: calc(100% + calc(1.1 * var(--u))); transform: translateX(-50%);
       font-size: calc(calc(1.9 * var(--u)) * var(--cl)); font-weight: 800; color: var(--text-dim); white-space: nowrap;
-      opacity: 0; transition: opacity 0.4s ease;
+      display: none;   /* 트랙 위 '진입' 문구는 쓰지 않는다 — 하단 진입 칩이 담당 */
     }
-    #cd-track.pending .cd-marker-cap .cd-marker-label { opacity: 1; }
     #cd-track.pending .cd-marker-cap.near .cd-marker-label { opacity: 0; }
     .cd-marker-program { display: none; }    /* 프로그램명은 우측 타일이 담당 */
     .cd-marker-dot.hit { animation: marker-hit 0.9s ease-out; }
@@ -297,7 +296,7 @@
     .cd-chip .cap:empty { display: none; }
     .cd-chip .cap { font-size: calc(calc(2.6 * var(--u)) * var(--cl) * var(--fit)); line-height: 1; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
     .cd-chip .t { font-size: calc(calc(4.6 * var(--u)) * var(--cl) * var(--fit)); line-height: 1; font-weight: 800; color: #fff; white-space: nowrap; }
-    .cd-chip.out .t { color: var(--primary); }
+    .cd-chip.out .t { color: #fff; }
     .cd-chip .cd-marker-assigned { font-size: 0.42em; color: var(--text-dim); margin-left: 0.3em; font-weight: 700; }
     .cd-chip.rem { padding-left: calc(calc(3.2 * var(--u)) * var(--fit)); padding-right: calc(calc(3.2 * var(--u)) * var(--fit)); }
     .cd-chip.rem .cap { color: #fff; opacity: 0.75; }
