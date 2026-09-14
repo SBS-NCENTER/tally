@@ -315,8 +315,9 @@
     /* ══════════ 세로 모드 (전체 화면 90도 회전) ══════════ */
     body.portrait-right, body.portrait-left {
       position: fixed;
-      top: calc(50vh - calc(50 * var(--u))); left: calc(calc(50 * var(--u)) - 50vh);
-      width: 100vh; height: calc(100 * var(--u)); min-height: unset; overflow: hidden;
+      /* 회전 기하는 실제 뷰포트 단위(vw/vh)여야 한다 — --u 로 바꾸면 안 됨 */
+      top: calc(50vh - 50vw); left: calc(50vw - 50vh);
+      width: 100vh; height: 100vw; min-height: unset; overflow: hidden;
       --u: 1vh;
     }
     body.portrait-right { transform: rotate(90deg); }
