@@ -169,7 +169,13 @@
     .cd-chip.in { position: relative; border: 2px solid transparent; transition: border-color 0.3s ease, border-style 0.3s ease; }
     .cd-chip.in.tentative { border-color: var(--text-faint); border-style: dashed; }
     .cd-chip.in.tentative .t { color: var(--text-dim); }
-    .cd-chip.in.confirmed { border-color: var(--primary); }
+    .cd-chip.in.confirmed { border-color: var(--primary); box-shadow: 0 0 calc(1.2 * var(--u)) var(--primary-glow), inset 0 0 0 1px var(--primary-glow); }
+    .cd-chip.in.confirmed .cap { color: var(--primary); }
+    /* 확정되는 순간: 강조색으로 꽉 찼다가 튀면서 실선 테두리로 가라앉는다 */
+    .cd-chip.in.just-confirmed { animation: chip-confirm 1.2s cubic-bezier(0.2, 0, 0, 1); }
+    .cd-chip.in.just-confirmed .t, .cd-chip.in.just-confirmed .cap { animation: chip-confirm-text 1.2s cubic-bezier(0.2, 0, 0, 1); }
+    @keyframes chip-confirm { 0% { background: var(--primary); transform: scale(1); } 18% { transform: scale(1.06); } 45% { background: var(--primary); transform: scale(1); } 100% { background: var(--surface); } }
+    @keyframes chip-confirm-text { 0%, 45% { color: var(--on-primary); } 100% { } }
     .cd-chip .ok { display: none !important; }
 
     /* ══════════ 일반 모드 하단: 이전 / 현재 / 다음 일정 ══════════ */
@@ -855,6 +861,12 @@
     if (chipIn) {
       chipIn.classList.toggle('tentative', countdownModeOn && !!broadcastTime && !broadcastStartConfirmed);
       chipIn.classList.toggle('confirmed', ok);
+      // 미확정→확정으로 바뀌는 순간만 한 번 튀게 (첫 렌더는 제외)
+      if (renderTiles._lastOk === false && ok) {
+        chipIn.classList.remove('just-confirmed'); void chipIn.offsetWidth; chipIn.classList.add('just-confirmed');
+        setTimeout(() => chipIn.classList.remove('just-confirmed'), 1400);
+      }
+      renderTiles._lastOk = ok;
     }
   }
 
