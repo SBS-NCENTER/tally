@@ -101,7 +101,7 @@
     }
     #status-box.on-air { background: var(--red); color: #fff; box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45); }
     @keyframes lamp-blink { 50% { opacity: 0.3; } }
-    #status-text { font-weight: 800; font-size: calc(2.9 * var(--u)); line-height: 1.15; letter-spacing: 0.06em; white-space: nowrap; }
+    #status-text { font-weight: 800; font-size: calc(3.3 * var(--u)); line-height: 1.15; letter-spacing: 0.06em; white-space: nowrap; }
 
     #info-row {
       display: flex; align-items: center; gap: calc(1.2 * var(--u));
@@ -139,8 +139,8 @@
       min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(0.15 * var(--u));
       padding: calc(0.6 * var(--u)) calc(2.2 * var(--u));
     }
-    .tile .cap { font-size: calc(1.45 * var(--u) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
-    .tile .val { font-size: calc(2.8 * var(--u) * var(--sch-scale, 1)); line-height: 1.1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+    .tile .cap { font-size: calc(1.8 * var(--u) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
+    .tile .val { font-size: calc(3.6 * var(--u) * var(--sch-scale, 1)); line-height: 1.1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
     /* 긴 프로그램명을 위해 넉넉하게 — 짧아도 최소 폭 유지, 그 이상은 말줄임 */
     .tile.prog { background: var(--primary); color: var(--on-primary); min-width: calc(20 * var(--u)); max-width: calc(40 * var(--u)); }
     .tile.prog .cap { color: var(--on-primary-dim); }
@@ -148,9 +148,9 @@
     .tile.prog .val #tile-prog-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .tile .ok {
       display: inline-flex; align-items: center; justify-content: center; flex: none;
-      width: calc(2.6 * var(--u)); height: calc(2.6 * var(--u)); border-radius: 50%; margin-left: calc(0.8 * var(--u));
+      width: calc(3.2 * var(--u)); height: calc(3.2 * var(--u)); border-radius: 50%; margin-left: calc(1 * var(--u));
       background: var(--on-primary); color: var(--primary);
-      font-size: calc(1.7 * var(--u)); font-weight: 900;
+      font-size: calc(2.1 * var(--u)); font-weight: 900;
     }
 
     /* ══════════ 일반 모드 하단: 이전 / 현재 / 다음 일정 ══════════ */
