@@ -93,6 +93,7 @@
     #topbar { flex: none; display: flex; align-items: stretch; gap: calc(1.4 * var(--u)); min-height: 0; }
     #status-box {
       display: inline-flex; align-items: center; justify-content: center; gap: calc(1.2 * var(--u));
+      flex: none; width: calc(32 * var(--u));
       padding: calc(0.9 * var(--u) * var(--tally-box-scale, 1)) calc(3 * var(--u) * var(--tally-box-scale, 1));
       border-radius: calc(1.6 * var(--u));
       background: var(--surface-var);
@@ -109,6 +110,23 @@
     }
     #info-row .divider { width: 1px; height: calc(1.6 * var(--u)); background: var(--hairline); }
     #weather { display: inline-flex; align-items: center; gap: calc(0.5 * var(--u)); }
+
+    /* 상단 가운데 알림 슬롯 — 특보/긴급 편성이 있을 때만 카드가 뜬다 */
+    #alert-slot { flex: 1; min-width: 0; display: flex; align-items: stretch; justify-content: center; gap: calc(1 * var(--u)); }
+    .alert-card {
+      flex: 1; display: flex; align-items: center; gap: calc(1.4 * var(--u)); min-width: 0; max-width: calc(34 * var(--u));
+      padding: calc(0.6 * var(--u)) calc(1.6 * var(--u)) calc(0.6 * var(--u)) calc(0.8 * var(--u));
+      border-radius: calc(1.6 * var(--u)); background: var(--surface); border: calc(0.2 * var(--u)) solid var(--amber);
+      animation: alert-in 0.5s cubic-bezier(0.2, 0, 0, 1);
+    }
+    .alert-card.breaking { border-color: var(--red); background: var(--red-tint); animation: alert-in 0.5s cubic-bezier(0.2, 0, 0, 1), alert-glow 1.6s ease-in-out infinite 0.5s; }
+    .alert-card .a-tag { flex: none; padding: calc(0.5 * var(--u)) calc(1.2 * var(--u)); border-radius: calc(1 * var(--u)); background: var(--amber); color: #2b1a00; font-weight: 900; font-size: calc(2 * var(--u)); letter-spacing: 0.02em; }
+    .alert-card.breaking .a-tag { background: var(--red); color: #fff; }
+    .alert-card .a-body { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+    .alert-card .a-body b { font-size: calc(2.6 * var(--u)); font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .alert-card .a-body span { font-size: calc(1.8 * var(--u)); font-weight: 700; color: var(--text-dim); white-space: nowrap; }
+    @keyframes alert-in { from { opacity: 0; transform: translateY(-40%) scale(0.96); } to { opacity: 1; transform: none; } }
+    @keyframes alert-glow { 50% { box-shadow: 0 0 calc(1.6 * var(--u)) rgba(232,69,60,0.55); } }
 
     /* ══════════ 가운데: 시계 카드 + 우측 타일(부조정실 / 현재 방송) ══════════ */
     #center { flex: 1; min-height: 0; display: flex; gap: var(--gap); align-items: stretch; overflow: hidden; }
@@ -132,17 +150,17 @@
 
     /* 부조정실 + 방송 박스 — 상단 바 우측, 한 박스 안에 두 칸 */
     #side {
-      margin-left: auto; min-width: 0; display: flex; align-items: stretch;
+      flex: none; width: calc(32 * var(--u)); min-width: 0; display: flex; align-items: stretch;
       background: var(--surface); border-radius: calc(1.6 * var(--u)); overflow: hidden;
     }
     .tile {
       min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(0.15 * var(--u));
-      padding: calc(0.6 * var(--u)) calc(2.2 * var(--u));
+      padding: calc(0.6 * var(--u)) calc(1.5 * var(--u));
     }
     .tile .cap { font-size: calc(1.8 * var(--u) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
-    .tile .val { font-size: calc(3.6 * var(--u) * var(--sch-scale, 1)); line-height: 1.1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+    .tile .val { font-size: calc(3.4 * var(--u) * var(--sch-scale, 1)); line-height: 1.1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
     /* 긴 프로그램명을 위해 넉넉하게 — 짧아도 최소 폭 유지, 그 이상은 말줄임 */
-    .tile.prog { background: var(--primary); color: var(--on-primary); min-width: calc(20 * var(--u)); max-width: calc(40 * var(--u)); }
+    .tile.prog { background: var(--primary); color: var(--on-primary); flex: 1; min-width: 0; }
     .tile.prog .cap { color: var(--on-primary-dim); }
     .tile.prog .val { color: var(--on-primary); display: flex; align-items: center; }
     .tile.prog .val #tile-prog-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -558,6 +576,8 @@
         <span id="weather-text">날씨 불러오는 중…</span>
       </div>
     </div>
+    <!-- 상단 가운데: 특보·긴급 편성 알림 (JS가 채움) -->
+    <div id="alert-slot"></div>
     <!-- 부조정실 + 현재/다음 방송: 한 박스로 상단 우측 -->
     <div id="side">
       <div class="tile" id="tile-studio">
@@ -1759,7 +1779,8 @@
   /* ── 메인 탈리 (아날로그 램프) — 모든 모드에서 DM7 마이크 상태로만 구동 ─── */
   function updateMainTally() {
     // (5007) 마이크(DM7) ON 또는 운행표상 방송 중(SPS onAirIndex) — 진입 순간 램프가 바로 켜진다
-    box.classList.toggle('on-air', micLiveRaw || (countdownModeOn && broadcastIsLive));
+    // (5007) 마이크 탈리는 쓰지 않는다 — 운행표(SPS onAirIndex)상 방송 중일 때만 점등
+    box.classList.toggle('on-air', countdownModeOn && broadcastIsLive);
   }
 
   /* ── 마이크(DM7 페이더) — SSE ─────────────────────────────────── */
@@ -2233,6 +2254,64 @@
       0, row.offsetTop - qpSchedList.clientHeight / 2 + row.offsetHeight / 2
     );
   }
+
+  /* ── 특보 / 긴급 편성 알림 ───────────────────────────────────────
+     모든 부조의 오늘 생방송 목록(/sps/live-schedule?all=1)을 15초마다 보고,
+     처음 보는 eventId가 나타나면 상단 가운데에 카드를 띄운다. 첫 로드(또는 날짜가
+     바뀐 뒤 첫 로드)는 기준선만 잡고 알리지 않는다. 알린 항목은 localStorage에
+     날짜별로 기억해 새로고침해도 다시 울리지 않는다. 이름에 특보/속보/긴급이
+     있으면 '특보'(빨강, 그 방송이 끝날 때까지), 아니면 '편성 추가'(앰버, 10분). */
+  const alertSlot = document.getElementById('alert-slot');
+  const ALERT_KEY = 'tally-known-events';
+  const ALERT_TTL_MS = 10 * 60 * 1000;
+  let knownEvents = null;
+  let alerts = [];
+  function alertDate() { const d = getNow(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function loadKnown(date) {
+    try { const k = JSON.parse(localStorage.getItem(ALERT_KEY) || 'null'); if (k && k.date === date && k.ids) return k; } catch (e) {}
+    return { date, ids: {} };
+  }
+  function saveKnown() { try { localStorage.setItem(ALERT_KEY, JSON.stringify(knownEvents)); } catch (e) {} }
+  function isBreakingName(n) { return /특보|속보|긴급/.test(n || ''); }
+  function renderAlerts() {
+    const now = Date.now(), nowStr = getNow().toTimeString().slice(0, 8);
+    alerts = alerts.filter(a => (a.kind === 'breaking' && a.endFull > a.startFull && nowStr < a.endFull) || (now - a.at < ALERT_TTL_MS));
+    alerts.sort((x, y) => (y.kind === 'breaking') - (x.kind === 'breaking') || y.at - x.at);   // 특보 우선, 최신 우선
+    const html = alerts.slice(0, 1).map(a =>
+      '<div class="alert-card ' + a.kind + '"><span class="a-tag">' + (a.kind === 'breaking' ? '특보' : '편성 추가') + '</span>' +
+      '<span class="a-body"><b>' + escapeHtml(a.studio ? a.studio + ' · ' : '') + escapeHtml(a.name) + '</b><span>' +
+      escapeHtml(a.start) + ' – ' + escapeHtml(a.end) + '</span></span></div>').join('');
+    if (alertSlot.innerHTML !== html) alertSlot.innerHTML = html;
+  }
+  function pollAlerts() {
+    fetch('/sps/live-schedule?all=1').then(r => r.json()).then(items => {
+      if (!Array.isArray(items)) return;
+      const date = alertDate();
+      if (!knownEvents || knownEvents.date !== date) knownEvents = loadKnown(date);
+      const baseline = Object.keys(knownEvents.ids).length === 0;
+      const now = Date.now(), nowStr = getNow().toTimeString().slice(0, 8);
+      items.forEach(it => {
+        if (!it.eventId || knownEvents.ids[it.eventId]) return;
+        knownEvents.ids[it.eventId] = now;
+        if (baseline) return;
+        const overnight = it.end < it.start;
+        if (!overnight && nowStr >= it.end) return;      // 이미 끝난 항목은 알리지 않는다
+        alerts.unshift({ id: it.eventId, kind: isBreakingName(it.programName) ? 'breaking' : 'added',
+          studio: it.videoSource || '', name: it.programName || '', start: it.start.slice(0, 5), end: it.end.slice(0, 5),
+          startFull: it.start, endFull: it.end, at: now });
+      });
+      saveKnown();
+      renderAlerts();
+    }).catch(() => {});
+  }
+  if (/alertdemo/.test(location.search)) {   // 검수용: ?alertdemo=1 → 예시 카드
+    alerts.push({ id: 'demo1', kind: 'breaking', studio: 'TS-1', name: '뉴스특보', start: '21:00', end: '21:30', startFull: '21:00:00', endFull: '23:59:59', at: Date.now() });
+    alerts.push({ id: 'demo2', kind: 'added', studio: 'TS-4', name: '긴급 편성 리허설', start: '22:10', end: '22:40', startFull: '22:10:00', endFull: '22:40:00', at: Date.now() });
+    renderAlerts();
+  }
+  pollAlerts();
+  setInterval(pollAlerts, 15000);
+  setInterval(renderAlerts, 30000);
 
   qpPollStudios();
   setInterval(qpPollStudios, 60000);

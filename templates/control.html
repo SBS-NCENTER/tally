@@ -847,7 +847,7 @@
           <div class="setting-hint">DM7처럼 네트워크로 탈리 신호를 안 주는 콘솔(STUDER Vista8, SSL C100HD 등)은 GPO/접점 출력을 라즈베리파이 GPIO 핀과 GND에 연결해서 쓰세요. 기본값은 "접점이 닫히면(ON) 핀이 GND로 당겨지는" 방식이고, 콘솔이 반대로 동작하면 위 '신호 반전'을 꺼주세요.</div>
         </div>
       </div>
-      <div class="setting-row">
+      <div class="setting-row" style="display:none"><!-- 5007: 마이크 탈리를 쓰지 않으므로 숨김 (ON AIR는 운행표 기준) -->
         <div class="toggle-row">
           <span class="toggle-label">{{ icon('flask') }}탈리 테스트 (강제 ON — 실제 마이크와 무관)</span>
           <label class="toggle"><input type="checkbox" id="tally-test-toggle" /><span class="toggle-track"></span></label>

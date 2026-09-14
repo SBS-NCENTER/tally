@@ -1141,7 +1141,8 @@ def sps_live_schedule():
     for entry in repos:
         if not entry.get('liveOrVcr'):
             continue
-        if studio and entry.get('videoSource') != studio:
+        # ?all=1 이면 부조 필터를 건너뛴다 — 화면의 특보/긴급 편성 알림은 모든 부조를 본다
+        if studio and not request.args.get('all') and entry.get('videoSource') != studio:
             continue
         start_dt = datetime.strptime(entry['startTime'], '%Y-%m-%d %H:%M:%S').replace(tzinfo=KST)
         end_dt = start_dt + timedelta(seconds=entry['duration'])
