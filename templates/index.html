@@ -166,6 +166,8 @@
     .tile.prog .val #tile-prog-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     /* 진입 확정 — 칩 폭을 늘리지 않고 상태로 보여준다:
        미확정 = 점선 테두리·흐린 시각(아직 바뀔 수 있는 예정), 확정 = 실선·흰 시각 + 모서리 체크 뱃지 */
+    /* 진입·종료 칩은 항상 같은 폭 — 내용(체크·(분))과 무관하게 남는 폭을 둘이 똑같이 나눈다 */
+    .cd-chip.in, .cd-chip.out { flex: 1 1 0; min-width: max-content; }
     .cd-chip.in { position: relative; border: 2px solid transparent; transition: border-color 0.3s ease, border-style 0.3s ease; }
     .cd-chip.in.tentative { border-color: var(--text-faint); border-style: dashed; }
     .cd-chip.in.tentative .t { color: var(--text-dim); }
