@@ -167,7 +167,7 @@
     /* 진입 확정 — 칩 폭을 늘리지 않고 상태로 보여준다:
        미확정 = 점선 테두리·흐린 시각(아직 바뀔 수 있는 예정), 확정 = 실선·흰 시각 + 모서리 체크 뱃지 */
     /* 진입·종료 칩은 항상 같은 폭 — 내용(체크·(분))과 무관하게 남는 폭을 둘이 똑같이 나눈다 */
-    .cd-chip.in, .cd-chip.out { flex: 1 1 0; min-width: max-content; }
+    .cd-chip.in, .cd-chip.out { flex: 0 0 auto; }   /* 폭은 JS(fitEnds)가 둘 중 넓은 쪽으로 맞춘다 */
     .cd-chip.in { position: relative; border: 2px solid transparent; transition: border-color 0.3s ease, border-style 0.3s ease; }
     .cd-chip.in.tentative { border-color: var(--text-faint); border-style: dashed; }
     .cd-chip.in.tentative .t { color: var(--text-dim); }
@@ -829,10 +829,15 @@
   // 글자 배율(--fit)을 줄여 항상 한 줄에 맞춘다 — 잘리는 것보다 작은 게 낫다.
   function fitEnds() {
     if (!cdEndsEl || countdownEl.style.display === 'none') return;
+    // 진입·종료 칩은 항상 같은 폭(둘 중 넓은 쪽). 그래도 한 줄에 못 들어가면 글자 배율(--fit)을
+    // 줄여 다시 잰다 — 글자만 줄면 여백은 그대로라 한 번의 비례 계산으로는 부족해 최대 4번 조인다.
+    const sides = [cdEndsEl.querySelector('.cd-chip.in'), cdEndsEl.querySelector('.cd-chip.out')].filter(Boolean);
     cdEndsEl.style.setProperty('--fit', '1');
-    // 글자만 줄면 여백은 그대로라 한 번의 비례 계산으로는 부족하다 — 적용 후 다시 재서 최대 3번 조인다.
     let fit = 1;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
+      sides.forEach(c => { c.style.width = ''; });
+      const wide = Math.max(...sides.map(c => c.offsetWidth));
+      sides.forEach(c => { c.style.width = wide + 'px'; });
       const w = cdEndsEl.scrollWidth, c = cdEndsEl.clientWidth;
       if (!(w > c && w > 0)) break;
       fit = Math.max(0.5, fit * c / w * 0.985);
