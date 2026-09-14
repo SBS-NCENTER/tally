@@ -258,7 +258,7 @@
     .cd-runner-head {
       position: absolute; left: 0; top: 0; transform: translate(-50%, calc(-100% + 2.3 * var(--u) * var(--cb)));   /* 아래끝을 트랙 아래선에 맞춤 */
       width: calc(calc(0.8 * var(--u)) * var(--cb)); height: calc(calc(7.4 * var(--u)) * var(--cb)); border-radius: 99px;
-      background: #fff; box-shadow: 0 0 0 calc(calc(0.5 * var(--u)) * var(--cb)) var(--bg);
+      background: #fff; box-shadow: 0 0 0 2px rgba(20,18,24,0.6);   /* 얇은 반투명 테두리만 — 트랙과 분리되게 */
       transition: background 0.4s ease, transform 0.4s ease;
     }
     .cd-runner-cap {
