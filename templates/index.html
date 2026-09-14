@@ -1228,8 +1228,13 @@
       );
     else fetchWeather(37.5665, 126.9780);
   }
-  loadWeather();
-  setInterval(loadWeather, 10 * 60 * 1000);
+  let weatherStarted = false;
+  function startWeatherIfShown() {
+    if (weatherStarted || infoRow.style.display === 'none') return;
+    weatherStarted = true;
+    loadWeather();
+    setInterval(loadWeather, 10 * 60 * 1000);
+  }
 
   /* ── 캘린더 타임라인 ─────────────────────────────────────────── */
   function getCalendarUrl() {
@@ -1879,6 +1884,7 @@
     // 기본으로 나오도록 undefined일 때 true로 둔다.
     clock12Hour = s.clock12Hour === undefined ? true : !!s.clock12Hour;
     infoRow.style.display = s.showDateWeather === false ? 'none' : 'flex';
+    startWeatherIfShown();
 
     if (s.clockScale !== undefined) clockScale = parseFloat(s.clockScale);
     if (s.tallyScale !== undefined) tallyScale = parseFloat(s.tallyScale);
