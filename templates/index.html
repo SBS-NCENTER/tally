@@ -93,8 +93,8 @@
     #topbar { flex: none; display: flex; align-items: stretch; gap: calc(1.4 * var(--u)); min-height: 0; }
     #status-box {
       display: inline-flex; align-items: center; justify-content: center; gap: calc(1.2 * var(--u));
-      flex: none; width: calc(20 * var(--u));   /* 우측 프로그램 칸과 비슷한 폭 */
-      padding: calc(0.9 * var(--u) * var(--tally-box-scale, 1)) calc(3 * var(--u) * var(--tally-box-scale, 1));
+      flex: none; width: calc(24 * var(--u));   /* 우측 프로그램 칸과 비슷한 폭 */
+      padding: calc(1.2 * var(--u) * var(--tally-box-scale, 1)) calc(3 * var(--u) * var(--tally-box-scale, 1));
       border-radius: calc(1.6 * var(--u));
       background: #26262a;
       color: rgba(235,235,245,0.4);
@@ -102,7 +102,7 @@
     }
     #status-box.on-air { background: var(--red); color: #fff; box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45); }
     @keyframes lamp-blink { 50% { opacity: 0.3; } }
-    #status-text { font-weight: 800; font-size: calc(3.3 * var(--u)); line-height: 1.15; letter-spacing: 0.06em; white-space: nowrap; }
+    #status-text { font-weight: 800; font-size: calc(4.2 * var(--u)); line-height: 1.15; letter-spacing: 0.06em; white-space: nowrap; }
 
     #info-row {
       display: flex; align-items: center; gap: calc(1.2 * var(--u));
@@ -114,17 +114,17 @@
     /* 상단 가운데 알림 슬롯 — 특보/긴급 편성이 있을 때만 카드가 뜬다 */
     #alert-slot { flex: 1; min-width: 0; display: flex; align-items: stretch; justify-content: center; gap: calc(1 * var(--u)); }
     .alert-card {
-      flex: 1; display: flex; align-items: center; gap: calc(1.4 * var(--u)); min-width: 0; max-width: calc(40 * var(--u));
+      flex: 1; display: flex; align-items: center; gap: calc(1.4 * var(--u)); min-width: 0; max-width: calc(48 * var(--u));
       padding: calc(0.6 * var(--u)) calc(1.6 * var(--u)) calc(0.6 * var(--u)) calc(0.8 * var(--u));
       border-radius: calc(1.6 * var(--u)); background: var(--surface); border: calc(0.2 * var(--u)) solid var(--amber);
       animation: alert-in 0.5s cubic-bezier(0.2, 0, 0, 1);
     }
     .alert-card.breaking { border-color: var(--red); background: var(--red-tint); animation: alert-in 0.5s cubic-bezier(0.2, 0, 0, 1), alert-glow 1.6s ease-in-out infinite 0.5s; }
-    .alert-card .a-tag { flex: none; padding: calc(0.5 * var(--u)) calc(1.2 * var(--u)); border-radius: calc(1 * var(--u)); background: var(--amber); color: #2b1a00; font-weight: 900; font-size: calc(2 * var(--u)); letter-spacing: 0.02em; }
+    .alert-card .a-tag { flex: none; padding: calc(0.5 * var(--u)) calc(1.2 * var(--u)); border-radius: calc(1 * var(--u)); background: var(--amber); color: #2b1a00; font-weight: 900; font-size: calc(2.4 * var(--u)); letter-spacing: 0.02em; }
     .alert-card.breaking .a-tag { background: var(--red); color: #fff; }
     .alert-card .a-body { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
-    .alert-card .a-body b { font-size: calc(2.6 * var(--u)); font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .alert-card .a-body span { font-size: calc(1.8 * var(--u)); font-weight: 700; color: var(--text-dim); white-space: nowrap; }
+    .alert-card .a-body b { font-size: calc(3.2 * var(--u)); font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .alert-card .a-body span { font-size: calc(2.2 * var(--u)); font-weight: 700; color: var(--text-dim); white-space: nowrap; }
     @keyframes alert-in { from { opacity: 0; transform: translateY(-40%) scale(0.96); } to { opacity: 1; transform: none; } }
     @keyframes alert-glow { 50% { box-shadow: 0 0 calc(1.6 * var(--u)) rgba(232,69,60,0.55); } }
 
@@ -134,7 +134,7 @@
       flex: 1; min-width: 0; min-height: 0;
       background: var(--surface-hi);
       display: flex; align-items: center; justify-content: center;
-      padding: calc(calc(1.2 * var(--u)) * var(--clock-box-scale, 1)) calc(2 * var(--u));
+      padding: calc(calc(1.2 * var(--u)) * var(--clock-box-scale, 1)) calc(5 * var(--u));
     }
     #clock {
       display: inline-flex; align-items: baseline; justify-content: center;
@@ -150,15 +150,15 @@
 
     /* 부조정실 + 방송 박스 — 상단 바 우측, 한 박스 안에 두 칸 */
     #side {
-      flex: none; width: calc(28 * var(--u)); min-width: 0; display: flex; align-items: stretch;
+      flex: none; width: calc(34 * var(--u)); min-width: 0; display: flex; align-items: stretch;
       background: var(--surface); border-radius: calc(1.6 * var(--u)); overflow: hidden;
     }
     .tile {
       min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(0.15 * var(--u));
-      padding: calc(0.6 * var(--u)) calc(1.5 * var(--u));
+      padding: calc(0.9 * var(--u)) calc(1.8 * var(--u));
     }
-    .tile .cap { display: flex; align-items: center; gap: calc(0.6 * var(--u)); font-size: calc(1.8 * var(--u) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
-    .tile .val { font-size: calc(3.4 * var(--u) * var(--sch-scale, 1)); line-height: 1.1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+    .tile .cap { display: flex; align-items: center; gap: calc(0.6 * var(--u)); font-size: calc(2.2 * var(--u) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
+    .tile .val { font-size: calc(4.3 * var(--u) * var(--sch-scale, 1)); line-height: 1.1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
     /* 긴 프로그램명을 위해 넉넉하게 — 짧아도 최소 폭 유지, 그 이상은 말줄임 */
     .tile.prog { background: var(--primary); color: var(--on-primary); flex: 1; min-width: 0; }
     .tile.prog .cap { color: var(--on-primary-dim); }
