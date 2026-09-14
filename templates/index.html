@@ -93,11 +93,11 @@
     #topbar { flex: none; display: flex; align-items: stretch; gap: calc(1.4 * var(--u)); min-height: 0; }
     #status-box {
       display: inline-flex; align-items: center; justify-content: center; gap: calc(1.2 * var(--u));
-      flex: none; width: calc(32 * var(--u));
+      flex: none; width: calc(28 * var(--u));
       padding: calc(0.9 * var(--u) * var(--tally-box-scale, 1)) calc(3 * var(--u) * var(--tally-box-scale, 1));
       border-radius: calc(1.6 * var(--u));
-      background: var(--surface-var);
-      color: var(--text-dim);
+      background: #26262a;
+      color: rgba(235,235,245,0.4);
       transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
     }
     #status-box.on-air { background: var(--red); color: #fff; box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45); }
@@ -114,7 +114,7 @@
     /* 상단 가운데 알림 슬롯 — 특보/긴급 편성이 있을 때만 카드가 뜬다 */
     #alert-slot { flex: 1; min-width: 0; display: flex; align-items: stretch; justify-content: center; gap: calc(1 * var(--u)); }
     .alert-card {
-      flex: 1; display: flex; align-items: center; gap: calc(1.4 * var(--u)); min-width: 0; max-width: calc(34 * var(--u));
+      flex: 1; display: flex; align-items: center; gap: calc(1.4 * var(--u)); min-width: 0; max-width: calc(40 * var(--u));
       padding: calc(0.6 * var(--u)) calc(1.6 * var(--u)) calc(0.6 * var(--u)) calc(0.8 * var(--u));
       border-radius: calc(1.6 * var(--u)); background: var(--surface); border: calc(0.2 * var(--u)) solid var(--amber);
       animation: alert-in 0.5s cubic-bezier(0.2, 0, 0, 1);
@@ -150,14 +150,14 @@
 
     /* 부조정실 + 방송 박스 — 상단 바 우측, 한 박스 안에 두 칸 */
     #side {
-      flex: none; width: calc(32 * var(--u)); min-width: 0; display: flex; align-items: stretch;
+      flex: none; width: calc(28 * var(--u)); min-width: 0; display: flex; align-items: stretch;
       background: var(--surface); border-radius: calc(1.6 * var(--u)); overflow: hidden;
     }
     .tile {
       min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(0.15 * var(--u));
       padding: calc(0.6 * var(--u)) calc(1.5 * var(--u));
     }
-    .tile .cap { font-size: calc(1.8 * var(--u) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
+    .tile .cap { display: flex; align-items: center; gap: calc(0.6 * var(--u)); font-size: calc(1.8 * var(--u) * var(--sch-scale, 1)); line-height: 1.2; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
     .tile .val { font-size: calc(3.4 * var(--u) * var(--sch-scale, 1)); line-height: 1.1; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
     /* 긴 프로그램명을 위해 넉넉하게 — 짧아도 최소 폭 유지, 그 이상은 말줄임 */
     .tile.prog { background: var(--primary); color: var(--on-primary); flex: 1; min-width: 0; }
@@ -166,9 +166,9 @@
     .tile.prog .val #tile-prog-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .tile .ok {
       display: inline-flex; align-items: center; justify-content: center; flex: none;
-      width: calc(3.2 * var(--u)); height: calc(3.2 * var(--u)); border-radius: 50%; margin-left: calc(1 * var(--u));
+      width: calc(2.2 * var(--u)); height: calc(2.2 * var(--u)); border-radius: 50%;
       background: var(--on-primary); color: var(--primary);
-      font-size: calc(2.1 * var(--u)); font-weight: 900;
+      font-size: calc(1.4 * var(--u)); font-weight: 900;
     }
 
     /* ══════════ 일반 모드 하단: 이전 / 현재 / 다음 일정 ══════════ */
@@ -255,13 +255,13 @@
     }
     #cd-runner.cross-anim, #cd-fill.cross-anim, .cd-runner-tag.cross-anim { transition-duration: 0.8s; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
     .cd-runner-head {
-      position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
-      width: calc(calc(1.5 * var(--u)) * var(--cb)); height: calc(calc(8.6 * var(--u)) * var(--cb)); border-radius: 99px;
+      position: absolute; left: 0; top: 0; transform: translate(-50%, calc(-100% + 2.3 * var(--u) * var(--cb)));   /* 아래끝을 트랙 아래선에 맞춤 */
+      width: calc(calc(1.5 * var(--u)) * var(--cb)); height: calc(calc(7.4 * var(--u)) * var(--cb)); border-radius: 99px;
       background: #fff; box-shadow: 0 0 0 calc(calc(0.8 * var(--u)) * var(--cb)) var(--bg);
       transition: background 0.4s ease, transform 0.4s ease;
     }
     .cd-runner-cap {
-      position: absolute; left: 0; bottom: calc(calc(4.3 * var(--u)) * var(--cb) + calc(1.2 * var(--u))); transform: translateX(-50%);
+      position: absolute; left: 0; bottom: calc(5.1 * var(--u) * var(--cb) + 1 * var(--u)); transform: translateX(-50%);
       width: 0; height: 0; border: calc(calc(1.4 * var(--u)) * var(--cb)) solid transparent; border-bottom: 0;
       border-top-color: var(--primary); transition: border-top-color 0.4s ease;
     }
@@ -307,7 +307,6 @@
     .cd-tick::before { content: ''; position: absolute; left: 0; top: 18%; bottom: 18%; width: calc(0.35 * var(--u)); transform: translateX(-50%); background: rgba(255,255,255,0.35); border-radius: 99px; }
     .cd-tick span { position: absolute; left: 0; top: calc(100% + 0.7 * var(--u)); transform: translateX(-50%); font-size: calc(1.6 * var(--u)); font-weight: 700; color: var(--text-faint); white-space: nowrap; transition: opacity 0.3s ease; }
     #cd-track.pending .cd-tick { opacity: 1; }
-    .cd-tick.near span { opacity: 0; }
     /* 방송 중: 트랙이 라이브 색으로 */
     #cd-track.live #cd-fill { background: linear-gradient(90deg, var(--red), #ff8a80); box-shadow: 0 0 calc(1.4 * var(--u)) rgba(232,69,60,0.35); }
     #cd-track.live .cd-runner-cap { border-top-color: #ff8a80; }
@@ -319,13 +318,18 @@
     #countdown.start-burst .cd-chip.rem { animation: chip-hit 0.7s ease-out; }
 
     /* 진입 임박 줌: 확정된 방송 시작 1분 전 — 색을 앰버로 데우고 마지막 10초는 펄스 */
-    #countdown.imminent #cd-track.pending #cd-fill { background: var(--amber); }
+    #countdown.imminent #cd-track.pending {
+      background: linear-gradient(90deg, var(--surface-var) 0 80%, var(--amber-tint) 80%);
+    }
+    #countdown.imminent #cd-track.pending #cd-fill {
+      background: linear-gradient(90deg, var(--primary) 0, var(--primary) calc(var(--track-w, 1000px) * 0.8), var(--amber) calc(var(--track-w, 1000px) * 0.8));
+    }
     #countdown.imminent .cd-runner-cap { border-top-color: var(--amber); }
     #countdown.imminent #cd-marker-start .cd-marker-dot { background: var(--amber); transform: translate(-50%,-50%) scaleY(1.15); box-shadow: 0 0 0 calc(calc(0.5 * var(--u)) * var(--cb)) var(--bg), 0 0 calc(2 * var(--u)) rgba(255,185,90,0.6); }
     #countdown.imminent #cd-marker-end { opacity: 0.15; transition: opacity 0.6s ease; }
     #countdown.imminent-final .cd-runner-head { animation: imminent-pulse 0.7s ease-in-out infinite; }
     #countdown.imminent-final .cd-chip.rem { animation: imminent-pill-pulse 0.7s ease-in-out infinite; }
-    @keyframes imminent-pulse { 50% { transform: translate(-50%,-50%) scaleX(1.5); } }
+    @keyframes imminent-pulse { 50% { transform: translate(-50%, calc(-100% + 2.3 * var(--u) * var(--cb))) scaleX(1.5); } }
     @keyframes imminent-pill-pulse { 50% { transform: scale(1.04); } }
 
     /* ══════════ 타이머 모드 하단: 타이머 / 스톱워치 ══════════ */
@@ -585,8 +589,8 @@
         <span class="val" id="tile-studio-val">—</span>
       </div>
       <div class="tile prog" id="tile-prog">
-        <span class="cap" id="tile-prog-cap">현재 방송</span>
-        <span class="val"><span id="tile-prog-name">—</span><span class="ok" id="tile-prog-ok" title="확정된 시작 시각" style="display:none">✓</span></span>
+        <span class="cap"><span id="tile-prog-cap">현재 방송</span><span class="ok" id="tile-prog-ok" title="확정된 시작 시각" style="display:none">✓</span></span>
+        <span class="val"><span id="tile-prog-name">—</span></span>
       </div>
     </div>
   </header>
@@ -631,8 +635,9 @@
           <span class="cd-marker-program" id="cd-marker-start-program"></span>진입
         </span>
       </div>
-      <div class="cd-tick" data-pct="40" style="left:40%"><span>10분</span></div>
-      <div class="cd-tick" data-pct="80" style="left:80%"><span>1분</span></div>
+      <div class="cd-tick" data-pct="5" style="left:5%"><span>60분 전</span></div>
+      <div class="cd-tick" data-pct="40" style="left:40%"><span>10분 전</span></div>
+      <div class="cd-tick" data-pct="80" style="left:80%"><span>1분 전</span></div>
       <div class="cd-marker" id="cd-marker-end">
         <span class="cd-marker-dot"></span>
       </div>
@@ -1512,7 +1517,10 @@
       }, 850);
     }
 
-    if (!cdTrackWidthPx) cdTrackWidthPx = cdTrack.getBoundingClientRect().width;
+    if (!cdTrackWidthPx) {
+      cdTrackWidthPx = cdTrack.getBoundingClientRect().width;
+      cdTrack.style.setProperty('--track-w', cdTrackWidthPx + 'px');   // 임박 구간(80%~) 앰버 경계 계산용
+    }
 
     cdMarkerStart.style.left = startPct + '%';               // 점은 줌 위치로 질주
     if (cdMarkerStartCap) {
@@ -1551,8 +1559,7 @@
       cdTagSub.textContent = formatDuration(Math.max(0, Math.round((end - start) / 1000)));
       cdRunnerTagPill.classList.add('two');
       cdTagSub.classList.remove('overrun', 'neg');
-      setRemChip(finalDiffSec > 0 ? '늦게 종료' : '일찍 종료', sign + formatDuration(Math.abs(finalDiffSec)),
-                 finalDiffSec > 0 ? 'final-over' : 'final-under');
+      setRemChip('', sign + fmtHMS(Math.abs(finalDiffSec)), finalDiffSec > 0 ? 'final-over' : 'final-under');
       renderTiles('종료된 방송');
       if (!cdWasFinalEnded) {
         cdRunnerTagPill.classList.add('final-blink');
