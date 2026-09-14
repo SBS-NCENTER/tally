@@ -649,17 +649,18 @@
         <div class="setting-hint" style="margin-bottom:8px">실제 방송을 기다리지 않고 대기→시작→LIVE→예정초과 흐름을 짧게 재현해서 화면을 미리 확인합니다. 실행 중엔 자동 운행표 연동이 잠시 멈췄다가, 테스트를 마치면 원래대로 돌아옵니다. 지난 방송 기록엔 남지 않습니다.</div>
         <div class="setting-row">
           <div class="setting-row-inline"><span>시작까지 대기</span><span class="val" id="test-start-in-val">10초</span></div>
-          <input type="range" id="test-start-in" min="0" max="60" step="5" value="10" />
+          <input type="range" id="test-start-in" min="0" max="1800" step="10" value="10" />
         </div>
         <div class="setting-row">
           <div class="setting-row-inline"><span>방송 길이(예정)</span><span class="val" id="test-duration-val">30초</span></div>
-          <input type="range" id="test-duration" min="10" max="120" step="5" value="30" />
+          <input type="range" id="test-duration" min="10" max="3600" step="10" value="30" />
         </div>
         <div class="btn-row">
           <button type="button" class="action-btn" id="test-mode-start-btn">테스트 시작</button>
           <button type="button" class="action-btn" id="test-mode-end-btn" style="display:none">지금 종료 처리</button>
           <button type="button" class="action-btn" id="test-mode-stop-btn" style="display:none">중단</button>
         </div>
+        <div class="setting-hint">대기 16분 이상이면 "먼 대기" → 15분 전부터 리드인 → 확정 방송은 1분 전 임박 줌 → 진입 순서로 볼 수 있습니다.</div>
         <div class="setting-hint" id="test-mode-status" style="margin-top:8px"></div>
       </div>
     </div>
@@ -1494,8 +1495,10 @@
   const testModeEndBtn   = document.getElementById('test-mode-end-btn');
   const testModeStopBtn  = document.getElementById('test-mode-stop-btn');
   const testModeStatus   = document.getElementById('test-mode-status');
-  testStartInSlider.addEventListener('input', () => { testStartInVal.textContent = testStartInSlider.value + '초'; });
-  testDurationSlider.addEventListener('input', () => { testDurationVal.textContent = testDurationSlider.value + '초'; });
+  // 대기 시간을 최대 30분까지 늘려 먼 대기(15분 리드인 이전)·리드인·임박 줌을 순서대로 볼 수 있게 함
+  function fmtTestSec(v) { v = parseInt(v, 10); return v >= 60 ? Math.floor(v / 60) + '분' + (v % 60 ? ' ' + (v % 60) + '초' : '') : v + '초'; }
+  testStartInSlider.addEventListener('input', () => { testStartInVal.textContent = fmtTestSec(testStartInSlider.value); });
+  testDurationSlider.addEventListener('input', () => { testDurationVal.textContent = fmtTestSec(testDurationSlider.value); });
   testModeStartBtn.addEventListener('click', () => {
     fetch('/test/countdown/start', {
       method: 'POST',
