@@ -267,13 +267,13 @@
     .cd-marker-dot {
       position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
       width: calc(calc(0.7 * var(--u)) * var(--cb)); height: calc(calc(7 * var(--u)) * var(--cb)); border-radius: 99px;
-      background: var(--text-dim);   /* 배경색 링 없음 — 링이 트랙 둥근 끝을 잘라 지저분했다 */
+      background: var(--primary);    /* 예정 지점(진입·종료)은 강조색 — 흰색 러너(현재)와 구별. 배경색 링 없음(트랙 끝을 잘라 지저분했다) */
       transition: transform 0.4s ease, background 0.4s ease, box-shadow 0.4s ease, opacity 0.4s ease;
     }
     #cd-marker-end { left: 100%; }
     /* 트랙 끝에 서는 마커는 오른쪽 가장자리를 트랙 끝에 맞춰 '캡'처럼 — 둥근 끝이 마커 너머로 삐져나오지 않는다 */
     #cd-marker-end .cd-marker-dot, #cd-track.pending #cd-marker-start .cd-marker-dot { transform: translate(-100%, -50%); }
-    #cd-marker-end .cd-marker-dot { background: var(--text-faint); width: calc(calc(0.8 * var(--u)) * var(--cb)); height: calc(calc(5.8 * var(--u)) * var(--cb)); }   /* 러너 막대와 같은 크기의 회색 캡 */
+    #cd-marker-end .cd-marker-dot { background: color-mix(in srgb, var(--primary) 75%, var(--bg)); width: calc(calc(0.8 * var(--u)) * var(--cb)); height: calc(calc(5.8 * var(--u)) * var(--cb)); }   /* 러너 막대와 같은 크기의 회색 캡 */
     #cd-marker-start.crossed .cd-marker-dot { opacity: 0; }
     .cd-marker-cap { top: 0; }
     .cd-marker-cap .cd-marker-label {
