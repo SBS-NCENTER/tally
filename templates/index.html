@@ -102,7 +102,12 @@
       color: rgba(235,235,245,0.4);
       transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
     }
-    #status-box.on-air { background: var(--red); color: #fff; box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45); }
+    #status-box.on-air { background: var(--red); color: #fff; box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45); animation: lamp-breathe 3.4s ease-in-out infinite; }
+    @keyframes lamp-breathe {
+      0%, 100% { box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45), 0 0 0 0 rgba(232,69,60,0.35); }
+      50%      { box-shadow: 0 0 calc(4.2 * var(--u)) rgba(232,69,60,0.7),  0 0 0 calc(0.6 * var(--u)) rgba(232,69,60,0); }
+    }
+    #status-box.on-air.ignite { animation: lamp-ignite 1.2s cubic-bezier(0.2, 0, 0, 1), lamp-breathe 3.4s ease-in-out 1.2s infinite; }
     @keyframes lamp-blink { 50% { opacity: 0.3; } }
     #status-text { font-weight: 800; font-size: calc(4.2 * var(--u)); line-height: 1.15; letter-spacing: 0.06em; white-space: nowrap; }
 
@@ -172,6 +177,7 @@
        미확정 = 점선 테두리·흐린 시각(아직 바뀔 수 있는 예정), 확정 = 실선·흰 시각 + 모서리 체크 뱃지 */
     /* 진입·종료 칩은 항상 같은 폭 — 내용(체크·(분))과 무관하게 남는 폭을 둘이 똑같이 나눈다 */
     .cd-chip.in, .cd-chip.out { flex: 0 0 auto; }   /* 폭은 JS(fitEnds)가 둘 중 넓은 쪽으로 맞춘다 */
+    .cd-chip.out { justify-content: flex-end; }     /* 종료는 오른쪽 가장자리에 — 진입(왼쪽)과 대칭 */
     .cd-chip.in { position: relative; overflow: hidden; border: 2px solid transparent; transition: border-color 0.35s ease, background 0.45s ease, box-shadow 0.45s ease; }
     .cd-chip.in .t { transition: color 0.45s ease; }
     /* 미확정 = 종료 칩과 똑같은 기본 칩(테두리·흐림 없음). 확정만 채운 칩으로 구분 */
@@ -342,7 +348,11 @@
     .cd-tick { position: absolute; top: 0; bottom: 0; width: 0; opacity: 0; transition: opacity 0.4s ease; }
     .cd-tick::before { content: ''; position: absolute; left: 0; top: 18%; bottom: 18%; width: calc(0.35 * var(--u)); transform: translateX(-50%); background: rgba(255,255,255,0.35); border-radius: 99px; }
     .cd-tick span { position: absolute; left: 0; top: calc(100% + 0.7 * var(--u)); transform: translateX(-50%); font-size: calc(1.6 * var(--u)); font-weight: 700; color: var(--text-faint); white-space: nowrap; transition: opacity 0.3s ease; }
-    #cd-track.pending .cd-tick { opacity: 1; }
+    #cd-track.pending .cd-tick:not(.live-tick) { opacity: 1; }
+    /* 방송 중 경과 눈금(15분·30분·45분…) — 시작 전엔 숨기고 시작하면 페이드인, 종료 후에도 남긴다 */
+    #cd-track:not(.pending) .cd-tick.live-tick { opacity: 1; }
+    .cd-tick.live-tick::before { background: rgba(255,255,255,0.45); }
+    .cd-tick.live-tick span { color: var(--text-dim); }
     /* 방송 중: 트랙이 라이브 색으로 */
     #cd-track.live #cd-fill { background: linear-gradient(90deg, var(--red), #ff8a80); box-shadow: 0 0 calc(1.4 * var(--u)) rgba(232,69,60,0.35); }
     #cd-track.live .cd-runner-cap { border-top-color: #ff8a80; }
@@ -381,7 +391,6 @@
     @keyframes fill-ignite { 0% { filter: brightness(2.2); } 100% { filter: brightness(1); } }
     body.ignite .clk-sep { animation: sep-flash 1.4s ease-out; }
     @keyframes sep-flash { 0%, 25% { color: #ff8a80; text-shadow: 0 0 0.25em rgba(232,69,60,0.7); } 100% { color: var(--primary); text-shadow: none; } }
-    #status-box.ignite { animation: lamp-ignite 1.2s cubic-bezier(0.2, 0, 0, 1); }
     @keyframes lamp-ignite {
       0%   { transform: scale(0.96); filter: brightness(1.7); box-shadow: 0 0 0 0 rgba(232,69,60,0.9); }
       35%  { transform: scale(1.03); }
@@ -897,6 +906,42 @@
     if (over > 1) tileProgName.style.fontSize = (Math.max(0.66, tileProgName.clientWidth / tileProgName.scrollWidth) * 97) + '%';
   }
   window.addEventListener('resize', fitProgName);
+  /* 방송 중 경과 눈금 — 제작 배정 시간(시작~예정 종료)을 '딱 떨어지는' 간격으로 나눈다.
+     후보 간격(5·10·15·20·30·60·90·120·180분) 중 눈금 수가 3개에 가장 가까운 것을 고르고,
+     같으면 큰 간격(눈금 적은 쪽). 60분→15/30/45, 120분→30/60/90, 77분→20/40/60, 20분→5/10/15.
+     끝에 너무 붙는 눈금(92% 이후)은 뺀다. */
+  let liveTicksKey = '';
+  function fmtTickMin(m) {
+    if (m < 60) return m + '분';
+    return m % 60 === 0 ? (m / 60) + '시간' : Math.floor(m / 60) + '시간 ' + (m % 60) + '분';
+  }
+  function ensureLiveTicks(start, end, startPct) {
+    const key = +start + ':' + +end + ':' + startPct;
+    if (key === liveTicksKey) return;
+    liveTicksKey = key;
+    cdTrack.querySelectorAll('.cd-tick.live-tick').forEach(el => el.remove());
+    const D = (end - start) / 60000;
+    if (!(D > 0)) return;
+    let best = null;
+    [5, 10, 15, 20, 30, 60, 90, 120, 180].forEach(st => {
+      const n = Math.floor((D - 0.01) / st);
+      if (n < 1) return;
+      const score = Math.abs(n - 3) + (n > 4 ? 10 : 0);
+      if (!best || score < best.score || (score === best.score && st > best.st)) best = { st, n, score };
+    });
+    if (!best) return;
+    for (let i = 1; i <= best.n; i++) {
+      const m = i * best.st;
+      if (m / D > 0.92) break;
+      const el = document.createElement('div');
+      el.className = 'cd-tick live-tick';
+      el.style.left = (startPct + m / D * (100 - startPct)) + '%';
+      const label = document.createElement('span');
+      label.textContent = fmtTickMin(m);
+      el.appendChild(label);
+      cdTrack.appendChild(el);
+    }
+  }
   function cdBeat() {
     [cdRemEl, document.querySelector('.cd-runner-cap'), document.querySelector('.cd-runner-head')].forEach(el => {
       if (!el) return; el.classList.remove('beat'); void el.offsetWidth; el.classList.add('beat');
@@ -1746,6 +1791,7 @@
       cdRunner.classList.add('running');
       cdTrack.classList.remove('parked', 'pending');
       cdTrack.classList.add('live');
+      ensureLiveTicks(start, end, startPct);
       countdownEl.classList.remove('imminent', 'imminent-final');
     } else {
       cdFill.style.left = startPct + '%';
