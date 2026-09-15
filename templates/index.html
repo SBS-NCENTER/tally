@@ -911,10 +911,7 @@
      같으면 큰 간격(눈금 적은 쪽). 60분→15/30/45, 120분→30/60/90, 77분→20/40/60, 20분→5/10/15.
      끝에 너무 붙는 눈금(92% 이후)은 뺀다. */
   let liveTicksKey = '';
-  function fmtTickMin(m) {
-    if (m < 60) return m + '분';
-    return m % 60 === 0 ? (m / 60) + '시간' : Math.floor(m / 60) + '시간 ' + (m % 60) + '분';
-  }
+  function fmtTickMin(m) { return m + '분'; }   // 60분·90분·120분 — 단위는 분으로 통일
   function ensureLiveTicks(start, end, startPct) {
     const key = +start + ':' + +end + ':' + startPct;
     if (key === liveTicksKey) return;
