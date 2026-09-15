@@ -919,9 +919,11 @@
     if (!(D > 0)) return;
     let best = null;
     [5, 10, 15, 20, 30, 60, 90, 120, 180].forEach(st => {
-      const n = Math.floor((D - 0.01) / st);
+      // 끝에 붙어 생략될 눈금(92% 이후)은 빼고 센다 — 42분: 10분 간격(10·20·30)이 20분 간격(20만 남음)보다 낫다
+      const n = Math.floor(Math.min(D - 0.01, D * 0.92) / st);
       if (n < 1) return;
-      const score = Math.abs(n - 3) + (n > 4 ? 10 : 0);
+      // 눈금 수가 3에 가까울수록 좋고, 같으면 배정 시간을 나누어떨어지게 하는 간격(45분→15분), 그래도 같으면 큰 간격
+      const score = Math.abs(n - 3) + (n > 4 ? 10 : 0) + (D % st === 0 ? 0 : 0.5);
       if (!best || score < best.score || (score === best.score && st > best.st)) best = { st, n, score };
     });
     if (!best) return;
