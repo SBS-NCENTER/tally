@@ -177,7 +177,7 @@
        미확정 = 점선 테두리·흐린 시각(아직 바뀔 수 있는 예정), 확정 = 실선·흰 시각 + 모서리 체크 뱃지 */
     /* 진입·종료 칩은 항상 같은 폭 — 내용(체크·(분))과 무관하게 남는 폭을 둘이 똑같이 나눈다 */
     .cd-chip.in, .cd-chip.out { flex: 0 0 auto; }   /* 폭은 JS(fitEnds)가 둘 중 넓은 쪽으로 맞춘다 */
-    .cd-chip.out { justify-content: flex-end; }     /* 종료는 오른쪽 가장자리에 — 진입(왼쪽)과 대칭 */
+    .cd-chip.out { justify-content: center; }       /* 종료 시각은 칩 가운데 */
     .cd-chip.in { position: relative; overflow: hidden; border: 2px solid transparent; transition: border-color 0.35s ease, background 0.45s ease, box-shadow 0.45s ease; }
     .cd-chip.in .t { transition: color 0.45s ease; }
     /* 미확정 = 종료 칩과 똑같은 기본 칩(테두리·흐림 없음). 확정만 채운 칩으로 구분 */
