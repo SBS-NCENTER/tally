@@ -114,6 +114,7 @@
     #weather { display: inline-flex; align-items: center; gap: calc(0.5 * var(--u)); }
 
     /* 상단 가운데 알림 슬롯 — 특보/긴급 편성이 있을 때만 카드가 뜬다 */
+    #alert-slot:not(:empty) ~ #side { max-width: calc(34 * var(--u)); }   /* 알림 카드가 떠 있으면 기본 폭으로 돌아가 자리를 양보 */
     #alert-slot { flex: 1; min-width: 0; display: flex; align-items: stretch; justify-content: center; gap: calc(1 * var(--u)); }
     .alert-card {
       flex: 1; display: flex; align-items: center; gap: calc(1.4 * var(--u)); min-width: 0; max-width: calc(48 * var(--u));
@@ -152,7 +153,8 @@
 
     /* 부조정실 + 방송 박스 — 상단 바 우측, 한 박스 안에 두 칸 */
     #side {
-      flex: none; width: calc(34 * var(--u)); min-width: 0; display: flex; align-items: stretch;
+      /* 폭은 내용에 맞춰 늘어난다(34u~64u): 긴 프로그램명은 먼저 상자를 넓히고, 그래도 넘치면 JS가 글자를 줄이고, 마지막에야 … */
+      flex: none; width: auto; min-width: calc(34 * var(--u)); max-width: calc(64 * var(--u)); display: flex; align-items: stretch;
       background: var(--surface); border-radius: calc(1.6 * var(--u)); overflow: hidden;
     }
     .tile {
@@ -887,6 +889,14 @@
   let lampWasOn = null;       // ON AIR 램프 직전 상태 (false→true 순간 점화 연출)
   let cdBeatSec = null;       // 마지막 10초 심장박동: 마지막으로 박동한 초
   let cdPhaseBefore = null;   // 지금 방송 시작 전인가 (진입 칩 확정 강조는 시작 전에만)
+  // 프로그램명: 상자(#side)를 최대 폭까지 넓혀도 넘치면 글자를 줄인다(최소 66%) — 그 아래로는 …
+  // 이름이 바뀔 때, 알림 카드가 뜨고 질 때(상자 폭이 바뀜), 창 크기가 바뀔 때 다시 맞춘다.
+  function fitProgName() {
+    tileProgName.style.fontSize = '';
+    const over = tileProgName.scrollWidth - tileProgName.clientWidth;
+    if (over > 1) tileProgName.style.fontSize = (Math.max(0.66, tileProgName.clientWidth / tileProgName.scrollWidth) * 97) + '%';
+  }
+  window.addEventListener('resize', fitProgName);
   function cdBeat() {
     [cdRemEl, document.querySelector('.cd-runner-cap'), document.querySelector('.cd-runner-head')].forEach(el => {
       if (!el) return; el.classList.remove('beat'); void el.offsetWidth; el.classList.add('beat');
@@ -912,7 +922,7 @@
     const studioTxt = studio || '—';
     if (tileStudioVal.textContent !== studioTxt) tileStudioVal.textContent = studioTxt;
     const name = (countdownModeOn ? broadcastProgramName : calCurrentName) || '—';
-    if (tileProgName.textContent !== name) tileProgName.textContent = name;
+    if (tileProgName.textContent !== name) { tileProgName.textContent = name; fitProgName(); }
     const cap = stateCap || (countdownModeOn ? tileProgCap.textContent : '현재 일정');
     if (tileProgCap.textContent !== cap) tileProgCap.textContent = cap;
     // 확정 강조(채운 칩·✓)는 방송 시작 전에만 — 시작하면 진입 시각은 종료 칩과 같은 기본 칩으로 돌아간다
@@ -2381,9 +2391,9 @@
     alerts.sort((x, y) => (y.kind === 'breaking') - (x.kind === 'breaking') || y.at - x.at);   // 특보 우선, 최신 우선
     const html = alerts.slice(0, 1).map(a =>
       '<div class="alert-card ' + a.kind + '"><span class="a-tag">' + (a.kind === 'breaking' ? '특보' : '편성 추가') + '</span>' +
-      '<span class="a-body"><b>' + escapeHtml(a.studio ? a.studio + ' · ' : '') + escapeHtml(a.name) + '</b><span>' +
-      escapeHtml(a.start) + ' – ' + escapeHtml(a.end) + '</span></span></div>').join('');
-    if (alertSlot.innerHTML !== html) alertSlot.innerHTML = html;
+      '<span class="a-body"><b>' + escapeHtml(a.name) + '</b><span>' +
+      escapeHtml(a.start) + ' – ' + escapeHtml(a.end) + escapeHtml(a.studio ? ' · ' + a.studio : '') + '</span></span></div>').join('');
+    if (alertSlot.innerHTML !== html) { alertSlot.innerHTML = html; fitProgName(); }
   }
   function pollAlerts() {
     fetch('/sps/live-schedule?all=1').then(r => r.json()).then(items => {
