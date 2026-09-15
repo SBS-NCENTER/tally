@@ -275,6 +275,8 @@
     #cd-marker-end .cd-marker-dot, #cd-track.pending #cd-marker-start .cd-marker-dot { transform: translate(-100%, -50%); }
     #cd-marker-end .cd-marker-dot { background: rgba(255,255,255,0.32); }
     #cd-marker-start.crossed .cd-marker-dot { opacity: 0; }
+    /* 시작·종료 지점 선은 쓰지 않는다 — 트랙의 둥근 끝이 곧 끝점(2026-09-15) */
+    .cd-marker-dot { display: none; }
     .cd-marker-cap { top: 0; }
     .cd-marker-cap .cd-marker-label {
       position: absolute; left: 0; bottom: calc(100% + calc(1.1 * var(--u))); transform: translateX(-50%);
