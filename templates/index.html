@@ -267,11 +267,13 @@
     .cd-marker-dot {
       position: absolute; left: 0; top: 0; transform: translate(-50%, -50%);
       width: calc(calc(0.7 * var(--u)) * var(--cb)); height: calc(calc(7 * var(--u)) * var(--cb)); border-radius: 99px;
-      background: var(--text-dim); box-shadow: 0 0 0 calc(calc(0.5 * var(--u)) * var(--cb)) var(--bg);
+      background: var(--text-dim);   /* 배경색 링 없음 — 링이 트랙 둥근 끝을 잘라 지저분했다 */
       transition: transform 0.4s ease, background 0.4s ease, box-shadow 0.4s ease, opacity 0.4s ease;
     }
     #cd-marker-end { left: 100%; }
-    #cd-marker-end .cd-marker-dot { background: var(--text-faint); height: calc(calc(6 * var(--u)) * var(--cb)); }
+    /* 트랙 끝에 서는 마커는 오른쪽 가장자리를 트랙 끝에 맞춰 '캡'처럼 — 둥근 끝이 마커 너머로 삐져나오지 않는다 */
+    #cd-marker-end .cd-marker-dot, #cd-track.pending #cd-marker-start .cd-marker-dot { transform: translate(-100%, -50%); }
+    #cd-marker-end .cd-marker-dot { background: var(--text-faint); width: calc(calc(0.8 * var(--u)) * var(--cb)); height: calc(calc(5.8 * var(--u)) * var(--cb)); }   /* 러너 막대와 같은 크기의 회색 캡 */
     #cd-marker-start.crossed .cd-marker-dot { opacity: 0; }
     .cd-marker-cap { top: 0; }
     .cd-marker-cap .cd-marker-label {
@@ -282,7 +284,7 @@
     #cd-track.pending .cd-marker-cap.near .cd-marker-label { opacity: 0; }
     .cd-marker-program { display: none; }    /* 프로그램명은 우측 타일이 담당 */
     .cd-marker-dot.hit { animation: marker-hit 0.9s ease-out; }
-    @keyframes marker-hit { 0% { transform: translate(-50%,-50%) scale(1); } 30% { transform: translate(-50%,-50%) scale(1.5); } 100% { transform: translate(-50%,-50%) scale(1); } }
+    @keyframes marker-hit { 0% { transform: translate(-100%,-50%) scale(1); } 30% { transform: translate(-100%,-50%) scale(1.5); } 100% { transform: translate(-100%,-50%) scale(1); } }
 
     /* 러너 — 흰 막대 + 트랙 위 ▼ 캡. JS가 translateX(px)로 등속 이동시킨다. */
     #cd-runner {
@@ -367,7 +369,7 @@
       background: linear-gradient(90deg, var(--primary) 0, var(--primary) calc(var(--track-w, 1000px) * 0.8), var(--amber) calc(var(--track-w, 1000px) * 0.8));
     }
     #countdown.imminent .cd-runner-cap { border-top-color: var(--amber); }
-    #countdown.imminent #cd-marker-start .cd-marker-dot { background: var(--amber); transform: translate(-50%,-50%) scaleY(1.15); box-shadow: 0 0 0 calc(calc(0.5 * var(--u)) * var(--cb)) var(--bg), 0 0 calc(2 * var(--u)) rgba(255,185,90,0.6); }
+    #countdown.imminent #cd-marker-start .cd-marker-dot { background: var(--amber); transform: translate(-100%,-50%) scaleY(1.15); box-shadow: 0 0 calc(2 * var(--u)) rgba(255,185,90,0.6); }
     #countdown.imminent #cd-marker-end { opacity: 0.15; transition: opacity 0.6s ease; }
     /* 마지막 10초 심장박동 — 매초 숫자가 바뀌는 순간 JS가 .beat를 다시 붙인다(초와 동기) */
     .cd-chip.rem.beat { animation: chip-beat 0.5s cubic-bezier(0.2, 0, 0, 1); }
@@ -1371,7 +1373,7 @@
   // 진입 임박 줌: 확정된 방송이 시작 FINAL_ZOOM_SEC 안으로 들어오면 시작 마커를
   // FINAL_ZOOM_MAX_PCT까지 밀어 러너가 큰 거리를 질주하게 만든다(긴박감).
   const FINAL_ZOOM_SEC = 60;
-  const FINAL_ZOOM_MAX_PCT = 99;
+  const FINAL_ZOOM_MAX_PCT = 100;
   const FINAL_ZOOM_SETTLE_SEC = 2;   // 시작 이만큼 전에 이미 끝(마커)에 도착해 대기
   const FINAL_PULSE_SEC = 10;   // 마지막 10초는 강한 펄스
   let cdWasBeforeStart = null;
