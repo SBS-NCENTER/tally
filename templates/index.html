@@ -258,7 +258,7 @@
       border-radius: 99px; background: var(--primary);
       transition: width 0.9s linear, left 0.9s linear, background 0.4s ease;
     }
-    #cd-track.pending #cd-fill { background: color-mix(in srgb, var(--primary) 45%, var(--surface-var)); }
+    #cd-track.pending #cd-fill { background: transparent; }   /* 시작 전엔 채움 없음 — 러너 왼쪽에 민트 토막이 남아 시작 마커처럼 보였다 */
     #cd-runner.finished ~ #cd-fill, #cd-track:has(#cd-runner.finished) #cd-fill { background: color-mix(in srgb, var(--primary) 70%, var(--surface-var)); }
 
     /* 시작/종료 마커 — 시작 마커는 대기 중 리드인 지점(임박 줌 때 오른쪽으로 질주)에,
@@ -366,7 +366,7 @@
       background: linear-gradient(90deg, var(--surface-var) 0 80%, var(--amber-tint) 80%);
     }
     #countdown.imminent #cd-track.pending #cd-fill {
-      background: linear-gradient(90deg, var(--primary) 0, var(--primary) calc(var(--track-w, 1000px) * 0.8), var(--amber) calc(var(--track-w, 1000px) * 0.8));
+      background: linear-gradient(90deg, transparent 0, transparent calc(var(--track-w, 1000px) * 0.8), var(--amber) calc(var(--track-w, 1000px) * 0.8));
     }
     #countdown.imminent .cd-runner-cap { border-top-color: var(--amber); }
     /* 임박해도 진입 마커는 어두운 선 그대로 — 앰버는 채움·러너 캡·칩이 맡는다 */
