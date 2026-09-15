@@ -369,7 +369,7 @@
       background: linear-gradient(90deg, var(--primary) 0, var(--primary) calc(var(--track-w, 1000px) * 0.8), var(--amber) calc(var(--track-w, 1000px) * 0.8));
     }
     #countdown.imminent .cd-runner-cap { border-top-color: var(--amber); }
-    #countdown.imminent #cd-marker-start .cd-marker-dot { background: var(--amber); transform: translate(-100%,-50%) scaleY(1.15); box-shadow: 0 0 calc(2 * var(--u)) rgba(255,185,90,0.6); }
+    /* 임박해도 진입 마커는 어두운 선 그대로 — 앰버는 채움·러너 캡·칩이 맡는다 */
     #countdown.imminent #cd-marker-end { opacity: 0.15; transition: opacity 0.6s ease; }
     /* 마지막 10초 심장박동 — 매초 숫자가 바뀌는 순간 JS가 .beat를 다시 붙인다(초와 동기) */
     .cd-chip.rem.beat { animation: chip-beat 0.5s cubic-bezier(0.2, 0, 0, 1); }
