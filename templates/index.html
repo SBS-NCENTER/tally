@@ -3,7 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SBS Web Tally</title>
+  <title>SBS Web Scheduler</title>
+  <link id="favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%224.5%22%20y%3D%229.5%22%20width%3D%2255%22%20height%3D%2250%22%20rx%3D%2210%22%20fill%3D%22%23fff%22%20stroke%3D%22%231C1B22%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M14%208h36a11%2011%200%200%201%2011%2011v5H3v-5A11%2011%200%200%201%2014%208z%22%20fill%3D%22%238B6FD6%22%2F%3E%3Crect%20x%3D%2215%22%20y%3D%222%22%20width%3D%228%22%20height%3D%2214%22%20rx%3D%224%22%20fill%3D%22%231C1B22%22%2F%3E%3Crect%20x%3D%2241%22%20y%3D%222%22%20width%3D%228%22%20height%3D%2214%22%20rx%3D%224%22%20fill%3D%22%231C1B22%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2242%22%20r%3D%2212%22%20fill%3D%22none%22%20stroke%3D%22%231C1B22%22%20stroke-width%3D%225.5%22%2F%3E%3Cpath%20d%3D%22M32%2035v7.5l5%203.5%22%20fill%3D%22none%22%20stroke%3D%22%238B6FD6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E" />
+  <script>
+    /* 탭 아이콘은 테마(보라/민트)를 따라간다 — <html data-theme>가 바뀔 때마다 교체 */
+    (function () {
+      var ICONS = { purple: "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%224.5%22%20y%3D%229.5%22%20width%3D%2255%22%20height%3D%2250%22%20rx%3D%2210%22%20fill%3D%22%23fff%22%20stroke%3D%22%231C1B22%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M14%208h36a11%2011%200%200%201%2011%2011v5H3v-5A11%2011%200%200%201%2014%208z%22%20fill%3D%22%238B6FD6%22%2F%3E%3Crect%20x%3D%2215%22%20y%3D%222%22%20width%3D%228%22%20height%3D%2214%22%20rx%3D%224%22%20fill%3D%22%231C1B22%22%2F%3E%3Crect%20x%3D%2241%22%20y%3D%222%22%20width%3D%228%22%20height%3D%2214%22%20rx%3D%224%22%20fill%3D%22%231C1B22%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2242%22%20r%3D%2212%22%20fill%3D%22none%22%20stroke%3D%22%231C1B22%22%20stroke-width%3D%225.5%22%2F%3E%3Cpath%20d%3D%22M32%2035v7.5l5%203.5%22%20fill%3D%22none%22%20stroke%3D%22%238B6FD6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E", mint: "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20x%3D%224.5%22%20y%3D%229.5%22%20width%3D%2255%22%20height%3D%2250%22%20rx%3D%2210%22%20fill%3D%22%23fff%22%20stroke%3D%22%231C1B22%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M14%208h36a11%2011%200%200%201%2011%2011v5H3v-5A11%2011%200%200%201%2014%208z%22%20fill%3D%22%2322B39B%22%2F%3E%3Crect%20x%3D%2215%22%20y%3D%222%22%20width%3D%228%22%20height%3D%2214%22%20rx%3D%224%22%20fill%3D%22%231C1B22%22%2F%3E%3Crect%20x%3D%2241%22%20y%3D%222%22%20width%3D%228%22%20height%3D%2214%22%20rx%3D%224%22%20fill%3D%22%231C1B22%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2242%22%20r%3D%2212%22%20fill%3D%22none%22%20stroke%3D%22%231C1B22%22%20stroke-width%3D%225.5%22%2F%3E%3Cpath%20d%3D%22M32%2035v7.5l5%203.5%22%20fill%3D%22none%22%20stroke%3D%22%2322B39B%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E" };
+      function sync() {
+        var el = document.getElementById('favicon');
+        var href = ICONS[document.documentElement.getAttribute('data-theme')] || ICONS.purple;
+        if (el && el.getAttribute('href') !== href) el.setAttribute('href', href);
+      }
+      new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+      document.addEventListener('DOMContentLoaded', sync);
+    })();
+  </script>
   <style>
     /* Pretendard — 저장소에 동봉(자체 호스팅). 외부 폰트 CDN에 의존하지 않아
        망 상태와 무관하게 항상 같은 글꼴로 뜬다. */
