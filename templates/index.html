@@ -1570,14 +1570,19 @@
     const baseEnd = endVal ? timeToday(baseStart, endVal, endNextDay) : null;
     const durationMs = baseEnd ? baseEnd - baseStart : 0;
 
-    let bestStart = baseStart, bestDist = Infinity;
+    const PAST_HOLD_MS = 3 * 3600 * 1000;   // 끝난 지 이 정도까지는 방금 끝난 방송을 계속 붙든다(종료 결과 표시)
+    let best = null;
     for (const dayOffset of [-1, 0, 1]) {
       const s = new Date(baseStart);
       s.setDate(s.getDate() + dayOffset);
       const e = baseEnd ? new Date(s.getTime() + durationMs) : s;
-      const dist = now < s ? (s - now) : (now >= e ? (now - e) : 0);
-      if (dist < bestDist) { bestDist = dist; bestStart = s; }
+      let rank, dist;
+      if (now >= s && now < e) { rank = 0; dist = 0; }                                  // 지금 진행 중
+      else if (now >= e) { rank = (now - e <= PAST_HOLD_MS) ? 1 : 3; dist = now - e; }   // 이미 끝남(최근이면 유지, 오래됐으면 후순위)
+      else { rank = 2; dist = s - now; }                                                 // 아직 시작 전
+      if (!best || rank < best.rank || (rank === best.rank && dist < best.dist)) best = { rank, dist, s };
     }
+    const bestStart = best.s;
     return { start: bestStart, end: baseEnd ? new Date(bestStart.getTime() + durationMs) : null };
   }
 
