@@ -455,14 +455,24 @@
       width: calc(56 * var(--u)); z-index: 4;
     }
     body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot .alert-card { max-width: none; padding-block: calc(1 * var(--u)); }
-    /* 정확히 3등분 — 상단 바(ON AIR | 시계 | 부조·방송)와 하단 칩(진입 | 남음 | 종료)이 같은 세 칸에 위아래로 맞는다 */
-    body.tl-main:not(.portrait-right):not(.portrait-left) #topbar,
+    /* 하단 칩(진입 | 남음 | 종료)은 정확히 3등분 */
     body.tl-main:not(.portrait-right):not(.portrait-left) #cd-ends {
       display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(1.4 * var(--u));
     }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #status-box { width: auto; }
+    /* 상단 바: 시계(좌) | ON AIR(가운데, 작게) | 부조·방송(우). ON AIR를 줄인 만큼 시계와 방송명이 크고 길어진다.
+       방송명이 시계보다 길어서 오른쪽 칸을 조금 더 넓게 준다. */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #topbar {
+      display: grid; grid-template-columns: minmax(0, 0.85fr) auto minmax(0, 1.15fr); gap: calc(1.4 * var(--u));
+    }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock { order: 1; font-size: calc(7 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #status-box {
+      order: 2; width: auto; padding: calc(1 * var(--u)) calc(2.6 * var(--u));
+    }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #status-text { font-size: calc(3 * var(--u)) !important; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #side,
-    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot:not(:empty) ~ #side { width: auto; min-width: 0; max-width: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot:not(:empty) ~ #side { order: 3; width: auto; min-width: 0; max-width: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #side .tile .val { font-size: calc(5 * var(--u) * var(--sch-scale, 1)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio { padding-inline: calc(1.6 * var(--u)); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip { width: auto !important; min-width: 0; justify-content: center; }
     /* 트랙은 상단 바와 칩 사이 빈 자리의 정가운데 — 트랙 아래 눈금 글씨(약 4u)만큼 칩 위를 비워 '트랙+글씨' 묶음이 가운데로 보이게 */
     body.tl-main:not(.portrait-right):not(.portrait-left) #countdown { flex: 1 1 auto; }
@@ -1007,6 +1017,13 @@
     if (over > 1) tileProgName.style.fontSize = (Math.max(0.66, tileProgName.clientWidth / tileProgName.scrollWidth) * 97) + '%';
   }
   window.addEventListener('resize', fitProgName);
+  // 이름·창 크기만 보면 놓친다 — 폰트 로딩, 생방송 배치 전환, 글자 배율 변경으로 상자 폭이 바뀌어도
+  // 다시 재지 않아 잘린 채로 남았다(전체화면 전환 같은 resize가 와야 풀렸다). 상자 크기가 바뀌면 항상 다시 맞춘다.
+  if (window.ResizeObserver) {
+    let fitRaf = 0;
+    new ResizeObserver(() => { cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fitProgName); })
+      .observe(document.getElementById('tile-prog'));
+  }
   /* 방송 중 경과 눈금 — 제작 배정 시간(시작~예정 종료)을 '딱 떨어지는' 간격으로 나눈다.
      후보 간격(5·10·15·20·30·60·90·120·180분) 중 눈금 수가 3개에 가장 가까운 것을 고르고,
      같으면 큰 간격(눈금 적은 쪽). 60분→15/30/45, 120분→30/60/90, 77분→20/40/60, 20분→5/10/15.
@@ -1275,6 +1292,7 @@
     const k = (rem / SCH_BASELINE).toFixed(3);
     scheduleEl.style.setProperty('--sch-scale', k);
     if (sideEl) sideEl.style.setProperty('--sch-scale', k);
+    fitProgName();   // 글자 배율이 바뀌면 상자 폭은 그대로여도 이름이 넘칠 수 있다
   }
 
   /* 위 BASELINE 값들은 실제 배포 대상인 2560x1440 키오스크에서 눈으로 맞춘
@@ -2020,6 +2038,7 @@
     applyCdSize();       // --vpf도 화면 높이에 따라 다시 계산돼야 한다
     cdTrackWidthPx = 0;  // 글자 크기가 바뀌면 카드 여백도 바뀌어 트랙 폭이 달라진다
     fitEnds();
+    fitProgName();       // 폰트가 늦게 로드되면 이름 폭이 달라진다
   }
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(refitScaledText).catch(() => {});
