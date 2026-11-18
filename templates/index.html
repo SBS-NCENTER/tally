@@ -953,19 +953,34 @@
     let fit = 1;
     if (document.body.classList.contains('tl-main') && !isPortraitMode()) {
       // 생방송 3등분 배치: 칸 폭은 CSS가 똑같이 나눈다 — 어느 칩이든 글자가 칸을 넘치면 같이 줄인다
+      // 남음 칩과 진입·종료 칩은 따로 맞춘다 — 같이 줄이면 가장 긴 남음 때문에 진입·종료가 괜히 작아진다.
+      // 진입·종료는 서로 같은 크기, 남음 글자의 90%를 넘지 않게(남음이 주인공).
       const chips = [...cdEndsEl.querySelectorAll('.cd-chip')];
-      chips.forEach(c => { c.style.width = ''; });
-      for (let i = 0; i < 4; i++) {
-        // 가운데 정렬 칩은 넘친 부분이 양쪽으로 빠져 scrollWidth로는 덜 잡힌다 — 내용 폭을 직접 더해 잰다
-        const need = c => {
-          const cs = getComputedStyle(c), kids = [...c.children].filter(k => k.offsetWidth);
-          return kids.reduce((s, k) => s + k.offsetWidth, 0) + (parseFloat(cs.columnGap) || 0) * Math.max(0, kids.length - 1)
-            + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-        };
-        const over = Math.max(...chips.map(c => c.clientWidth ? need(c) / c.clientWidth : 1));
-        if (!(over > 1)) break;
-        fit = Math.max(0.5, fit / over * 0.985);
-        cdEndsEl.style.setProperty('--fit', fit.toFixed(3));
+      const rem = cdEndsEl.querySelector('.cd-chip.rem');
+      chips.forEach(c => { c.style.width = ''; c.style.removeProperty('--fit'); });
+      // 가운데 정렬 칩은 넘친 부분이 양쪽으로 빠져 scrollWidth로는 덜 잡힌다 — 내용 폭을 직접 더해 잰다
+      const need = c => {
+        const cs = getComputedStyle(c), kids = [...c.children].filter(k => k.offsetWidth);
+        return kids.reduce((s, k) => s + k.offsetWidth, 0) + (parseFloat(cs.columnGap) || 0) * Math.max(0, kids.length - 1)
+          + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      };
+      const shrink = (group, start) => {
+        let f = start;
+        group.forEach(c => c.style.setProperty('--fit', f.toFixed(3)));
+        for (let i = 0; i < 5; i++) {
+          const over = Math.max(...group.map(c => c.clientWidth ? need(c) / c.clientWidth : 1));
+          if (!(over > 1)) break;
+          f = Math.max(0.4, f / over * 0.985);
+          group.forEach(c => c.style.setProperty('--fit', f.toFixed(3)));
+        }
+        return f;
+      };
+      const tSize = c => parseFloat(getComputedStyle(c.querySelector('.t')).fontSize) || 0;
+      if (rem) shrink([rem], 1);
+      if (sides.length) {
+        sides.forEach(c => c.style.setProperty('--fit', '1'));
+        const full = tSize(sides[0]), cap = rem && full ? Math.min(1, 0.9 * tSize(rem) / full) : 1;
+        shrink(sides, cap);
       }
       return;
     }
