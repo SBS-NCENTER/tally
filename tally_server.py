@@ -636,7 +636,10 @@ def sps_to_result(picked, now):
         'start_str': start_dt.strftime('%H:%M:%S'),
         'end_str': end_dt.strftime('%H:%M:%S'),
         'end_next_day': end_dt.date() != start_dt.date(),
-        'start_next_day': start_dt.date() != now.date(),
+        # '>' 여야 한다 — '!='면 자정 전에 시작해 자정을 넘겨 진행 중인 방송(나이트라인
+        # 23:58~00:23 등)이 자정 직후 '내일 시작'으로 뒤집혀, 화면이 오늘 밤 23:58까지
+        # -23:58:30 카운트다운을 띄웠다. 어제 시작은 화면이 하루 앞뒤를 찾아 제자리에 앉힌다.
+        'start_next_day': start_dt.date() > now.date(),
     }
 
 
