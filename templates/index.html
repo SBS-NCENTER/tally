@@ -1589,6 +1589,11 @@
   function isDifferentDay(d, ref) {
     return d.getFullYear() !== ref.getFullYear() || d.getMonth() !== ref.getMonth() || d.getDate() !== ref.getDate();
   }
+  // 'N'(익일) 표시용 — 날짜가 다르기만 하면 자정을 넘겨 진행 중인 방송의 '어제' 시작(23:58)에도
+  // N이 붙었다. 오늘보다 뒤 날짜일 때만 N.
+  function isLaterDay(d, ref) {
+    return d > ref && isDifferentDay(d, ref);
+  }
 
   function updateCountdown(fromPoll) {
     if (!countdownModeOn) return;
@@ -1654,7 +1659,7 @@
     // 잠깐 체크 표시가 빠진다(모닝와이드1→2→3부, 뉴스헌터스→8뉴스 등).
     const confirmedMark = '';   // (5007) 확정 표시는 '현재 방송' 타일의 체크 배지로
     const durationMin = Math.round(durationSec / 60);
-    cdMarkerStartLabel.innerHTML = (isDifferentDay(start, now) ? 'N ' : '') + hhmm(start)
+    cdMarkerStartLabel.innerHTML = (isLaterDay(start, now) ? 'N ' : '') + hhmm(start)
       + `<span class="cd-marker-assigned">(${durationMin})</span>` + confirmedMark;
     cdMarkerStartProgram.innerHTML = programLabel();
     renderBoundedTrack(now, start, end, durationSec);
@@ -1666,7 +1671,7 @@
     // 계산은 계속 최신값(end, 방송 중엔 예정=최신이라 같고 끝나면 실제)을 쓴다.
     const scheduledEnd = broadcastScheduledEndTime
       ? timeToday(start, broadcastScheduledEndTime, broadcastScheduledEndTimeNextDay) : end;
-    cdMarkerEndLabel.textContent = (isDifferentDay(scheduledEnd, now) ? 'N ' : '') + hhmm(scheduledEnd);
+    cdMarkerEndLabel.textContent = (isLaterDay(scheduledEnd, now) ? 'N ' : '') + hhmm(scheduledEnd);
 
     // 방송이 실제로 끝났으면(=LIVE가 꺼지고 예정과 실제 종료가 달라지면) 그
     // 사실을 우하단 텍스트가 아니라 말풍선 자체로 보여준다 — 끝난 뒤엔 말풍선의
