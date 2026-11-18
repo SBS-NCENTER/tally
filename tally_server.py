@@ -295,7 +295,7 @@ SPS_LOOKAHEAD_DAYS = 30     # 오늘 남은 생방송이 없을 때 며칠 앞�
                             # 있는 게 낫다는 피드백으로 넉넉하게 늘림(그래도 완전히 무한은
                             # 아니고, 운행표 자체가 몇 주씩 통째로 비어있는 진짜 예외
                             # 상황에서는 여전히 일정 모드로 안전하게 빠진다).
-SPS_SLOW_INTERVAL = 20      # 초 — 평상시 폴링 간격
+SPS_SLOW_INTERVAL = 10      # 초 — 평상시 폴링 간격
 SPS_FAST_INTERVAL = 1       # 초 — 임박한 생방송 핸드오프 전후 폴링 간격
 SPS_FAST_WINDOW = timedelta(minutes=5)      # 핸드오프 경계 앞뒤로 촘촘하게 볼 범위
 SPS_HANDOFF_GAP = timedelta(minutes=10)     # 두 생방송 사이 이 안이면 "핸드오프"로 간주
@@ -512,9 +512,48 @@ def sps_read_history(date_str):
     return out
 
 
+_SPS_REPOS_PATH = ''   # 되는 것을 기억해 둔다 — 안 되는 경로를 매번 두드리지 않게
+
+
+def sps_get_repos(date_str, token):
+    """운행표 조회. 뉴스센터 전용 경로를 먼저, 안 되면 옛 경로.
+
+    ★ 새 토큰(뉴스센터 계정)은 옛 경로에서 403, 옛 토큰은 새 경로에서 500 이다.
+      이 서버는 없는 주소에 404 가 아니라 500 을 주므로 응답 내용으로
+      구분하지 않고 '되는 쪽'을 기억한다(2026-09-28 확인).
+    """
+    global _SPS_REPOS_PATH
+    paths = [f'/daily-schedule/repos/news-center?date={date_str}',
+             f'/daily-schedule/repos?date={date_str}&uhd=false&band=true']
+    if _SPS_REPOS_PATH:
+        paths.sort(key=lambda p: not p.startswith(_SPS_REPOS_PATH))
+    last = None
+    for path in paths:
+        try:
+            data = sps_api_get(path, token)
+        except Exception as e:
+            last = e
+            continue
+        _SPS_REPOS_PATH = path.split('?')[0]
+        return data.get('repos', [])
+    raise last
+
+
+def sps_air_index(repos):
+    """지금 주조가 내보내는 항목의 자리 — 항목의 status 로 안다.
+
+    status 2 = 방송 중, 1 = 다음. /onairdate 의 onAirIndex 와 일치한다
+    (2026-09-28, 20초 간격 3회 실측).
+    """
+    for i, x in enumerate(repos or []):
+        if x.get('status') == 2:
+            return i
+    return None
+
+
 def sps_fetch_repos(date_str, token):
     """해당 날짜(방송일) 운행표 전체(repos 배열)를 조회하고 캐시 파일도 갱신해서 반환."""
-    repos = sps_api_get(f'/daily-schedule/repos?date={date_str}&uhd=false&band=true', token).get('repos', [])
+    repos = sps_get_repos(date_str, token)
     save_sps_schedule(date_str, repos)
     return repos
 
@@ -746,7 +785,11 @@ def sps_listener():
                 on_air_event_id = None
                 on_air_idx = None
                 try:
-                    idx = sps_api_get(f'/daily-schedule/onairdate?date={date_str}', token).get('onAirIndex')
+                    idx = sps_air_index(repos)
+                    if idx is None:   # 옛 계정이면 이쪽도 된다
+                        idx = sps_api_get(
+                            f'/daily-schedule/onairdate?date={date_str}',
+                            token).get('onAirIndex')
                     if idx is not None and 0 <= idx < len(repos):
                         on_air_idx = idx
                         on_air_event_id = repos[idx].get('eventId')
@@ -1221,6 +1264,177 @@ def sps_history():
     return jsonify(records)
 
 
+# ── 운행표 내보내기 (사내 다른 시스템용, 2026-11-16) ───────────────────────────
+# 파이가 SPS 에서 받아 둔 하루치 운행표(sps.sbs.co.kr '실시간 편성정보' 표와 같은 내용)를
+# 같은 사내망의 다른 시스템에 넘긴다. 두 가지 길:
+#   1) 보내기 — settings.json 의 spsPushUrl 로 파이가 직접 POST(내용이 바뀔 때 + 1분마다)
+#   2) 가져가기 — GET /api/sps/schedule (spsFeedAllow 에 IP 가 있으면 그 IP 만)
+# 둘 다 캐시 파일만 읽는다 — SPS 를 더 두드리지 않는다.
+_FEED_DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+SPS_PUSH_CHECK_SEC = 2       # 캐시가 바뀌었는지 보는 간격
+SPS_PUSH_HEARTBEAT_SEC = 60  # 바뀐 게 없어도 이만큼마다 한 번 보낸다(받는 쪽이 '살아 있음'을 안다)
+SPS_PUSH_RETRY_SEC = 10      # 실패하면 이만큼 뒤에 다시
+SPS_PUSH_TIMEOUT_SEC = 5     # 받는 쪽이 멈춰도 오래 붙잡히지 않게
+SPS_PUSH_STATE = {'lastOkAt': None, 'lastError': None, 'lastErrorAt': None, 'sent': 0, 'failed': 0}
+
+
+def _hms(sec):
+    sec = int(sec or 0)
+    return f'{sec // 3600:02d}:{sec % 3600 // 60:02d}:{sec % 60:02d}'
+
+
+def sps_feed_item(i, e, raw=False):
+    try:
+        start = datetime.strptime(e['startTime'], '%Y-%m-%d %H:%M:%S')
+        end = (start + timedelta(seconds=int(e.get('duration') or 0))).strftime('%Y-%m-%d %H:%M:%S')
+    except Exception:
+        end = ''
+    item = {
+        'index': i,
+        'eventId': e.get('eventId'),
+        'startTime': e.get('startTime', ''),          # 방송시간
+        'endTime': end,
+        'duration': e.get('duration'),                # 방송길이(초)
+        'durationText': _hms(e.get('duration')),      # 방송길이 00:03:51
+        'programName': e.get('programName', ''),
+        'programItemName': e.get('programItemName', ''),   # 프로그램 이름(화면에 보이는 긴 이름)
+        'videoSource': e.get('videoSource', ''),      # 비디오소스 PGM1 · PR · ID · CM · TS-4 · RSW4 …
+        'eventType': e.get('eventType', ''),          # PGM = 본방송(초록 줄), SB = 광고·예고·ID
+        'live': bool(e.get('liveOrVcr')),             # 생방송
+        'rerun': bool(e.get('rerun')),                # 재
+        'caption': bool(e.get('closedCaptionService')),       # 자(자막)
+        'signLanguage': bool(e.get('signLanguage')),          # 수어
+        'audioDescription': bool(e.get('descriptiveVideoService')),  # 화면해설
+        'onAir': e.get('status') == 2,                # 지금 주조가 내보내는 항목
+        'next': e.get('status') == 1,                 # 바로 다음 항목
+    }
+    if raw:
+        item['sps'] = e                               # SPS 원본 그대로
+    return item
+
+
+def sps_feed_payload(date_str=None, sources=None, raw=False):
+    """하루치 운행표를 넘길 모양으로. 그날 캐시가 없으면 None."""
+    today = sps_broadcast_date(datetime.now(KST)).strftime('%Y-%m-%d')
+    date_str = date_str or today
+    try:
+        with open(os.path.join(SPS_DATA_DIR, f'sps_schedule_{date_str}.json'), encoding='utf-8') as f:
+            cache = json.load(f)
+    except Exception:
+        return None
+    repos = cache.get('repos', [])
+    items = [sps_feed_item(i, e, raw) for i, e in enumerate(repos)
+             if not sources or e.get('videoSource') in sources]
+    health = sps_health_snapshot()
+    return {
+        'date': date_str,
+        'isToday': date_str == today,
+        # ok 면 파이가 SPS 와 정상 연결 중(10초마다 새로 받음). down/stale 이면 아래 값이 낡았을 수 있다.
+        'health': health.get('state'),
+        'checkedAt': health.get('lastOkAt'),     # 파이가 마지막으로 SPS 에서 받은 시각
+        'changedAt': cache.get('updated_at'),    # 운행표 내용이 마지막으로 바뀐 시각
+        'onAirIndex': next((i for i, e in enumerate(repos) if e.get('status') == 2), None),
+        'count': len(items),
+        'items': items,
+    }
+
+
+def get_push_settings():
+    try:
+        with open(SETTINGS_FILE, encoding='utf-8') as f:
+            s = json.load(f)
+    except Exception:
+        s = {}
+    urls = s.get('spsPushUrl') or []
+    if isinstance(urls, str):
+        urls = [urls]
+    return [u for u in urls if u.startswith(('http://', 'https://'))], s.get('spsPushToken') or ''
+
+
+def sps_push_once(url, token, payload):
+    body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    if token:
+        headers['X-Scheduler-Token'] = token
+    req = urllib.request.Request(url, data=body, headers=headers, method='POST')
+    with urllib.request.urlopen(req, timeout=SPS_PUSH_TIMEOUT_SEC) as resp:
+        if not 200 <= resp.status < 300:
+            raise RuntimeError(f'HTTP {resp.status}')
+
+
+def sps_push_loop():
+    """운행표가 바뀌면(시각 밀림·항목 변경·지금 방송 넘어감) 바로, 아니면 1분마다
+    받는 쪽에 하루치 전체를 POST. 받는 곳마다 따로 기억해서 한 곳이 죽어도 다른 곳은 간다.
+    이 스레드는 탈리·SPS 조회와 아무것도 나눠 쓰지 않는다 — 받는 쪽이 꺼져 있어도
+    방송 화면에는 영향이 없다."""
+    sent = {}   # url -> (마지막으로 보낸 내용 지문, 보낸 시각, 다음에 다시 해 볼 시각)
+    while True:
+        time.sleep(SPS_PUSH_CHECK_SEC)
+        try:
+            urls, token = get_push_settings()
+            if not urls:
+                continue
+            payload = sps_feed_payload()
+            if payload is None:
+                continue
+            # 지문은 내용만으로(health/checkedAt 처럼 매번 바뀌는 칸은 빼고)
+            mark = hashlib.sha256(json.dumps([payload['date'], payload['items']],
+                                             ensure_ascii=False).encode('utf-8')).hexdigest()
+            now = time.time()
+            for url in urls:
+                last_mark, last_at, retry_at = sent.get(url, (None, 0, 0))
+                changed = mark != last_mark
+                if now < retry_at or (not changed and now - last_at < SPS_PUSH_HEARTBEAT_SEC):
+                    continue
+                payload['reason'] = 'change' if changed else 'heartbeat'
+                payload['sentAt'] = datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')
+                try:
+                    sps_push_once(url, token, payload)
+                    sent[url] = (mark, now, 0)
+                    SPS_PUSH_STATE.update(lastOkAt=payload['sentAt'], sent=SPS_PUSH_STATE['sent'] + 1)
+                except Exception as e:
+                    sent[url] = (last_mark, last_at, now + SPS_PUSH_RETRY_SEC)
+                    msg = f'{type(e).__name__}: {e}'
+                    if SPS_PUSH_STATE['lastError'] != msg:
+                        print(f'[SPS 보내기] 실패 {url} — {msg}', flush=True)
+                    SPS_PUSH_STATE.update(lastError=msg, lastErrorAt=payload['sentAt'],
+                                          failed=SPS_PUSH_STATE['failed'] + 1)
+        except Exception as e:
+            print(f'[SPS 보내기] 오류: {e}', flush=True)
+
+
+@app.route('/api/sps/push-status')
+def api_sps_push_status():
+    """보내기가 잘 되고 있는지(받는 주소는 보여 주지 않는다)."""
+    urls, _ = get_push_settings()
+    return jsonify(dict(SPS_PUSH_STATE, targets=len(urls)))
+
+
+@app.route('/api/sps/schedule')
+def api_sps_schedule():
+    """하루치 운행표. ?date=YYYY-MM-DD(없으면 오늘 방송일, 새벽 5시 전이면 전날),
+    ?source=PGM1,TS-4(비디오소스로 거르기), ?raw=1(SPS 원본 칸까지)."""
+    try:
+        with open(SETTINGS_FILE, encoding='utf-8') as f:
+            allow = json.load(f).get('spsFeedAllow') or []
+    except Exception:
+        allow = []
+    if allow and request.remote_addr not in allow:
+        return jsonify(error='forbidden'), 403
+    date_str = request.args.get('date') or None
+    if date_str and not _FEED_DATE.match(date_str):
+        return jsonify(error='bad_date', hint='date=YYYY-MM-DD'), 400
+    sources = {s.strip() for s in (request.args.get('source') or '').split(',') if s.strip()}
+    payload = sps_feed_payload(date_str, sources, request.args.get('raw') in ('1', 'true'))
+    if payload is None:
+        resp, code = jsonify(error='no_schedule', date=date_str), 404
+    else:
+        resp, code = jsonify(payload), 200
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp, code
+
+
 @app.route('/settings', methods=['GET'])
 def get_settings():
     try:
@@ -1482,5 +1696,6 @@ if __name__ == '__main__':
     threading.Thread(target=gpio_listener, daemon=True, name='gpio').start()
     threading.Thread(target=auto_revert_watcher, daemon=True, name='auto-revert').start()
     threading.Thread(target=sps_listener, daemon=True, name='sps').start()
+    threading.Thread(target=sps_push_loop, daemon=True, name='sps-push').start()
     print(f"[tally] '{cfg['name']}' → http://{cfg['host']}:{cfg['port']}", flush=True)
     app.run(host=cfg['host'], port=cfg['port'], threaded=True)
