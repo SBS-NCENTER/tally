@@ -459,18 +459,24 @@
     body.tl-main:not(.portrait-right):not(.portrait-left) #cd-ends {
       display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(1.4 * var(--u));
     }
-    /* 상단 바: 시계(좌) | ON AIR(가운데, 작게) | 부조·방송(우). ON AIR를 줄인 만큼 시계와 방송명이 크고 길어진다.
-       방송명이 시계보다 길어서 오른쪽 칸을 조금 더 넓게 준다. */
+    /* 상단 바: 시계 상자(좌) | 부조·방송(우), 정확히 반반 (2026-11-18 시안 H1).
+       ON AIR 박스는 빼고, 방송 중이면 방송 박스가 빨갛게 켜져 ON AIR 램프 역할을 한다. */
     body.tl-main:not(.portrait-right):not(.portrait-left) #topbar {
-      display: grid; grid-template-columns: minmax(0, 0.85fr) auto minmax(0, 1.15fr); gap: calc(1.4 * var(--u));
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: calc(1.4 * var(--u));
     }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock { order: 1; font-size: calc(7 * var(--u)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #status-box {
-      order: 2; width: auto; padding: calc(1 * var(--u)) calc(2.6 * var(--u));
+    body.tl-main:not(.portrait-right):not(.portrait-left) #status-box { display: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock {
+      order: 1; font-size: calc(7.2 * var(--u)); align-self: stretch; align-items: center;
+      background: var(--surface); border-radius: calc(1.6 * var(--u));
     }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #status-text { font-size: calc(3 * var(--u)) !important; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #side,
-    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot:not(:empty) ~ #side { order: 3; width: auto; min-width: 0; max-width: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot:not(:empty) ~ #side { order: 2; width: auto; min-width: 0; max-width: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog { transition: background 0.25s ease, box-shadow 0.25s ease; }
+    body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog {
+      background: var(--red); box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45);
+    }
+    body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog .cap,
+    body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog .val { color: #fff; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #side .tile .val { font-size: calc(5 * var(--u) * var(--sch-scale, 1)); }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio { padding-inline: calc(1.6 * var(--u)); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip { width: auto !important; min-width: 0; justify-content: center; }
