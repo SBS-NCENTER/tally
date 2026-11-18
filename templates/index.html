@@ -434,6 +434,43 @@
     .tm-col.finished { box-shadow: inset 0 0 0 calc(0.2 * var(--u)) var(--red); }
     .tm-col.finished .tm-value { color: var(--red); animation: chip-blink 0.8s ease-in-out infinite; }
 
+    /* ══════════ 생방송 모드(가로) = 타임라인이 주인공 (2026-11-18, 시안 B1) ══════════
+       현장은 시계보다 타임라인을 본다 — 큰 시계 카드를 접고 시계는 상단 바 가운데로.
+       트랙은 뚱뚱하지 않게 조금만 굵히고 화면 가운데에 띄우며, 칩은 맨 아래에 크게.
+       일반(일정)·타이머 모드와 세로 모드는 예전 배치 그대로. */
+    #top-clock { display: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #center { display: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #info-row { display: none !important; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot:empty { flex: 0 0 auto; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock {
+      flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; align-self: center;
+      font-weight: 800; font-size: calc(6.2 * var(--u)); line-height: 1; letter-spacing: -0.02em; color: #fff; white-space: nowrap;
+      transition: font-size 0.3s ease;
+    }
+    #top-clock-meridiem { font-size: 0.4em; color: var(--text-dim); margin-right: 0.25em; letter-spacing: 0; }
+    #top-clock-meridiem:empty { display: none; }
+    /* 특보·긴급 알림 카드 — 상단 바는 시계가 차지하므로, 상단 바 바로 아래 빈 자리(타임라인 위) 가운데에 띄운다 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot {
+      position: absolute; top: calc(100% + 2.4 * var(--u)); left: 50%; transform: translateX(-50%);
+      width: calc(56 * var(--u)); z-index: 4;
+    }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot .alert-card { max-width: none; padding-block: calc(1 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot:not(:empty) ~ #side { max-width: calc(64 * var(--u)); }   /* 알림이 상단 바를 안 쓰니 방송명 칸을 줄일 필요 없음 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #countdown { flex: 1 1 auto; padding-top: calc(5 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #cd-track { height: calc(calc(6.5 * var(--u)) * var(--cb)); margin: auto 0; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-runner-head { width: calc(calc(0.9 * var(--u)) * var(--cb)); height: calc(calc(9.5 * var(--u)) * var(--cb)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-runner-cap {
+      bottom: calc(calc(5.35 * var(--u)) * var(--cb)); border-width: calc(calc(1.3 * var(--u)) * var(--cb)); border-bottom-width: 0;
+    }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-tick::before { width: calc(0.45 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-tick span { font-size: calc(2.8 * var(--u)); top: calc(100% + 1.2 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #cd-ends { margin-bottom: calc(1 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip {
+      padding: calc(calc(2.6 * var(--u)) * var(--cb)) calc(calc(3 * var(--u)) * var(--fit)); border-radius: calc(2.6 * var(--u));
+    }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .t { font-size: calc(calc(7.4 * var(--u)) * var(--cl) * var(--fit)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { font-size: calc(calc(10 * var(--u)) * var(--ct) * var(--fit)); }
+
     /* ══════════ 세로 모드 (전체 화면 90도 회전) ══════════ */
     body.portrait-right, body.portrait-left {
       position: fixed;
@@ -664,6 +701,8 @@
     </div>
     <!-- 상단 가운데: 특보·긴급 편성 알림 (JS가 채움) -->
     <div id="alert-slot"></div>
+    <!-- 생방송 모드(가로)에선 큰 시계 대신 상단 가운데 작은 시계 — 화면 가운데는 타임라인 -->
+    <div id="top-clock"><span id="top-clock-meridiem"></span><span id="top-clock-time"></span></div>
     <!-- 부조정실 + 현재/다음 방송: 한 박스로 상단 우측 -->
     <div id="side">
       <div class="tile" id="tile-studio">
@@ -852,6 +891,8 @@
   const stopwatchEl = document.getElementById('stopwatch');
   const clockEl     = document.getElementById('clock');
   const clockTimeEl = document.getElementById('clock-time');
+  const topClockTimeEl = document.getElementById('top-clock-time');
+  const topClockMeridiemEl = document.getElementById('top-clock-meridiem');
   const clockMeridiemEl = document.getElementById('clock-meridiem');
   let clock12Hour = true; // 기본값 12시간제(AM/PM) — settings.json에 값이 아직 없어도 이게 기본
   const infoRow     = document.getElementById('info-row');
@@ -1135,6 +1176,9 @@
   }
 
   function setClockFontSize(rem) {
+    // 시계 카드가 접혀 있으면(생방송 모드) 잴 폭이 0이라 글자가 0으로 줄어든다 — 그땐 건너뛰고
+    // 카드가 다시 보일 때(applyBottomDisplay) 다시 맞춘다.
+    if (!clockCard.clientWidth) return;
     if (false) {   // (5007) 세로 모드도 아래 카드 기준 분기를 그대로 쓴다
       // 90도 회전 구조라 두 축이 뒤바뀐다:
       // - #clock의 '너비'(8ch, 로컬 좌표)는 화면에선 '세로' 길이가 됨 → innerHeight 기준 제한
@@ -1356,6 +1400,8 @@
       clockTimeEl.innerHTML = clockDigits(`${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`);
       clockMeridiemEl.textContent = '';
     }
+    topClockTimeEl.innerHTML = clockTimeEl.innerHTML;
+    topClockMeridiemEl.textContent = clockMeridiemEl.textContent;
     dateEl.textContent =
       `${n.getFullYear()}년 ${pad(n.getMonth()+1)}월 ${pad(n.getDate())}일 (${DAYS[n.getDay()]})`;
   }
@@ -1439,6 +1485,13 @@
     scheduleEl.style.display  = (!countdownModeOn && !stopwatchModeOn && scheduleVisible) ? 'grid' : 'none';
     countdownEl.style.display = countdownModeOn ? 'flex' : 'none';
     stopwatchEl.style.display = stopwatchModeOn ? 'flex' : 'none';
+    // 생방송 모드 = 타임라인이 주인공(2026-11-18 B1): 큰 시계 카드를 접고 시계는 상단 바로.
+    // 가로 모드에서만 적용(CSS가 세로 모드는 제외). 시계 카드가 다시 보이게 되면 크기를 다시 맞춘다.
+    const tl = countdownModeOn && !stopwatchModeOn;
+    if (document.body.classList.contains('tl-main') !== tl) {
+      document.body.classList.toggle('tl-main', tl);
+      if (!tl) { try { isPortraitMode() ? applyPortraitSizes() : applyLandscapeSizes(); } catch (e) {} }
+    }
   }
 
   /* ── 방송 시작 카운트다운 ───────────────────────────────────── */
