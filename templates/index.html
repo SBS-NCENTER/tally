@@ -527,6 +527,10 @@
     #tl-ring .head { fill: var(--ring-hi); }
     #tl-ring .mk { fill: rgba(255,255,255,0.6); }
     #tl-ring .mk.past { fill: rgba(0,0,0,0.5); }
+    /* 시작 전엔 밝은 쪽이 '앞으로 남은' 구간 — 점 색도 반대로(밝은 호 위 = 어두운 점, 지나온 어두운 쪽 = 흐린 점), 12시 시작 점은 숨김 */
+    #tl-ring.pre .mk, #tl-ring.imm .mk { fill: rgba(0,0,0,0.45); }
+    #tl-ring.pre .mk.past, #tl-ring.imm .mk.past { fill: rgba(255,255,255,0.3); }
+    #tl-ring.pre .cap0, #tl-ring.imm .cap0 { opacity: 0; }
     #tl-ring text { display: none; }   /* 눈금 글자(몇 시간 전·몇 분 전)는 뺀다(사용자 2026-11-20) — 점만 남긴다 */
     #tl-ring .mk { r: 7px; }
     #tl-ring text.past { fill: #D1D1D6; }
@@ -1241,8 +1245,11 @@
     if (tlMidValEl.textContent !== val) tlMidValEl.textContent = val;
   }
   function tlOff() { tlRingEl.classList.add('off'); setTlMid('', ''); }
+  // 시작 전(pre·imm)은 '남은 시간'을 밝게 — 머리(p)부터 진입(12시)까지가 밝고, 지나온 쪽은 어둡다. 줄어들어 진입 때 0.
+  // 방송 중·끝난 뒤는 지나온 만큼(0→p)을 채운다. (사용자 2026-11-20: 남은 시간을 세니까 시작 전엔 반대로)
+  function tlRemainMode() { return tlRingEl.classList.contains('pre') || tlRingEl.classList.contains('imm'); }
   function tlDrawArc(p) {
-    const d = tlArcD(p);
+    const d = tlRemainMode() ? tlSeg(p, 1) : tlArcD(p);
     if (tlArcEl.getAttribute('d') !== d) { tlArcEl.setAttribute('d', d); tlGlowEl.setAttribute('d', d); }
     const h = tlPt(TL_R, p);
     [tlHeadEl, tlHeadDotEl].forEach(el => { el.setAttribute('cx', h[0].toFixed(2)); el.setAttribute('cy', h[1].toFixed(2)); });
@@ -1317,16 +1324,16 @@
     if (tlRingEl.classList.contains('off') || !document.body.classList.contains('tl-main')) return;
     tlRunTween(1300, k => {
       const t = k * 1300;
+      // 시작 전 밝은 '남은 시간'이 0이 된 자리에서 흰 빛이 한 바퀴 돌고, 빨간 방송 호가 0부터 자란다
+      const target = tlLastArgs ? tlLastArgs[1] : 0;
       if (t < 800) {
         const e = t / 800;
         tlFlashEl.setAttribute('d', tlSeg(Math.max(0, e - 0.12), Math.max(0.001, e)));
         tlFlashEl.style.opacity = String(1 - e * 0.6);
-        tlDrawArc(1);
       } else {
         tlFlashEl.style.opacity = '0';
-        const target = tlLastArgs ? tlLastArgs[1] : 0;
-        tlDrawArc(1 + (target - 1) * tlEase((t - 800) / 500));
       }
+      tlDrawArc(target);
     });
   }
   function cdBeat() {
