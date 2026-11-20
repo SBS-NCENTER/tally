@@ -450,25 +450,25 @@
     body.tl-main:not(.portrait-right):not(.portrait-left) #info-row { display: none !important; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #status-box { display: none; }   /* ON AIR 는 고리 안 등과 방송명 타일 색이 맡는다 */
     /* ── 위 줄 ── */
-    body.tl-main:not(.portrait-right):not(.portrait-left) #topbar { display: flex; align-items: stretch; gap: calc(1.4 * var(--u)); height: calc(8.33 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #topbar { display: flex; align-items: stretch; gap: calc(1.4 * var(--u)); height: calc(6.6 * var(--u)); }   /* 2026-11-20 사용자 '위 줄 더 얇게' 8.33u→6.6u */
     body.tl-main:not(.portrait-right):not(.portrait-left) #side, body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot:not(:empty) ~ #side {
-      order: 1; flex: 0 1 auto; width: auto; min-width: 0; max-width: none; border-radius: calc(2.3 * var(--u)); background: transparent;
+      order: 1; flex: 0 1 auto; width: auto; min-width: 0; max-width: none; border-radius: calc(1.9 * var(--u)); background: transparent;
     }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio { flex: none; padding: 0 calc(2.3 * var(--u)); background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair); border-radius: calc(2.3 * var(--u)) 0 0 calc(2.3 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio { flex: none; padding: 0 calc(2 * var(--u)); background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair); border-radius: calc(1.9 * var(--u)) 0 0 calc(1.9 * var(--u)); }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio .cap { display: none; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio .val { font-size: calc(3.75 * var(--u) * var(--sch-scale, 1)); font-weight: 800; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog { padding: 0 calc(2.7 * var(--u)) 0 calc(2.1 * var(--u)); transition: background 0.25s ease, box-shadow 0.25s ease; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog .cap { font-size: calc(1.67 * var(--u) * var(--sch-scale, 1)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog .val { font-size: calc(4.5 * var(--u) * var(--sch-scale, 1)); line-height: 1.08; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio .val { font-size: calc(3.1 * var(--u) * var(--sch-scale, 1)); font-weight: 800; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog { padding: 0 calc(2.3 * var(--u)) 0 calc(1.8 * var(--u)); transition: background 0.25s ease, box-shadow 0.25s ease; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog .cap { font-size: calc(1.35 * var(--u) * var(--sch-scale, 1)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog .val { font-size: calc(3.7 * var(--u) * var(--sch-scale, 1)); line-height: 1.08; }
     body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog { background: var(--red); box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45); }
     body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog .cap,
     body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog .val { color: #fff; }
     /* 현재 시각 — 덜 중요한 정보라 왼쪽 부조 칸과 같은 어두운 상자에 연회색으로(사용자 2026-11-20 'B 어두운 상자') */
     body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock {
       order: 2; margin-left: auto; flex: none; display: flex; align-items: center; justify-content: center;
-      padding: 0 calc(2.4 * var(--u)); border-radius: calc(2.3 * var(--u));
+      padding: 0 calc(2 * var(--u)); border-radius: calc(1.9 * var(--u));
       background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair);
-      font-weight: 600; font-size: calc(5.4 * var(--u)); line-height: 1; letter-spacing: -0.02em; color: #C7C7CC; white-space: nowrap;
+      font-weight: 600; font-size: calc(4.3 * var(--u)); line-height: 1; letter-spacing: -0.02em; color: #C7C7CC; white-space: nowrap;
     }
     /* 특보·편성 알림 카드 — 위 줄 바로 아래 가운데. 떠 있는 동안 가운데 칸을 그만큼 내려 고리·숫자를 가리지 않는다 */
     body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot {
@@ -480,7 +480,7 @@
     /* ── 가운데 + 아래: 3칸 격자. 1행 = 고리(1칸) · 남은 시간(2~3칸), 2행 = 유리판 위 진입 | 경과/배정 | 종료 ── */
     body.tl-main:not(.portrait-right):not(.portrait-left) #countdown {
       flex: 1 1 auto; min-height: 0; display: grid !important;   /* applyBottomDisplay 가 style.display='flex' 를 직접 넣는다 — 생방송 모드에서만 격자로 덮는다 */
-      grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr) calc(11 * var(--u));
+      grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr) calc(12.6 * var(--u));   /* 아래 판 11u→12.6u(사용자 '넓어져도 된다') */
       row-gap: calc(1.6 * var(--u));
     }
     body.tl-main:not(.portrait-right):not(.portrait-left) #countdown.no-schedule #tl-ring, body.tl-main:not(.portrait-right):not(.portrait-left) #countdown.no-schedule #tl-dock, body.tl-main:not(.portrait-right):not(.portrait-left) #countdown.no-schedule #tl-mid { visibility: hidden; }
@@ -490,15 +490,15 @@
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-ring.off { visibility: hidden; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-dock { display: block; grid-column: 1 / 4; grid-row: 2; border-radius: calc(2.9 * var(--u)); background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip { grid-row: 2; z-index: 1; width: auto !important; min-width: 0; justify-content: center; align-self: center;
-      background: transparent !important; box-shadow: none !important; border: 0 !important; padding: 0 calc(1.2 * var(--u)); gap: calc(1 * var(--u)); }
+      background: transparent !important; box-shadow: none !important; border: 0 !important; padding: 0 calc(1.8 * var(--u)); gap: calc(1 * var(--u)); }   /* 칸 경계선과 숫자 사이 여유 */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in { grid-column: 1; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid { display: flex; grid-column: 2; align-self: stretch; align-items: center; position: relative; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::before, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::after { content: ''; position: absolute; top: calc(2.1 * var(--u)); bottom: calc(2.1 * var(--u)); width: 2px; background: var(--hair); }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::before { left: 0; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::after { right: 0; }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out { grid-column: 3; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .cap, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out .cap, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid .cap { display: block; grid-area: cap; justify-self: center; font-size: calc(2.1 * var(--u)); line-height: 1.15; font-weight: 700; color: var(--sub); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .t { font-size: calc(calc(5.4 * var(--u)) * var(--cl) * var(--fit)); font-weight: 700; letter-spacing: -0.02em; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .cap, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out .cap, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid .cap { display: block; grid-area: cap; justify-self: center; font-size: calc(2.4 * var(--u)); line-height: 1.15; font-weight: 700; color: var(--sub); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .t { font-size: calc(calc(6.2 * var(--u)) * var(--cl) * var(--fit)); font-weight: 700; letter-spacing: -0.02em; }
     /* 아래 판 세 칸: 라벨은 위에 작게, 숫자는 아래에 크게(2026-11-20 사용자 '잘 안 보인다') — 숫자가 칸 폭을 다 쓴다. ✓ 는 숫자 옆 */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid {
       display: grid; grid-template-columns: auto auto; grid-template-areas: "cap cap" "t ok";
@@ -509,12 +509,12 @@
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid .t { color: #C7C7CC; }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .cd-marker-assigned { display: none; }   /* 배정 시간은 가운데 칸이 맡는다 */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in.confirmed .t { color: var(--primary); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .ok { order: 3; width: calc(3.4 * var(--u)); height: calc(3.4 * var(--u)); margin: 0; font-size: calc(2 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .ok { order: 3; width: calc(3.8 * var(--u)); height: calc(3.8 * var(--u)); margin: 0; font-size: calc(2.3 * var(--u)); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in.confirmed .ok { background: var(--primary); color: var(--on-primary); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in.just-confirmed { animation: none; }
     /* 남은 시간 — 칩 모양 없이 큰 숫자. 색으로 상태(1분 전 앰버, 초과·늦게 끝남 빨강, 일찍 끝남 초록) */
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem { grid-column: 2 / 4; grid-row: 1; align-self: center; justify-self: stretch; justify-content: center; padding: 0; }   /* 칸 폭을 꽉 잡아야 fitEnds 가 넘침을 잰다 */
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { font-size: calc(calc(10.2 * var(--u)) * var(--ct) * var(--fit)); font-weight: 800; letter-spacing: -0.025em; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem { grid-column: 2 / 4; grid-row: 1; align-self: center; justify-self: stretch; justify-content: center; padding: 0 0 0 calc(3.5 * var(--u)) !important; }   /* 왼쪽 여유: 고리 오른쪽 눈금 글자('30분 전')와 붙지 않게 */   /* 칸 폭을 꽉 잡아야 fitEnds 가 넘침을 잰다 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { font-size: calc(calc(12.3 * var(--u)) * var(--ct) * var(--fit)); font-weight: 800; letter-spacing: -0.025em; }   /* 196→236px(사용자 '남은 시간 더 크게'). 칸 폭을 넘으면 fitEnds 가 줄인다 */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.beat { animation: tl-beat 0.5s cubic-bezier(0.2, 0, 0, 1); }
     @keyframes tl-beat { 0% { transform: scale(1.05); } 100% { transform: scale(1); } }
     /* ── 고리 ── */
@@ -1072,10 +1072,13 @@
       };
       const tSize = c => parseFloat(getComputedStyle(c.querySelector('.t')).fontSize) || 0;
       if (rem) shrink([rem], 1);
-      if (sides.length) {
-        sides.forEach(c => c.style.setProperty('--fit', '1'));
-        const full = tSize(sides[0]), cap = rem && full ? Math.min(1, 0.9 * tSize(rem) / full) : 1;
-        shrink(sides, cap);
+      // 아래 판 세 칸(진입 | 경과·배정 | 종료)은 같이 — 가운데 칸이 빠지면 커진 숫자가 옆 칸으로 넘친다
+      const mid = cdEndsEl.querySelector('#tl-mid');
+      const trio = sides.concat(mid && mid.offsetWidth ? [mid] : []);
+      if (trio.length) {
+        trio.forEach(c => c.style.setProperty('--fit', '1'));
+        const full = tSize(trio[0]), cap = rem && full ? Math.min(1, 0.9 * tSize(rem) / full) : 1;
+        shrink(trio, cap);
       }
       return;
     }
