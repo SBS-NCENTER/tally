@@ -434,70 +434,106 @@
     .tm-col.finished { box-shadow: inset 0 0 0 calc(0.2 * var(--u)) var(--red); }
     .tm-col.finished .tm-value { color: var(--red); animation: chip-blink 0.8s ease-in-out infinite; }
 
-    /* ══════════ 생방송 모드(가로) = 타임라인이 주인공 (2026-11-18, 시안 B1) ══════════
-       현장은 시계보다 타임라인을 본다 — 큰 시계 카드를 접고 시계는 상단 바 가운데로.
-       트랙은 뚱뚱하지 않게 조금만 굵히고 화면 가운데에 띄우며, 칩은 맨 아래에 크게.
+    /* ══════════ 생방송 모드(가로) — 시안 A2 '부조 타일' (2026-11-20) ══════════
+       위: [부조 | 방송명] 타일(왼쪽, 방송 중 빨강) · 현재 시각은 어두운 상자(오른쪽, 덜 중요해 회색).
+       가운데: 왼쪽 고리(진행·눈금, 안에 ON AIR 등) + 오른쪽 큰 남은 시간. 아래: 유리판 한 장 [진입 | 경과/배정 | 종료].
+       계산은 예전 그대로 — 고리는 타임라인이 구한 위치(pct)·눈금을 그대로 받아 그린다. 숨긴 #cd-track 도 계속 계산된다.
        일반(일정)·타이머 모드와 세로 모드는 예전 배치 그대로. */
-    #top-clock { display: none; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #center { display: none; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #info-row { display: none !important; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot:empty { flex: 0 0 auto; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock {
-      flex: 1; min-width: 0; display: flex; align-items: baseline; justify-content: center; align-self: center;
-      font-weight: 800; font-size: calc(6.2 * var(--u)); line-height: 1; letter-spacing: -0.02em; color: #fff; white-space: nowrap;
-      transition: font-size 0.3s ease;
-    }
+    #top-clock, #tl-ring, #tl-dock, #tl-mid { display: none; }
     #top-clock-meridiem { font-size: 0.4em; color: var(--text-dim); margin-right: 0.25em; letter-spacing: 0; }
     #top-clock-meridiem:empty { display: none; }
-    /* 특보·긴급 알림 카드 — 상단 바는 시계가 차지하므로, 상단 바 바로 아래 빈 자리(타임라인 위) 가운데에 띄운다 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) {
+      --mat: rgba(255,255,255,0.075); --hair: rgba(255,255,255,0.10); --sub: #98989F;
+      padding: calc(2.9 * var(--u)) calc(3.75 * var(--u)) calc(3.1 * var(--u));
+    }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #center { display: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #info-row { display: none !important; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #status-box { display: none; }   /* ON AIR 는 고리 안 등과 방송명 타일 색이 맡는다 */
+    /* ── 위 줄 ── */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #topbar { display: flex; align-items: stretch; gap: calc(1.4 * var(--u)); height: calc(8.33 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #side, body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot:not(:empty) ~ #side {
+      order: 1; flex: 0 1 auto; width: auto; min-width: 0; max-width: none; border-radius: calc(2.3 * var(--u)); background: transparent;
+    }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio { flex: none; padding: 0 calc(2.3 * var(--u)); background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair); border-radius: calc(2.3 * var(--u)) 0 0 calc(2.3 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio .cap { display: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio .val { font-size: calc(3.75 * var(--u) * var(--sch-scale, 1)); font-weight: 800; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog { padding: 0 calc(2.7 * var(--u)) 0 calc(2.1 * var(--u)); transition: background 0.25s ease, box-shadow 0.25s ease; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog .cap { font-size: calc(1.67 * var(--u) * var(--sch-scale, 1)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog .val { font-size: calc(4.5 * var(--u) * var(--sch-scale, 1)); line-height: 1.08; }
+    body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog { background: var(--red); box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45); }
+    body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog .cap,
+    body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog .val { color: #fff; }
+    /* 현재 시각 — 덜 중요한 정보라 왼쪽 부조 칸과 같은 어두운 상자에 연회색으로(사용자 2026-11-20 'B 어두운 상자') */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock {
+      order: 2; margin-left: auto; flex: none; display: flex; align-items: center; justify-content: center;
+      padding: 0 calc(2.4 * var(--u)); border-radius: calc(2.3 * var(--u));
+      background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair);
+      font-weight: 600; font-size: calc(5.4 * var(--u)); line-height: 1; letter-spacing: -0.02em; color: #C7C7CC; white-space: nowrap;
+    }
+    /* 특보·편성 알림 카드 — 위 줄 바로 아래 가운데. 떠 있는 동안 가운데 칸을 그만큼 내려 고리·숫자를 가리지 않는다 */
     body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot {
       position: absolute; top: calc(100% + 1.6 * var(--u)); left: 50%; transform: translateX(-50%);
       width: calc(56 * var(--u)); z-index: 4;
     }
     body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot .alert-card { max-width: none; padding-block: calc(1 * var(--u)); }
-    /* 하단 칩(진입 | 남음 | 종료)은 정확히 3등분 */
-    body.tl-main:not(.portrait-right):not(.portrait-left) #cd-ends {
-      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(1.4 * var(--u));
+    body.tl-main:not(.portrait-right):not(.portrait-left):has(#alert-slot:not(:empty)) #countdown { padding-top: calc(8.4 * var(--u)); }
+    /* ── 가운데 + 아래: 3칸 격자. 1행 = 고리(1칸) · 남은 시간(2~3칸), 2행 = 유리판 위 진입 | 경과/배정 | 종료 ── */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #countdown {
+      flex: 1 1 auto; min-height: 0; display: grid !important;   /* applyBottomDisplay 가 style.display='flex' 를 직접 넣는다 — 생방송 모드에서만 격자로 덮는다 */
+      grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr) calc(8.75 * var(--u));
+      row-gap: calc(1.6 * var(--u));
     }
-    /* 상단 바: 시계 상자(좌) | 부조·방송(우), 정확히 반반 (2026-11-18 시안 H1).
-       ON AIR 박스는 빼고, 방송 중이면 방송 박스가 빨갛게 켜져 ON AIR 램프 역할을 한다. */
-    body.tl-main:not(.portrait-right):not(.portrait-left) #topbar {
-      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: calc(1.4 * var(--u));
-    }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #status-box { display: none; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock {
-      order: 1; font-size: calc(7.2 * var(--u)); align-self: stretch; align-items: center;
-      background: var(--surface); border-radius: calc(1.6 * var(--u));
-    }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #side,
-    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot:not(:empty) ~ #side { order: 2; width: auto; min-width: 0; max-width: none; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog { transition: background 0.25s ease, box-shadow 0.25s ease; }
-    body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog {
-      background: var(--red); box-shadow: 0 0 calc(2.4 * var(--u)) rgba(232,69,60,0.45);
-    }
-    body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog .cap,
-    body.tl-main:not(.portrait-right):not(.portrait-left):has(#status-box.on-air) .tile.prog .val { color: #fff; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #side .tile .val { font-size: calc(5 * var(--u) * var(--sch-scale, 1)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio { padding-inline: calc(1.6 * var(--u)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip { width: auto !important; min-width: 0; justify-content: center; }
-    /* 트랙은 상단 바와 칩 사이 빈 자리의 정가운데 — 트랙 아래 눈금 글씨(약 4u)만큼 칩 위를 비워 '트랙+글씨' 묶음이 가운데로 보이게 */
-    body.tl-main:not(.portrait-right):not(.portrait-left) #countdown { flex: 1 1 auto; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #cd-ends { margin-top: calc(4.4 * var(--u)); }
-    /* 알림 카드가 떠 있는 동안엔 카드 높이만큼 위를 비워 트랙(러너 ▼)이 카드에 가리지 않게 */
-    body.tl-main:not(.portrait-right):not(.portrait-left):has(#alert-slot:not(:empty)) #countdown { padding-top: calc(10 * var(--u)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #cd-track { height: calc(calc(6.5 * var(--u)) * var(--cb)); margin: auto 0; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-runner-head { width: calc(calc(0.9 * var(--u)) * var(--cb)); height: calc(calc(9.5 * var(--u)) * var(--cb)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-runner-cap {
-      bottom: calc(calc(5.35 * var(--u)) * var(--cb)); border-width: calc(calc(1.3 * var(--u)) * var(--cb)); border-bottom-width: 0;
-    }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-tick::before { width: calc(0.45 * var(--u)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-tick span { font-size: calc(2.8 * var(--u)); top: calc(100% + 1.2 * var(--u)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #cd-ends { margin-bottom: calc(1 * var(--u)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip {
-      padding: calc(calc(2.6 * var(--u)) * var(--cb)) calc(calc(3 * var(--u)) * var(--fit)); border-radius: calc(2.6 * var(--u));
-    }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .t { font-size: calc(calc(7.4 * var(--u)) * var(--cl) * var(--fit)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { font-size: calc(calc(10 * var(--u)) * var(--ct) * var(--fit)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #countdown.no-schedule #tl-ring, body.tl-main:not(.portrait-right):not(.portrait-left) #countdown.no-schedule #tl-dock, body.tl-main:not(.portrait-right):not(.portrait-left) #countdown.no-schedule #tl-mid { visibility: hidden; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #cd-track { display: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #cd-ends { display: contents; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-ring { display: block; grid-column: 1; grid-row: 1; position: relative; min-height: 0; container-type: size; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-ring.off { visibility: hidden; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-dock { display: block; grid-column: 1 / 4; grid-row: 2; border-radius: calc(2.9 * var(--u)); background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip { grid-row: 2; z-index: 1; width: auto !important; min-width: 0; justify-content: center; align-self: center;
+      background: transparent !important; box-shadow: none !important; border: 0 !important; padding: 0 calc(1.2 * var(--u)); gap: calc(1 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in { grid-column: 1; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid { display: flex; grid-column: 2; align-self: stretch; align-items: center; position: relative; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::before, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::after { content: ''; position: absolute; top: calc(2.1 * var(--u)); bottom: calc(2.1 * var(--u)); width: 2px; background: var(--hair); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::before { left: 0; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::after { right: 0; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out { grid-column: 3; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .cap, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out .cap, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid .cap { display: inline; font-size: calc(1.77 * var(--u)); font-weight: 600; color: var(--sub); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .t { font-size: calc(calc(3.75 * var(--u)) * var(--cl) * var(--fit)); font-weight: 700; letter-spacing: -0.02em; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid .t { color: #C7C7CC; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .cd-marker-assigned { display: none; }   /* 배정 시간은 가운데 칸이 맡는다 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in.confirmed .t { color: var(--primary); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .ok { order: 3; width: calc(2.8 * var(--u)); height: calc(2.8 * var(--u)); margin: 0; font-size: calc(1.6 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in.confirmed .ok { background: var(--primary); color: var(--on-primary); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in.just-confirmed { animation: none; }
+    /* 남은 시간 — 칩 모양 없이 큰 숫자. 색으로 상태(1분 전 앰버, 초과·늦게 끝남 빨강, 일찍 끝남 초록) */
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem { grid-column: 2 / 4; grid-row: 1; align-self: center; justify-self: stretch; justify-content: center; padding: 0; }   /* 칸 폭을 꽉 잡아야 fitEnds 가 넘침을 잰다 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { font-size: calc(calc(10.2 * var(--u)) * var(--ct) * var(--fit)); font-weight: 800; letter-spacing: -0.025em; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.beat { animation: tl-beat 0.5s cubic-bezier(0.2, 0, 0, 1); }
+    @keyframes tl-beat { 0% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    /* ── 고리 ── */
+    #tl-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    #tl-ring .trk { fill: none; stroke: var(--ring-trk); }
+    #tl-ring .glow { fill: none; stroke: var(--ring-hi); opacity: 0.38; filter: url(#tl-glow); }
+    #tl-ring .arc { fill: none; stroke: var(--ring-hi); }
+    #tl-ring .cap0 { fill: var(--ring-lo); }
+    #tl-ring .head { fill: var(--ring-hi); }
+    #tl-ring .mk { fill: rgba(255,255,255,0.6); }
+    #tl-ring .mk.past { fill: rgba(0,0,0,0.5); }
+    #tl-ring text { font-family: 'Pretendard', sans-serif; font-weight: 700; font-size: 36px; fill: #8E8E93; }
+    #tl-ring text.past { fill: #D1D1D6; }
+    #tl-ring { --ring-trk: rgba(255,255,255,0.11); --ring-lo: #5B6270; --ring-hi: #F2F4F8; }
+    #tl-ring.imm  { --ring-trk: rgba(255,185,90,0.16); --ring-lo: #8A5A14; --ring-hi: #FFB95A; }
+    #tl-ring.live { --ring-trk: rgba(232,69,60,0.20); --ring-lo: #A3231C; --ring-hi: #FF5A4F; }
+    #tl-ring.over { --ring-trk: rgba(232,69,60,0.20); --ring-lo: #A3231C; --ring-hi: #FF5A4F; }
+    #tl-ring.over .arc { animation: tl-over 1.6s ease-in-out infinite; }
+    @keyframes tl-over { 50% { opacity: 0.55; } }
+    #tl-ring.done { --ring-trk: rgba(255,255,255,0.08); --ring-lo: #3E5F5A; --ring-hi: #6FB8AC; }
+    #tl-lamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+    #tl-lamp i { display: block; width: 4cqh; height: 4cqh; border-radius: 50%; margin: 0 auto 2.2cqh; background: #2C2C31; }
+    #tl-lamp b { display: block; font-size: 11cqh; font-weight: 900; line-height: 1; letter-spacing: 0.04em; color: #34343A; white-space: nowrap; }
+    #tl-lamp.on i { background: #FF5A4F; box-shadow: 0 0 0 1.4cqh rgba(255,90,79,0.2), 0 0 5cqh rgba(255,90,79,0.9); }
+    #tl-lamp.on b { color: #FF5A4F; text-shadow: 0 0 6cqh rgba(255,90,79,0.55); }
+    #tl-lamp.ignite { animation: lamp-ignite 1.2s cubic-bezier(0.2, 0, 0, 1); }
 
     /* ══════════ 세로 모드 (전체 화면 90도 회전) ══════════ */
     body.portrait-right, body.portrait-left {
@@ -773,6 +809,21 @@
   <!-- 생방송 모드: 타임라인 + 진입 / 남음 / 종료 -->
   <section id="countdown">
     <div id="cd-nodata"></div>
+    <!-- 생방송 모드(가로) A2: 진행 고리 + 안에 ON AIR 등. 위치·눈금은 아래 #cd-track 계산을 그대로 받아 그린다(renderRing) -->
+    <div id="tl-ring" class="off">
+      <svg id="tl-ring-svg" viewBox="-350 -310 700 620" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <defs><filter id="tl-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter></defs>
+        <circle class="trk" cx="0" cy="0" r="220" stroke-width="50"/>
+        <path class="glow" d="" stroke-width="50" stroke-linecap="round"/>
+        <circle class="cap0" cx="0" cy="-220" r="25"/>
+        <path class="arc" d="" stroke-width="50" stroke-linecap="round"/>
+        <g class="marks"></g>
+        <circle class="head" cx="0" cy="-220" r="25"/>
+        <circle class="head-dot" cx="0" cy="-220" r="9" fill="#fff"/>
+      </svg>
+      <div id="tl-lamp"><i></i><b>ON AIR</b></div>
+    </div>
+    <div id="tl-dock"></div>
     <div id="cd-track">
       <div id="cd-track-line"></div>
       <div id="cd-fill"></div>
@@ -805,6 +856,7 @@
     <div id="cd-ends">
       <div class="cd-chip in"><span class="cap">진입</span><span class="ok" id="tile-prog-ok" title="확정된 진입 시각" style="display:none">✓</span><span class="t" id="cd-marker-start-label">--:--:--</span></div>
       <div class="cd-chip rem" id="cd-rem"><span class="cap" id="cd-rem-cap">남음</span><span class="t" id="cd-rem-val">--:--</span></div>
+      <div class="cd-chip mid" id="tl-mid"><span class="cap" id="tl-mid-cap"></span><span class="t" id="tl-mid-val"></span></div>
       <div class="cd-chip out"><span class="cap">종료</span><span class="t" id="cd-marker-end-label">--:--:--</span></div>
     </div>
   </section>
@@ -1129,6 +1181,54 @@
       el.appendChild(label);
       cdTrack.appendChild(el);
     }
+  }
+  /* ── 생방송 모드(가로) A2 고리 — 위치와 눈금은 타임라인(renderBoundedTrack)이 구한 값을 그대로 받는다.
+     고리 좌표: 가운데 (0,0), 반지름 220, 12시에서 시계 방향으로 p(0~1). 매초 바뀌는 건 호 하나와 머리 점 위치뿐. */
+  const tlRingEl = document.getElementById('tl-ring');
+  const tlArcEl = tlRingEl.querySelector('.arc'), tlGlowEl = tlRingEl.querySelector('.glow');
+  const tlHeadEl = tlRingEl.querySelector('.head'), tlHeadDotEl = tlRingEl.querySelector('.head-dot');
+  const tlMarksEl = tlRingEl.querySelector('.marks');
+  const tlLampEl = document.getElementById('tl-lamp');
+  const tlMidCapEl = document.getElementById('tl-mid-cap'), tlMidValEl = document.getElementById('tl-mid-val');
+  const TL_R = 220, TL_LAB = 220 + 25 + 44;
+  let tlMarksKey = '';
+  function tlPt(r, p) { const a = (p * 360 - 90) * Math.PI / 180; return [r * Math.cos(a), r * Math.sin(a)]; }
+  function tlArcD(p) {
+    if (!(p > 0)) return '';
+    if (p >= 0.9995) return 'M0 -220A220 220 0 1 1 0 220A220 220 0 1 1 0 -220';   // 한 바퀴는 반원 두 개로
+    const b = tlPt(TL_R, p);
+    return 'M0 -220A220 220 0 ' + (p > 0.5 ? 1 : 0) + ' 1 ' + b[0].toFixed(2) + ' ' + b[1].toFixed(2);
+  }
+  function setTlMid(cap, val) {
+    if (tlMidCapEl.textContent !== cap) tlMidCapEl.textContent = cap;
+    if (tlMidValEl.textContent !== val) tlMidValEl.textContent = val;
+  }
+  function tlOff() { tlRingEl.classList.add('off'); setTlMid('', ''); }
+  function renderRing(state, p, marks) {
+    p = Math.max(0, Math.min(1, p || 0));
+    ['pre', 'imm', 'live', 'over', 'done'].forEach(c => tlRingEl.classList.toggle(c, c === state));
+    tlRingEl.classList.remove('off');
+    const d = tlArcD(p);
+    if (tlArcEl.getAttribute('d') !== d) { tlArcEl.setAttribute('d', d); tlGlowEl.setAttribute('d', d); }
+    const h = tlPt(TL_R, p);
+    [tlHeadEl, tlHeadDotEl].forEach(el => { el.setAttribute('cx', h[0].toFixed(2)); el.setAttribute('cy', h[1].toFixed(2)); });
+    const key = marks.map(m => m.p.toFixed(4) + m.label).join('|');
+    if (key !== tlMarksKey) {
+      tlMarksKey = key;
+      tlMarksEl.textContent = '';
+      marks.forEach(m => {
+        const NS = 'http://www.w3.org/2000/svg', dp = tlPt(TL_R, m.p), q = tlPt(TL_LAB, m.p), co = q[0] / TL_LAB;
+        const c = document.createElementNS(NS, 'circle');
+        c.setAttribute('class', 'mk'); c.setAttribute('cx', dp[0].toFixed(1)); c.setAttribute('cy', dp[1].toFixed(1)); c.setAttribute('r', '6');
+        c.dataset.p = m.p;
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('x', q[0].toFixed(1)); t.setAttribute('y', q[1].toFixed(1)); t.setAttribute('dominant-baseline', 'middle');
+        t.setAttribute('text-anchor', co < -0.45 ? 'end' : (co > 0.45 ? 'start' : 'middle'));
+        t.dataset.p = m.p; t.textContent = m.label;
+        tlMarksEl.appendChild(c); tlMarksEl.appendChild(t);
+      });
+    }
+    tlMarksEl.querySelectorAll('[data-p]').forEach(el => el.classList.toggle('past', parseFloat(el.dataset.p) <= p));
   }
   function cdBeat() {
     [cdRemEl, document.querySelector('.cd-runner-cap'), document.querySelector('.cd-runner-head')].forEach(el => {
@@ -1731,6 +1831,7 @@
       cdRunnerTagPill.classList.remove('two');
       countdownEl.classList.remove('elapsed');
       cdTrack.classList.remove('show');
+      tlOff();
       cdTickLastSec = null;
       cdTickLastWallMs = null;
       return;
@@ -1761,6 +1862,7 @@
     if (!endVal || !end) {
       cdRunnerTagPill.classList.remove('two');
       cdTrack.classList.remove('show');
+      tlOff();
       setRemChip(rawDiffMs > 0 ? '' : '경과', rawDiffMs > 0 ? '-' + fmtHMS(rawDiffMs / 1000) : cdTagMain.textContent.replace(/^[+-]/, ''), rawDiffMs > 0 ? 'pending' : 'elapsed');
       renderTiles(rawDiffMs > 0 ? '다음 방송' : '현재 방송');
       return;
@@ -1769,6 +1871,7 @@
     if (durationSec <= 0) {
       cdRunnerTagPill.classList.remove('two');
       cdTrack.classList.remove('show');
+      tlOff();
       return;
     }
     cdTrack.classList.add('show');
@@ -2022,6 +2125,16 @@
       countdownEl.classList.remove('imminent', 'imminent-final');
     }
 
+    // 생방송 모드(가로) A2 — 위에서 구한 값(pct·눈금·상태)을 고리와 가운데 칸에 그대로 옮긴다. 새로 계산하지 않는다.
+    const tlOver = !isBeforeStart && broadcastIsLive && now > scheduledEnd;
+    const tlState = isBeforeStart ? (cdImminent ? 'imm' : 'pre') : (tlOver ? 'over' : (now < end ? 'live' : 'done'));
+    const tlTicks = [...cdTrack.querySelectorAll(isBeforeStart ? '.cd-tick.pre-tick' : '.cd-tick.live-tick')].map(t => ({
+      p: (isBeforeStart ? parseFloat(t.dataset.pct) : parseFloat(t.style.left)) / 100, label: t.textContent,
+    })).filter(m => m.p > 0 && m.p < 1);
+    renderRing(tlState, now < end || isBeforeStart ? pct / 100 : 1, tlTicks);
+    if (isBeforeStart) setTlMid('배정', Math.round(durationSec / 60) + '분');
+    else if (isFinalEnded) setTlMid('방송', fmtHMS((end - start) / 1000));
+    else setTlMid('경과', '+' + fmtHMS((now - start) / 1000));
   }
 
   let cdTrackWidthPx = 0;
@@ -2155,9 +2268,10 @@
     // (5007) 마이크 탈리는 쓰지 않는다 — 운행표(SPS onAirIndex)상 방송 중일 때만 점등
     const lampOn = countdownModeOn && broadcastIsLive;
     box.classList.toggle('on-air', lampOn);
+    tlLampEl.classList.toggle('on', lampOn);   // 생방송 모드(가로) A2: 고리 안 ON AIR 등
     if (lampOn && lampWasOn === false) {   // 꺼짐→켜짐 순간만(첫 렌더 제외) 부풀며 점화
-      box.classList.remove('ignite'); void box.offsetWidth; box.classList.add('ignite');
-      setTimeout(() => box.classList.remove('ignite'), 1300);
+      [box, tlLampEl].forEach(el => { el.classList.remove('ignite'); void el.offsetWidth; el.classList.add('ignite'); });
+      setTimeout(() => [box, tlLampEl].forEach(el => el.classList.remove('ignite')), 1300);
     }
     lampWasOn = lampOn;
   }
