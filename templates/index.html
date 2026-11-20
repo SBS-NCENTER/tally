@@ -533,7 +533,21 @@
     #tl-lamp b { display: block; font-size: 11cqh; font-weight: 900; line-height: 1; letter-spacing: 0.04em; color: #34343A; white-space: nowrap; }
     #tl-lamp.on i { background: #FF5A4F; box-shadow: 0 0 0 1.4cqh rgba(255,90,79,0.2), 0 0 5cqh rgba(255,90,79,0.9); }
     #tl-lamp.on b { color: #FF5A4F; text-shadow: 0 0 6cqh rgba(255,90,79,0.55); }
-    #tl-lamp.ignite { animation: lamp-ignite 1.2s cubic-bezier(0.2, 0, 0, 1); }
+    /* 점화 — 예전 ON AIR 상자용 lamp-ignite 는 transform·box-shadow 를 덮어써 가운데 맞춤이 1.2초 풀렸다. 고리 등은 따로 */
+    #tl-lamp.ignite { animation: tl-lamp-ignite 1.2s cubic-bezier(0.2, 0, 0, 1); }
+    @keyframes tl-lamp-ignite {
+      0%   { transform: translate(-50%, -50%) scale(0.94); filter: brightness(2.2); }
+      35%  { transform: translate(-50%, -50%) scale(1.06); }
+      100% { transform: translate(-50%, -50%) scale(1);    filter: brightness(1); }
+    }
+    /* 전환 연출(2026-11-20 시안) — 색은 0.8초 동안 번진다. 첫 화면은 번지지 않게 tl-anim 을 조금 뒤에 붙인다 */
+    #tl-ring .flash { fill: none; stroke: #fff; opacity: 0; }
+    #tl-ring.tl-anim .trk, #tl-ring.tl-anim .arc, #tl-ring.tl-anim .glow { transition: stroke 0.8s ease; }
+    #tl-ring.tl-anim .head, #tl-ring.tl-anim .cap0 { transition: fill 0.8s ease; }
+    #tl-ring .head.beat, #tl-ring .head-dot.beat { transform-box: fill-box; transform-origin: center; animation: tl-head-beat 0.45s cubic-bezier(0.2, 0, 0, 1); }
+    @keyframes tl-head-beat { 0% { transform: scale(1.4); } 100% { transform: scale(1); } }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { transition: color 0.6s ease; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in::after { background: linear-gradient(105deg, transparent 38%, rgba(127,227,211,0.55) 50%, transparent 62%); }
 
     /* ══════════ 세로 모드 (전체 화면 90도 회전) ══════════ */
     body.portrait-right, body.portrait-left {
@@ -817,6 +831,7 @@
         <path class="glow" d="" stroke-width="50" stroke-linecap="round"/>
         <circle class="cap0" cx="0" cy="-220" r="25"/>
         <path class="arc" d="" stroke-width="50" stroke-linecap="round"/>
+        <path class="flash" d="" stroke-width="54" stroke-linecap="round"/>
         <g class="marks"></g>
         <circle class="head" cx="0" cy="-220" r="25"/>
         <circle class="head-dot" cx="0" cy="-220" r="9" fill="#fff"/>
@@ -1147,6 +1162,7 @@
       } else { el.style.left = p + '%'; cdTrack.appendChild(el); }
     });
     if (animate) {
+      tlBeginZoom(zoomRem0, list);   // 생방송 모드(가로) A2 고리도 같은 줌
       [cdRunner, cdFill].forEach(el => el.classList.add('zoom-anim'));
       setTimeout(() => [cdRunner, cdFill].forEach(el => el.classList.remove('zoom-anim')), 1300);
     }
@@ -1191,49 +1207,116 @@
   const tlLampEl = document.getElementById('tl-lamp');
   const tlMidCapEl = document.getElementById('tl-mid-cap'), tlMidValEl = document.getElementById('tl-mid-val');
   const TL_R = 220, TL_LAB = 220 + 25 + 44;
-  let tlMarksKey = '';
+  const tlFlashEl = tlRingEl.querySelector('.flash');
+  const TL_NS = 'http://www.w3.org/2000/svg';
+  let tlMarksKey = '', tlLastMarks = [], tlLastP = 0, tlLastArgs = null, tlTween = 0, tlAnimArmed = false;
   function tlPt(r, p) { const a = (p * 360 - 90) * Math.PI / 180; return [r * Math.cos(a), r * Math.sin(a)]; }
-  function tlArcD(p) {
-    if (!(p > 0)) return '';
-    if (p >= 0.9995) return 'M0 -220A220 220 0 1 1 0 220A220 220 0 1 1 0 -220';   // 한 바퀴는 반원 두 개로
-    const b = tlPt(TL_R, p);
-    return 'M0 -220A220 220 0 ' + (p > 0.5 ? 1 : 0) + ' 1 ' + b[0].toFixed(2) + ' ' + b[1].toFixed(2);
+  function tlSeg(p0, p1) {
+    if (!(p1 - p0 > 0)) return '';
+    if (p1 - p0 >= 0.9995) return 'M0 -220A220 220 0 1 1 0 220A220 220 0 1 1 0 -220';   // 한 바퀴는 반원 두 개로
+    const a = tlPt(TL_R, p0), b = tlPt(TL_R, p1);
+    return 'M' + a[0].toFixed(2) + ' ' + a[1].toFixed(2) + 'A220 220 0 ' + (p1 - p0 > 0.5 ? 1 : 0) + ' 1 ' + b[0].toFixed(2) + ' ' + b[1].toFixed(2);
   }
+  function tlArcD(p) { return tlSeg(0, p); }
   function setTlMid(cap, val) {
     if (tlMidCapEl.textContent !== cap) tlMidCapEl.textContent = cap;
     if (tlMidValEl.textContent !== val) tlMidValEl.textContent = val;
   }
   function tlOff() { tlRingEl.classList.add('off'); setTlMid('', ''); }
-  function renderRing(state, p, marks) {
-    p = Math.max(0, Math.min(1, p || 0));
-    ['pre', 'imm', 'live', 'over', 'done'].forEach(c => tlRingEl.classList.toggle(c, c === state));
-    tlRingEl.classList.remove('off');
+  function tlDrawArc(p) {
     const d = tlArcD(p);
     if (tlArcEl.getAttribute('d') !== d) { tlArcEl.setAttribute('d', d); tlGlowEl.setAttribute('d', d); }
     const h = tlPt(TL_R, p);
     [tlHeadEl, tlHeadDotEl].forEach(el => { el.setAttribute('cx', h[0].toFixed(2)); el.setAttribute('cy', h[1].toFixed(2)); });
+  }
+  function tlMakeMark(label) {
+    const c = document.createElementNS(TL_NS, 'circle'), t = document.createElementNS(TL_NS, 'text');
+    c.setAttribute('class', 'mk'); c.setAttribute('r', '6');
+    t.setAttribute('dominant-baseline', 'middle'); t.textContent = label;
+    tlMarksEl.appendChild(c); tlMarksEl.appendChild(t);
+    return { c, t };
+  }
+  function tlPlaceMark(o, p, op) {
+    const dp = tlPt(TL_R, p), q = tlPt(TL_LAB, p), co = q[0] / TL_LAB;
+    o.c.setAttribute('cx', dp[0].toFixed(1)); o.c.setAttribute('cy', dp[1].toFixed(1));
+    o.t.setAttribute('x', q[0].toFixed(1)); o.t.setAttribute('y', q[1].toFixed(1));
+    o.t.setAttribute('text-anchor', co < -0.45 ? 'end' : (co > 0.45 ? 'start' : 'middle'));
+    o.c.dataset.p = p; o.t.dataset.p = p;
+    o.c.style.opacity = o.t.style.opacity = op === 1 ? '' : String(op);
+  }
+  function renderRing(state, p, marks) {
+    p = Math.max(0, Math.min(1, p || 0));
+    tlLastArgs = [state, p, marks];
+    ['pre', 'imm', 'live', 'over', 'done'].forEach(c => tlRingEl.classList.toggle(c, c === state));
+    tlRingEl.classList.remove('off');
+    if (!tlAnimArmed) { tlAnimArmed = true; setTimeout(() => tlRingEl.classList.add('tl-anim'), 1500); }   // 첫 화면은 색이 번지지 않게
+    if (tlTween) return;   // 연출 중엔 연출이 그린다 — 끝나면 마지막 값으로 다시 그린다
+    tlDrawArc(p);
     const key = marks.map(m => m.p.toFixed(4) + m.label).join('|');
     if (key !== tlMarksKey) {
       tlMarksKey = key;
       tlMarksEl.textContent = '';
-      marks.forEach(m => {
-        const NS = 'http://www.w3.org/2000/svg', dp = tlPt(TL_R, m.p), q = tlPt(TL_LAB, m.p), co = q[0] / TL_LAB;
-        const c = document.createElementNS(NS, 'circle');
-        c.setAttribute('class', 'mk'); c.setAttribute('cx', dp[0].toFixed(1)); c.setAttribute('cy', dp[1].toFixed(1)); c.setAttribute('r', '6');
-        c.dataset.p = m.p;
-        const t = document.createElementNS(NS, 'text');
-        t.setAttribute('x', q[0].toFixed(1)); t.setAttribute('y', q[1].toFixed(1)); t.setAttribute('dominant-baseline', 'middle');
-        t.setAttribute('text-anchor', co < -0.45 ? 'end' : (co > 0.45 ? 'start' : 'middle'));
-        t.dataset.p = m.p; t.textContent = m.label;
-        tlMarksEl.appendChild(c); tlMarksEl.appendChild(t);
-      });
+      marks.forEach(m => tlPlaceMark(tlMakeMark(m.label), m.p, 1));
     }
     tlMarksEl.querySelectorAll('[data-p]').forEach(el => el.classList.toggle('past', parseFloat(el.dataset.p) <= p));
+    tlLastMarks = marks; tlLastP = p;
+  }
+  // 연출 한 번 돌리기. requestAnimationFrame 이 멈춰도(화면 숨김 등) 시간 지나면 반드시 끝내고 제자리로 그린다.
+  function tlRunTween(dur, step) {
+    const id = ++tlTween, t0 = performance.now();
+    const finish = () => {
+      if (tlTween !== id) return;
+      tlTween = 0; tlMarksKey = ''; tlFlashEl.style.opacity = '0';
+      if (tlLastArgs) renderRing(tlLastArgs[0], tlLastArgs[1], tlLastArgs[2]);
+    };
+    const frame = now => {
+      if (tlTween !== id) return;
+      const k = Math.min(1, (now - t0) / dur);
+      try { step(k); } catch (e) { finish(); return; }
+      if (k < 1) requestAnimationFrame(frame); else finish();
+    };
+    requestAnimationFrame(frame);
+    setTimeout(finish, dur + 600);
+  }
+  const tlEase = k => 1 - Math.pow(1 - k, 3);
+  // 1시간 전 줌 — 오른쪽 끝(진입)을 축으로 확대: 시간 눈금은 처음 쪽으로 밀려 사라지고 30·10·1분 전 눈금이 진입 쪽에서 펼쳐진다
+  function tlBeginZoom(rem0, list) {
+    if (tlRingEl.classList.contains('off') || !(rem0 > 0) || !document.body.classList.contains('tl-main')) return;
+    tlMarksEl.textContent = '';
+    const olds = tlLastMarks.map(m => Object.assign(tlMakeMark(m.label), { p: m.p, to: m.label === '1시간 전' ? 0.03 : 0 }));
+    const news = list.map(([pct, label, min]) => Object.assign(tlMakeMark(label), { from: Math.max(0, Math.min(1, (rem0 - min) / rem0)), p: pct / 100 }));
+    const fromP = tlLastP;
+    tlRunTween(1200, k => {
+      const e = tlEase(k);
+      olds.forEach(o => tlPlaceMark(o, o.p + (o.to - o.p) * e, 1 - e));
+      news.forEach(o => tlPlaceMark(o, o.from + (o.p - o.from) * e, e));
+      const target = tlLastArgs ? tlLastArgs[1] : fromP;
+      tlDrawArc(fromP + (target - fromP) * e);
+    });
+  }
+  // 진입 순간 — 호가 한 바퀴를 채우고 흰 빛이 고리를 한 번 돈 뒤, 0부터 다시 자란다
+  function tlCrossing() {
+    if (tlRingEl.classList.contains('off') || !document.body.classList.contains('tl-main')) return;
+    tlRunTween(1300, k => {
+      const t = k * 1300;
+      if (t < 800) {
+        const e = t / 800;
+        tlFlashEl.setAttribute('d', tlSeg(Math.max(0, e - 0.12), Math.max(0.001, e)));
+        tlFlashEl.style.opacity = String(1 - e * 0.6);
+        tlDrawArc(1);
+      } else {
+        tlFlashEl.style.opacity = '0';
+        const target = tlLastArgs ? tlLastArgs[1] : 0;
+        tlDrawArc(1 + (target - 1) * tlEase((t - 800) / 500));
+      }
+    });
   }
   function cdBeat() {
     [cdRemEl, document.querySelector('.cd-runner-cap'), document.querySelector('.cd-runner-head')].forEach(el => {
       if (!el) return; el.classList.remove('beat'); void el.offsetWidth; el.classList.add('beat');
     });
+    // 고리 머리 점도 같은 박자로(SVG 는 offsetWidth 가 없어 getBoundingClientRect 로 다시 시작시킨다)
+    [tlHeadEl, tlHeadDotEl].forEach(el => { el.classList.remove('beat'); el.getBoundingClientRect(); el.classList.add('beat'); });
   }
   const REM_STATES = ['pending', 'imminent', 'running', 'over', 'final-over', 'final-under', 'elapsed'];
   // 시작 전 카운트다운은 항상 HH:MM:SS (-00:00:00 형식) — formatDuration은 1시간 미만이면 MM:SS라 따로 둔다
@@ -1974,6 +2057,7 @@
       setTimeout(() => document.body.classList.remove('ignite'), 1600);
       cdRunner.classList.add('cross-anim');
       cdFill.classList.add('cross-anim');
+      tlCrossing();   // 생방송 모드(가로) A2 고리: 한 바퀴 빛 → 0부터 다시
       setTimeout(() => {
         cdRunner.classList.remove('cross-anim');
         cdFill.classList.remove('cross-anim');
