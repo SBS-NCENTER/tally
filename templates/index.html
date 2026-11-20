@@ -456,7 +456,7 @@
     }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio { flex: none; padding: 0 calc(2 * var(--u)); background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair); border-radius: calc(1.9 * var(--u)) 0 0 calc(1.9 * var(--u)); }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio .cap { display: none; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio .val { font-size: calc(3.1 * var(--u) * var(--sch-scale, 1)); font-weight: 800; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio .val { font-size: calc(3.7 * var(--u) * var(--sch-scale, 1)); font-weight: 800; }   /* 방송명과 같은 크기(사용자 'TS-4 작아 보인다') */
     body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog { padding: 0 calc(2.3 * var(--u)) 0 calc(1.8 * var(--u)); transition: background 0.25s ease, box-shadow 0.25s ease; }
     body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog .cap { font-size: calc(1.35 * var(--u) * var(--sch-scale, 1)); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .tile.prog .val { font-size: calc(3.7 * var(--u) * var(--sch-scale, 1)); line-height: 1.08; }
@@ -470,13 +470,14 @@
       background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair);
       font-weight: 600; font-size: calc(4.3 * var(--u)); line-height: 1; letter-spacing: -0.02em; color: #C7C7CC; white-space: nowrap;
     }
-    /* 특보·편성 알림 카드 — 위 줄 바로 아래 가운데. 떠 있는 동안 가운데 칸을 그만큼 내려 고리·숫자를 가리지 않는다 */
+    /* 특보·편성 알림 카드 — 가운데 남은 시간 바로 위(오른쪽 2/3 칸, 사용자 2026-11-20). 고리는 가리지 않으니 줄이지 않고,
+       카드가 떠 있는 동안 남은 시간만 그만큼 아래로 내린다 */
     body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot {
-      position: absolute; top: calc(100% + 1.6 * var(--u)); left: 50%; transform: translateX(-50%);
-      width: calc(56 * var(--u)); z-index: 4;
+      position: absolute; top: calc(100% + 1.6 * var(--u)); right: 0; left: auto; transform: none;
+      width: calc(200% / 3); justify-content: center; z-index: 4;
     }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot .alert-card { max-width: none; padding-block: calc(1 * var(--u)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left):has(#alert-slot:not(:empty)) #countdown { padding-top: calc(8.4 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot .alert-card { flex: 0 1 calc(54 * var(--u)); max-width: none; padding-block: calc(1 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left):has(#alert-slot:not(:empty)) .cd-chip.rem { padding-top: calc(7.5 * var(--u)) !important; }
     /* ── 가운데 + 아래: 3칸 격자. 1행 = 고리(1칸) · 남은 시간(2~3칸), 2행 = 유리판 위 진입 | 경과/배정 | 종료 ── */
     body.tl-main:not(.portrait-right):not(.portrait-left) #countdown {
       flex: 1 1 auto; min-height: 0; display: grid !important;   /* applyBottomDisplay 가 style.display='flex' 를 직접 넣는다 — 생방송 모드에서만 격자로 덮는다 */
@@ -512,7 +513,7 @@
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in.confirmed .ok { background: var(--primary); color: var(--on-primary); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in.just-confirmed { animation: none; }
     /* 남은 시간 — 칩 모양 없이 큰 숫자. 색으로 상태(1분 전 앰버, 초과·늦게 끝남 빨강, 일찍 끝남 초록) */
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem { grid-column: 2 / 4; grid-row: 1; align-self: center; justify-self: stretch; justify-content: center; padding: 0 0 0 calc(3.5 * var(--u)) !important; }   /* 왼쪽 여유: 고리 오른쪽 눈금 글자('30분 전')와 붙지 않게 */   /* 칸 폭을 꽉 잡아야 fitEnds 가 넘침을 잰다 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem { grid-column: 2 / 4; grid-row: 1; align-self: center; justify-self: stretch; justify-content: center; padding: 0 0 0 calc(1.5 * var(--u)) !important; }   /* 왼쪽 여유 — 고리 눈금 글자를 뺀 뒤로는 조금만 */   /* 칸 폭을 꽉 잡아야 fitEnds 가 넘침을 잰다 */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { font-size: calc(calc(12.3 * var(--u)) * var(--ct) * var(--fit)); font-weight: 800; letter-spacing: -0.025em; }   /* 196→236px(사용자 '남은 시간 더 크게'). 칸 폭을 넘으면 fitEnds 가 줄인다 */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.beat { animation: tl-beat 0.5s cubic-bezier(0.2, 0, 0, 1); }
     @keyframes tl-beat { 0% { transform: scale(1.05); } 100% { transform: scale(1); } }
@@ -520,14 +521,16 @@
     #tl-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
     #tl-ring .trk { fill: none; stroke: var(--ring-trk); }
     #tl-ring .glow { fill: none; stroke: var(--ring-hi); opacity: 0.38; filter: url(#tl-glow); }
+    #tl-ring.pre .glow { opacity: 0.18; }
     #tl-ring .arc { fill: none; stroke: var(--ring-hi); }
     #tl-ring .cap0 { fill: var(--ring-lo); }
     #tl-ring .head { fill: var(--ring-hi); }
     #tl-ring .mk { fill: rgba(255,255,255,0.6); }
     #tl-ring .mk.past { fill: rgba(0,0,0,0.5); }
-    #tl-ring text { font-family: 'Pretendard', sans-serif; font-weight: 700; font-size: 36px; fill: #8E8E93; }
+    #tl-ring text { display: none; }   /* 눈금 글자(몇 시간 전·몇 분 전)는 뺀다(사용자 2026-11-20) — 점만 남긴다 */
+    #tl-ring .mk { r: 7px; }
     #tl-ring text.past { fill: #D1D1D6; }
-    #tl-ring { --ring-trk: rgba(255,255,255,0.11); --ring-lo: #5B6270; --ring-hi: #F2F4F8; }
+    #tl-ring { --ring-trk: rgba(255,255,255,0.10); --ring-lo: #4E5562; --ring-hi: #C4C9D2; }   /* 대기 흰색이 눈부셔 한 단계 낮춤(사용자) */
     #tl-ring.imm  { --ring-trk: rgba(255,185,90,0.16); --ring-lo: #8A5A14; --ring-hi: #FFB95A; }
     #tl-ring.live { --ring-trk: rgba(232,69,60,0.20); --ring-lo: #A3231C; --ring-hi: #FF5A4F; }
     #tl-ring.over { --ring-trk: rgba(232,69,60,0.20); --ring-lo: #A3231C; --ring-hi: #FF5A4F; }
@@ -540,6 +543,14 @@
     #tl-lamp.on i { background: #FF5A4F; box-shadow: 0 0 0 1.4cqh rgba(255,90,79,0.2), 0 0 5cqh rgba(255,90,79,0.9); }
     #tl-lamp.on b { color: #FF5A4F; text-shadow: 0 0 6cqh rgba(255,90,79,0.55); }
     /* 점화 — 예전 ON AIR 상자용 lamp-ignite 는 transform·box-shadow 를 덮어써 가운데 맞춤이 1.2초 풀렸다. 고리 등은 따로 */
+    /* 아래 판 라벨 = 그림(2026-11-20 사용자 '아이콘만'): ▶ 진입 · ⏱ 경과/방송 · ⧗ 배정(시작 전) · ■ 종료. 글자는 그대로 두고(읽기·폭 계산용) 그림으로 가린다.
+       이모지 글꼴이 키오스크에 없을 수 있어 SVG 마스크로 직접 그린다 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .cap[data-k='진입'] { --ico: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M7%204.5v15l12.5-7.5z%27%20fill%3D%27black%27/%3E%3C/svg%3E"); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .cap[data-k='경과'] { --ico: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2713.5%27%20r%3D%277.5%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272.6%27/%3E%3Cpath%20d%3D%27M12%2013.5V9.2M9.3%202.8h5.4%27%20stroke%3D%27black%27%20stroke-width%3D%272.6%27%20stroke-linecap%3D%27round%27/%3E%3Cpath%20d%3D%27M18.4%206.4l1.5-1.5%27%20stroke%3D%27black%27%20stroke-width%3D%272.4%27%20stroke-linecap%3D%27round%27/%3E%3C/svg%3E"); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .cap[data-k='방송'] { --ico: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2713.5%27%20r%3D%277.5%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272.6%27/%3E%3Cpath%20d%3D%27M12%2013.5V9.2M9.3%202.8h5.4%27%20stroke%3D%27black%27%20stroke-width%3D%272.6%27%20stroke-linecap%3D%27round%27/%3E%3Cpath%20d%3D%27M18.4%206.4l1.5-1.5%27%20stroke%3D%27black%27%20stroke-width%3D%272.4%27%20stroke-linecap%3D%27round%27/%3E%3C/svg%3E"); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .cap[data-k='배정'] { --ico: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Cpath%20d%3D%27M6.5%203h11M6.5%2021h11M7.5%203c0%205%209%206.5%209%209s-9%204-9%209M16.5%203c0%205-9%206.5-9%209s9%204%209%209%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272.4%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27/%3E%3C/svg%3E"); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .cap[data-k='종료'] { --ico: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2024%2024%27%3E%3Crect%20x%3D%275.5%27%20y%3D%275.5%27%20width%3D%2713%27%20height%3D%2713%27%20rx%3D%272.2%27%20fill%3D%27black%27/%3E%3C/svg%3E"); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .cap[data-k] { font-size: 0 !important; width: calc(3.8 * var(--u)); height: calc(3.8 * var(--u)); flex: none; align-self: center; background: #AEAEB2; -webkit-mask: var(--ico) center / contain no-repeat; mask: var(--ico) center / contain no-repeat; }
     #tl-lamp.ignite { animation: tl-lamp-ignite 1.2s cubic-bezier(0.2, 0, 0, 1); }
     @keyframes tl-lamp-ignite {
       0%   { transform: translate(-50%, -50%) scale(0.94); filter: brightness(2.2); }
@@ -831,7 +842,7 @@
     <div id="cd-nodata"></div>
     <!-- 생방송 모드(가로) A2: 진행 고리 + 안에 ON AIR 등. 위치·눈금은 아래 #cd-track 계산을 그대로 받아 그린다(renderRing) -->
     <div id="tl-ring" class="off">
-      <svg id="tl-ring-svg" viewBox="-350 -310 700 620" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <svg id="tl-ring-svg" viewBox="-275 -275 550 550" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <defs><filter id="tl-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter></defs>
         <circle class="trk" cx="0" cy="0" r="220" stroke-width="50"/>
         <path class="glow" d="" stroke-width="50" stroke-linecap="round"/>
@@ -875,10 +886,10 @@
       </div>
     </div>
     <div id="cd-ends">
-      <div class="cd-chip in"><span class="cap">진입</span><span class="ok" id="tile-prog-ok" title="확정된 진입 시각" style="display:none">✓</span><span class="t" id="cd-marker-start-label">--:--:--</span></div>
+      <div class="cd-chip in"><span class="cap" data-k="진입">진입</span><span class="ok" id="tile-prog-ok" title="확정된 진입 시각" style="display:none">✓</span><span class="t" id="cd-marker-start-label">--:--:--</span></div>
       <div class="cd-chip rem" id="cd-rem"><span class="cap" id="cd-rem-cap">남음</span><span class="t" id="cd-rem-val">--:--</span></div>
       <div class="cd-chip mid" id="tl-mid"><span class="cap" id="tl-mid-cap"></span><span class="t" id="tl-mid-val"></span></div>
-      <div class="cd-chip out"><span class="cap">종료</span><span class="t" id="cd-marker-end-label">--:--:--</span></div>
+      <div class="cd-chip out"><span class="cap" data-k="종료">종료</span><span class="t" id="cd-marker-end-label">--:--:--</span></div>
     </div>
   </section>
 
@@ -1235,6 +1246,7 @@
   function tlArcD(p) { return tlSeg(0, p); }
   function setTlMid(cap, val) {
     if (tlMidCapEl.textContent !== cap) tlMidCapEl.textContent = cap;
+    if (cap) tlMidCapEl.dataset.k = cap; else delete tlMidCapEl.dataset.k;   // 그림 라벨(경과·배정·방송)
     if (tlMidValEl.textContent !== val) tlMidValEl.textContent = val;
   }
   function tlOff() { tlRingEl.classList.add('off'); setTlMid('', ''); }
