@@ -480,7 +480,7 @@
     /* ── 가운데 + 아래: 3칸 격자. 1행 = 고리(1칸) · 남은 시간(2~3칸), 2행 = 유리판 위 진입 | 경과/배정 | 종료 ── */
     body.tl-main:not(.portrait-right):not(.portrait-left) #countdown {
       flex: 1 1 auto; min-height: 0; display: grid !important;   /* applyBottomDisplay 가 style.display='flex' 를 직접 넣는다 — 생방송 모드에서만 격자로 덮는다 */
-      grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr) calc(12.6 * var(--u));   /* 아래 판 11u→12.6u(사용자 '넓어져도 된다') */
+      grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr) calc(10 * var(--u));   /* 아래 판 한 줄 — 높이를 줄인 만큼 고리가 커진다 */
       row-gap: calc(1.6 * var(--u));
     }
     body.tl-main:not(.portrait-right):not(.portrait-left) #countdown.no-schedule #tl-ring, body.tl-main:not(.portrait-right):not(.portrait-left) #countdown.no-schedule #tl-dock, body.tl-main:not(.portrait-right):not(.portrait-left) #countdown.no-schedule #tl-mid { visibility: hidden; }
@@ -490,22 +490,21 @@
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-ring.off { visibility: hidden; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-dock { display: block; grid-column: 1 / 4; grid-row: 2; border-radius: calc(2.9 * var(--u)); background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip { grid-row: 2; z-index: 1; width: auto !important; min-width: 0; justify-content: center; align-self: center;
-      background: transparent !important; box-shadow: none !important; border: 0 !important; padding: 0 calc(1.8 * var(--u)); gap: calc(1 * var(--u)); }   /* 칸 경계선과 숫자 사이 여유 */
+      background: transparent !important; box-shadow: none !important; border: 0 !important; padding: 0 calc(1.4 * var(--u)); gap: calc(1 * var(--u)); }   /* 칸 경계선과 숫자 사이 여유 */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in { grid-column: 1; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid { display: flex; grid-column: 2; align-self: stretch; align-items: center; position: relative; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::before, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::after { content: ''; position: absolute; top: calc(2.1 * var(--u)); bottom: calc(2.1 * var(--u)); width: 2px; background: var(--hair); }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::before { left: 0; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid::after { right: 0; }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out { grid-column: 3; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .cap, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out .cap, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid .cap { display: block; grid-area: cap; justify-self: center; font-size: calc(2.4 * var(--u)); line-height: 1.15; font-weight: 700; color: var(--sub); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .cap, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out .cap, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid .cap { display: inline; font-size: calc(1.6 * var(--u)); line-height: 1; font-weight: 700; color: var(--sub); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip .t { font-size: calc(calc(6.2 * var(--u)) * var(--cl) * var(--fit)); font-weight: 700; letter-spacing: -0.02em; }
-    /* 아래 판 세 칸: 라벨은 위에 작게, 숫자는 아래에 크게(2026-11-20 사용자 '잘 안 보인다') — 숫자가 칸 폭을 다 쓴다. ✓ 는 숫자 옆 */
+    /* 아래 판 세 칸: 한 줄 — 라벨은 숫자 왼쪽에 작게, 숫자는 크게(2026-11-20 사용자 '두 줄 말고 한 줄로, 라벨은 작아도 된다'). ✓ 는 숫자 옆 */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid {
-      display: grid; grid-template-columns: auto auto; grid-template-areas: "cap cap" "t ok";
-      justify-content: center; align-content: center; align-items: center; column-gap: calc(1 * var(--u)); row-gap: calc(0.25 * var(--u));   /* 가운데 칸은 줄 높이를 꽉 채우므로 align-content 로 가운데 */
+      display: flex; flex-direction: row; flex-wrap: wrap; align-content: center; align-items: baseline; justify-content: center; column-gap: calc(1 * var(--u));   /* wrap+align-content: 높이를 꽉 채운 가운데 칸도 세로 가운데 */
     }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .t, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out .t, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid .t { grid-area: t; line-height: 1; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .ok { grid-area: ok; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .t, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out .t, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid .t { line-height: 1; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .ok { align-self: center; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid .t { color: #C7C7CC; }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .cd-marker-assigned { display: none; }   /* 배정 시간은 가운데 칸이 맡는다 */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in.confirmed .t { color: var(--primary); }
@@ -1063,7 +1062,8 @@
         let f = start;
         group.forEach(c => c.style.setProperty('--fit', f.toFixed(3)));
         for (let i = 0; i < 5; i++) {
-          const over = Math.max(...group.map(c => c.clientWidth ? need(c) / c.clientWidth : 1));
+          // +6px 여유: 폭이 정수로 반올림돼 1~2px 모자라면 한 줄 칸이 두 줄로 접힌다
+          const over = Math.max(...group.map(c => c.clientWidth ? (need(c) + 6) / c.clientWidth : 1));
           if (!(over > 1)) break;
           f = Math.max(0.4, f / over * 0.985);
           group.forEach(c => c.style.setProperty('--fit', f.toFixed(3)));
