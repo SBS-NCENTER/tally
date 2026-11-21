@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>전체 편성 뷰어</title>
+<!-- 팀장님용 전체 편성 화면(2026-11-21). 서버 코드 수정 없이 /static 에 두고 /api/sps/schedule(10초 캐시)만 읽는다.
+     키오스크(/)와 따로 돈다: 여기서 고른 보기(소스·본방만)는 이 브라우저에만 남는다. -->
+<style>
+@font-face{font-family:'Pretendard';src:url('/static/fonts/Pretendard-SemiBold.woff2') format('woff2');font-weight:600;font-display:swap}
+@font-face{font-family:'Pretendard';src:url('/static/fonts/Pretendard-Bold.woff2') format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:'Pretendard';src:url('/static/fonts/Pretendard-ExtraBold.woff2') format('woff2');font-weight:800;font-display:swap}
+/* 배치: 위 = 날짜·시계·상태 / 지금 방송 카드 + 다음 본방 / 보기 고르기 / 운행표 목록(지금 줄로 자동 이동) */
+:root{
+  --bg:#f4f5f6; --panel:#ffffff; --raise:#eceef0; --line:#dfe2e5; --ink:#15171a; --sub:#5f666d; --dim:#9aa1a7;
+  --air:#e0352b; --air-soft:rgba(224,53,43,.10); --mint:#0f8f7e; --mint-soft:rgba(15,143,126,.10); --amber:#b86e00;
+  --font:'Pretendard',system-ui,-apple-system,'Malgun Gothic',sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e0f11; --panel:#17191c; --raise:#202327; --line:#2a2e33; --ink:#f2f4f5; --sub:#a3aab0; --dim:#666d74;
+  --air:#ff5a4f; --air-soft:rgba(255,90,79,.13); --mint:#7fe3d3; --mint-soft:rgba(127,227,211,.10); --amber:#ffb95a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e0f11; --panel:#17191c; --raise:#202327; --line:#2a2e33; --ink:#f2f4f5; --sub:#a3aab0; --dim:#666d74;
+  --air:#ff5a4f; --air-soft:rgba(255,90,79,.13); --mint:#7fe3d3; --mint-soft:rgba(127,227,211,.10); --amber:#ffb95a; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45;
+  font-variant-numeric:tabular-nums;padding:0 max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:1180px;margin:0 auto}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+
+/* 위 */
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:16px 0 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.daynav{display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
+.daynav button{border:0;background:none;border-radius:7px;padding:5px 10px;font-weight:700}
+.daynav button:hover:not(:disabled){background:var(--raise)}
+.daynav button:disabled{color:var(--dim);cursor:default}
+.daynav b{padding:0 6px;font-weight:800;white-space:nowrap}
+.clock{margin-left:auto;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.health{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--sub)}
+.health i{width:8px;height:8px;border-radius:50%;background:var(--mint)}
+.health.warn i{background:var(--amber)} .health.bad i{background:var(--air)}
+
+/* 지금 / 다음 */
+.now{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px;margin:4px 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;min-width:0}
+.card .cap{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--sub);letter-spacing:.02em}
+.card.air{border-color:var(--air);box-shadow:inset 0 0 0 1px var(--air)}
+.card.air .cap{color:var(--air)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--air);animation:breathe 3s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
+.card h2{margin:6px 0 2px;font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.25;overflow-wrap:anywhere}
+.card .meta{font-size:14px;color:var(--sub);font-weight:600}
+.card .meta b{color:var(--ink);font-weight:800}
+.bar{height:6px;border-radius:3px;background:var(--raise);margin:12px 0 6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--air);border-radius:3px;width:0}
+.times{display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:var(--sub)}
+.times b{color:var(--ink);font-size:16px}
+.card.next h2{font-size:20px}
+.card .empty{color:var(--dim);font-weight:700;margin-top:8px}
+
+/* 보기 고르기 */
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 13px;font-size:14px;font-weight:700;color:var(--sub)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.chip small{font-weight:600;opacity:.7;margin-left:4px}
+.sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.jump{margin-left:auto}
+
+/* 목록 */
+.list{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.row{display:grid;grid-template-columns:150px 74px 72px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .t{font-weight:800;font-size:16px;white-space:nowrap}
+.row .t small{font-weight:600;color:var(--sub);font-size:13px;margin-left:4px}
+.row .len{color:var(--sub);font-weight:600;font-size:13px}
+.src{justify-self:start;font-size:12px;font-weight:800;padding:3px 8px;border-radius:6px;background:var(--raise);color:var(--sub);white-space:nowrap}
+.row .nm{min-width:0}
+.row .nm b{display:block;font-weight:700;overflow-wrap:anywhere}
+.row .nm span{display:block;font-size:13px;color:var(--sub);overflow-wrap:anywhere}
+.flags{display:flex;gap:4px}
+.flags i{font-style:normal;font-size:12px;font-weight:800;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;background:var(--raise);color:var(--sub)}
+.flags i.live{background:var(--air);color:#fff}
+.row.sb{padding-top:6px;padding-bottom:6px}
+.row.sb .t{font-size:14px;font-weight:700;color:var(--sub)}
+.row.sb .nm b{font-weight:600;color:var(--sub);font-size:14px}
+.row.pgm .src{background:var(--mint-soft);color:var(--mint)}
+.row.past{opacity:.5}
+.row.onair{background:var(--air-soft);opacity:1}
+.row.onair .src{background:var(--air);color:#fff}
+.row.onair .t{color:var(--air)}
+.row.next{box-shadow:inset 3px 0 0 var(--mint)}
+.msg{padding:28px 16px;text-align:center;color:var(--sub);font-weight:700}
+.legend{margin:12px 2px 0;font-size:13px;color:var(--dim);display:flex;flex-wrap:wrap;gap:12px}
+.legend i{font-style:normal;font-weight:800;color:var(--sub)}
+
+/* 넓은 화면: 왼쪽에 지금·다음·보기를 붙여 두고 오른쪽 목록만 흐른다 — '지금으로' 이동해도 카드가 안 밀려난다 */
+@media (min-width:1000px){
+  .wrap{max-width:1500px}
+  .cols{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;align-items:start}
+  .side{position:sticky;top:72px}
+  .now{grid-template-columns:minmax(0,1fr)}
+  .jump{margin-left:0}
+}
+@media (max-width:760px){
+  .now{grid-template-columns:minmax(0,1fr)}
+  .clock{font-size:20px}
+  .row{grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:10px 14px}
+  .row .t{grid-column:1} .row .flags{grid-column:2;grid-row:1}
+  .row .len{display:none}
+  .row .src{grid-column:2;grid-row:2;justify-self:end}
+  .row .nm{grid-column:1;grid-row:2}
+  .jump{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>전체 편성</h1>
+    <div class="daynav" role="group" aria-label="날짜">
+      <button type="button" id="prev" aria-label="전날">◀</button>
+      <b id="day">—</b>
+      <button type="button" id="next" aria-label="다음날">▶</button>
+    </div>
+    <span class="health" id="health"><i></i><span>확인 중</span></span>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <div class="cols">
+  <aside class="side">
+  <section class="now" aria-live="polite">
+    <div class="card" id="nowCard"><div class="cap">지금 방송</div><div class="empty">불러오는 중</div></div>
+    <div class="card next" id="nextCard"><div class="cap">다음 본방</div><div class="empty">불러오는 중</div></div>
+  </section>
+  <div class="filters" id="filters" role="group" aria-label="보기"></div>
+  </aside>
+  <main>
+  <div class="list" id="list"><div class="msg">불러오는 중</div></div>
+  <p class="legend"><span><i>생</i> 생방송</span><span><i>재</i> 재방송</span><span><i>자</i> 자막방송</span><span><i>수</i> 수어</span><span><i>해</i> 화면해설</span><span>10초마다 새로 받습니다</span></p>
+  </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // ?api=http://파이:5007 로 다른 곳에서 열어 볼 수 있다(시험용). 기본은 같은 서버.
+  var API = (new URLSearchParams(location.search).get('api') || '') + '/api/sps/schedule';
+  var $ = function (id) { return document.getElementById(id); };
+  var data = null, viewDate = null, offsetMs = 0;
+  var pref = { src: 'ALL', pgmOnly: false };
+  try { var sv = JSON.parse(localStorage.getItem('sched-view') || 'null'); if (sv) pref = Object.assign(pref, sv); } catch (e) {}
+  function save() { try { localStorage.setItem('sched-view', JSON.stringify(pref)); } catch (e) {} }
+
+  var DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  function p2(n) { return String(n).padStart(2, '0'); }
+  function t(s) { return new Date(s.replace(' ', 'T') + '+09:00').getTime(); }   // 운행표 시각은 KST
+  function kst(ms) { return new Date(ms + 9 * 3600e3); }                            // UTC 메서드로 읽으면 KST
+  function hms(ms) { var d = kst(ms); return p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()) + ':' + p2(d.getUTCSeconds()); }
+  function hm(ms) { var d = kst(ms); return p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()); }
+  function dur(sec, up) {                 // 남은 시간은 올림, 지난 시간은 버림
+    sec = Math.max(0, up ? Math.ceil(sec) : Math.floor(sec));
+    return p2(Math.floor(sec / 3600)) + ':' + p2(Math.floor(sec % 3600 / 60)) + ':' + p2(sec % 60);
+  }
+  function addDay(ds, n) { var d = new Date(ds + 'T12:00:00+09:00'); d = kst(d.getTime() + n * 864e5); return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()); }
+  function dayLabel(ds) { var d = kst(new Date(ds + 'T12:00:00+09:00').getTime()); return (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일 (' + DOW[d.getUTCDay()] + ')'; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function now() { return Date.now() + offsetMs; }
+  function isPgm(it) { return it.eventType === 'PGM'; }
+  function title(it) { return isPgm(it) ? (it.programName || it.programItemName) : (it.programItemName || it.programName); }
+  function sub(it) { return isPgm(it) && it.programItemName && it.programItemName !== it.programName ? it.programItemName : ''; }
+
+  function load() {
+    var url = API + (viewDate ? '?date=' + viewDate : '');
+    fetch(url, { cache: 'no-store' }).then(function (r) {
+      var dh = r.headers.get('Date'); if (dh) offsetMs = new Date(dh).getTime() + 500 - Date.now();
+      if (r.status === 404) return { missing: true };
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (d) {
+      if (d.missing) { data = { date: viewDate, items: [], missing: true }; }
+      else { data = d; if (!viewDate) viewDate = d.date; }
+      render(true);
+    }).catch(function () { setHealth('bad', '서버 연결 안 됨'); });
+  }
+
+  function setHealth(cls, text) { var h = $('health'); h.className = 'health ' + cls; h.lastChild.textContent = text; }
+
+  function sources(items) {
+    var seen = {}, out = [];
+    items.forEach(function (it) { if (isPgm(it) && !seen[it.videoSource]) { seen[it.videoSource] = 1; out.push(it.videoSource); } });
+    return out;
+  }
+
+  function filtered() {
+    return data.items.filter(function (it) {
+      if (pref.pgmOnly && !isPgm(it)) return false;
+      if (pref.src !== 'ALL' && it.videoSource !== pref.src) return false;
+      return true;
+    });
+  }
+
+  function renderFilters() {
+    var srcs = sources(data.items);
+    if (pref.src !== 'ALL' && srcs.indexOf(pref.src) < 0 && data.items.length) pref.src = 'ALL';
+    var h = '<button type="button" class="chip" data-src="ALL" aria-pressed="' + (pref.src === 'ALL') + '">전체<small>' + data.items.length + '</small></button>';
+    srcs.forEach(function (s) {
+      var n = data.items.filter(function (it) { return it.videoSource === s; }).length;
+      h += '<button type="button" class="chip" data-src="' + esc(s) + '" aria-pressed="' + (pref.src === s) + '">' + esc(s) + '<small>' + n + '</small></button>';
+    });
+    h += '<span class="sep"></span><button type="button" class="chip" id="pgmOnly" aria-pressed="' + pref.pgmOnly + '">본방만 (광고·예고 숨김)</button>';
+    h += '<button type="button" class="chip jump" id="jump">지금으로</button>';
+    var f = $('filters'); if (f.innerHTML !== h) f.innerHTML = h;
+  }
+
+  function rowHtml(it, n) {
+    var s = t(it.startTime), e = t(it.endTime);
+    var cls = ['row', isPgm(it) ? 'pgm' : 'sb'];
+    if (it.onAir && data.isToday) cls.push('onair'); else if (data.isToday && e <= n) cls.push('past');
+    if (it.next && data.isToday) cls.push('next');
+    var fl = (it.live ? '<i class="live" title="생방송">생</i>' : '') + (it.rerun ? '<i title="재방송">재</i>' : '') +
+      (it.caption ? '<i title="자막방송">자</i>' : '') + (it.signLanguage ? '<i title="수어">수</i>' : '') + (it.audioDescription ? '<i title="화면해설">해</i>' : '');
+    var sb = sub(it);
+    return '<div class="' + cls.join(' ') + '" data-i="' + it.index + '">' +
+      '<span class="t">' + hms(s) + '<small>~' + hm(e) + '</small></span>' +
+      '<span class="len">' + esc(it.durationText) + '</span>' +
+      '<span class="src">' + esc(it.videoSource) + '</span>' +
+      '<span class="nm"><b>' + esc(title(it)) + '</b>' + (sb ? '<span>' + esc(sb) + '</span>' : '') + '</span>' +
+      '<span class="flags">' + fl + '</span></div>';
+  }
+
+  var lastListKey = '';
+  function render(fromLoad) {
+    if (!data) return;
+    var n = now();
+    $('day').textContent = dayLabel(data.date || viewDate);
+    $('next').disabled = !!data.isToday;
+    if (data.missing) setHealth('warn', '이 날 운행표 없음');
+    else if (data.health === 'ok') setHealth('', '정상 · ' + String(data.checkedAt || '').slice(11, 19) + ' 확인');
+    else if (data.health === 'down' || data.health === 'stale') setHealth('bad', 'SPS 연결 끊김');
+    else setHealth('warn', 'SPS ' + (data.health || '확인 중'));
+
+    renderFilters();
+
+    // 지금 방송 · 다음 본방 (오늘일 때만)
+    var air = data.isToday ? data.items.filter(function (it) { return it.onAir; })[0] : null;
+    var nc = $('nowCard');
+    if (air) {
+      var s = t(air.startTime), e = t(air.endTime), pct = Math.min(100, Math.max(0, (n - s) / (e - s) * 100));
+      nc.className = 'card air';
+      nc.innerHTML = '<div class="cap"><span class="dot"></span>지금 방송 · ' + esc(air.videoSource) + '</div>' +
+        '<h2>' + esc(title(air)) + '</h2><div class="meta">' + hms(s) + ' ~ ' + hms(e) + ' · ' + esc(air.durationText) + '</div>' +
+        '<div class="bar"><i style="width:' + pct.toFixed(2) + '%"></i></div>' +
+        '<div class="times"><span>경과 <b>+' + dur((n - s) / 1000) + '</b></span><span>남음 <b>-' + dur((e - n) / 1000, true) + '</b></span></div>';
+    } else {
+      nc.className = 'card';
+      nc.innerHTML = '<div class="cap">지금 방송</div><div class="empty">' + (data.isToday ? '확인된 방송 없음' : '지난 날짜 보기') + '</div>';
+    }
+    var nx = data.isToday ? data.items.filter(function (it) { return isPgm(it) && t(it.startTime) > n; })[0] : null;
+    var xc = $('nextCard');
+    if (nx) {
+      xc.innerHTML = '<div class="cap">다음 본방 · ' + esc(nx.videoSource) + '</div><h2>' + esc(title(nx)) + '</h2>' +
+        '<div class="meta"><b>' + hms(t(nx.startTime)) + '</b> 진입 · ' + esc(nx.durationText) + ' · <b>-' + dur((t(nx.startTime) - n) / 1000, true) + '</b></div>';
+    } else {
+      xc.innerHTML = '<div class="cap">다음 본방</div><div class="empty">' + (data.isToday ? '오늘 남은 본방 없음' : '—') + '</div>';
+    }
+
+    // 목록: 1초마다 지난 줄·지금 줄만 바뀌므로 내용이 같으면 다시 그리지 않는다
+    var items = filtered();
+    var key = data.date + '|' + pref.src + '|' + pref.pgmOnly + '|' + data.changedAt + '|' + items.map(function (it) {
+      return it.index + (it.onAir ? 'a' : '') + (t(it.endTime) <= n ? 'p' : '');
+    }).join(',');
+    if (key !== lastListKey) {
+      lastListKey = key;
+      $('list').innerHTML = data.missing ? '<div class="msg">이 날짜의 운행표가 파이에 없습니다</div>'
+        : items.length ? items.map(function (it) { return rowHtml(it, n); }).join('') : '<div class="msg">고른 보기에 해당하는 편성이 없습니다</div>';
+      if (fromLoad && !jumped) { jumped = true; jump(); }
+    }
+  }
+
+  var jumped = false;
+  function jump() {
+    var el = document.querySelector('.row.onair') || document.querySelector('.row:not(.past)');
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  $('filters').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.id === 'jump') { jump(); return; }
+    if (b.id === 'pgmOnly') pref.pgmOnly = !pref.pgmOnly; else if (b.dataset.src) pref.src = b.dataset.src;
+    save(); render(); jump();
+  });
+  $('prev').addEventListener('click', function () { viewDate = addDay(viewDate, -1); jumped = true; lastListKey = ''; window.scrollTo(0, 0); load(); });
+  $('next').addEventListener('click', function () { viewDate = addDay(viewDate, 1); jumped = false; lastListKey = ''; load(); });
+
+  setInterval(function () { $('clock').textContent = hms(now()); render(); }, 1000);
+  setInterval(load, 10000);
+  load();
+})();
+</script>
+</body>
+</html>

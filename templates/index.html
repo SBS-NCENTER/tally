@@ -562,6 +562,60 @@
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { transition: color 0.6s ease; }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in::after { background: linear-gradient(105deg, transparent 38%, rgba(127,227,211,0.55) 50%, transparent 62%); }
 
+    /* ── 2026-11-21 사용자 확정(G3 + H1 + F1): 아래 판 ▶/■ 아이콘, 방송 중 큰 숫자 = +경과·그 아래 작게 남은 시간,
+          ON AIR 점 숨쉬기, 고리 위 빛 띠. 생방송 모드(가로)에서만 ── */
+    .cd-chip .pic { display: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .cap, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out .cap { display: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in .pic, body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.out .pic {
+      display: block; order: -1; align-self: center; flex: none; width: calc(3.5 * var(--u) * var(--fit, 1)); height: calc(3.5 * var(--u) * var(--fit, 1));
+      color: #8E8E93; transition: color 0.6s ease;
+    }
+    .cd-chip .pic circle { fill: none; stroke: currentColor; stroke-width: 4; }
+    .cd-chip .pic .f { fill: currentColor; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+    /* 기다리는 쪽만 색 + ON AIR 점과 같은 3초로 은은하게: 시작 전 = ▶(확정색, 1분 전 앰버), 방송 중·초과 = ■ 빨강 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-ring.pre ~ #cd-ends .cd-chip.in .pic { color: var(--primary); animation: tl-pic-pulse 3s ease-in-out infinite; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-ring.imm ~ #cd-ends .cd-chip.in .pic { color: var(--amber); animation: tl-pic-pulse 3s ease-in-out infinite; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-ring.live ~ #cd-ends .cd-chip.out .pic,
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-ring.over ~ #cd-ends .cd-chip.out .pic { color: #E0706A; animation: tl-pic-pulse 3s ease-in-out infinite; }
+    @keyframes tl-pic-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+    /* 종료 시각이 방송 중에 바뀌면(주조 수정) 종료 숫자를 앰버로 4번 반짝(약 8초) — 바뀐 걸 알 수 있게(2026-11-21 사용자) */
+    .cd-chip.out.end-changed .t { animation: end-changed 2s ease-in-out 4; }
+    .cd-chip.out.end-changed .pic { color: var(--amber) !important; }
+    @keyframes end-changed { 0%, 100% { color: inherit; text-shadow: none; } 35%, 65% { color: var(--amber); text-shadow: 0 0 calc(2 * var(--u)) rgba(255,185,90,0.55); } }
+    /* 가운데 칸: 배정이면 '배정' 글자 대신 양끝 막힌 화살표 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.assign .cap, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.remain .cap { display: none; }
+    /* 방송 중 가운데 칸 = 모래시계 + 남은 시간(초과면 +초과 빨강) — 사용자 2026-11-21 '남은 시간은 원래대로 하단 가운데' */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.remain .pic.hg {
+      display: block; align-self: center; flex: none; width: calc(1.9 * var(--u) * var(--fit, 1)); height: calc(2.5 * var(--u) * var(--fit, 1));
+      fill: none; stroke: #8E8E93; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round;
+    }
+    #tl-mid .pic.hg .f { fill: #8E8E93; stroke: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.over .t { color: #E0706A; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.over .pic.hg { stroke: #E0706A; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.over .pic.hg .f { fill: #E0706A; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.assign .pic:not(.hg) {
+      display: block; align-self: center; flex: none; width: calc(2.3 * var(--u) * var(--fit, 1)); height: calc(2.2 * var(--u) * var(--fit, 1));
+      fill: none; stroke: #8E8E93; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round;
+    }
+    /* ON AIR 점 숨쉬기 — 3초, 번짐과 밝기만 조금(F1) */
+    #tl-lamp.on i { animation: tl-lamp-breathe 3s ease-in-out infinite; }
+    @keyframes tl-lamp-breathe {
+      0%, 100% { box-shadow: 0 0 0 1.2cqh rgba(255,90,79,0.20), 0 0 2.4cqh rgba(255,90,79,0.30); filter: brightness(0.93); }
+      50%      { box-shadow: 0 0 0 1.9cqh rgba(255,90,79,0.30), 0 0 6cqh rgba(255,90,79,0.60); filter: brightness(1.13); }
+    }
+    /* 고리 빛 띠 — 길이가 다른 흰 조각 셋을 겹쳐 가장자리가 흐린 띠. 방송 중 12시→머리, 시작 전 머리→12시(진입). 흐림 필터는 안 씀(파이 부하) */
+    #tl-ring .band path { fill: none; stroke: #fff; stroke-width: 46; stroke-linecap: butt; stroke-dasharray: var(--l) 400; stroke-dashoffset: var(--f); stroke-opacity: 0; }
+    #tl-ring .band .b1 { --l: 28; --f: 28; --t: -100; }
+    #tl-ring .band .b2 { --l: 18; --f: 23; --t: -105; }
+    #tl-ring .band .b3 { --l: 10; --f: 19; --t: -109; }
+    #tl-ring.live .band path { stroke-opacity: 0.03; animation: tl-band 4.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
+    #tl-ring.pre .band path, #tl-ring.imm .band path { stroke-opacity: 0.043; animation: tl-band 5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
+    @keyframes tl-band { 0% { stroke-dashoffset: var(--f); } 78%, 100% { stroke-dashoffset: var(--t); } }
+    @media (prefers-reduced-motion: reduce) {
+      #tl-lamp.on i, .cd-chip .pic, #tl-ring .band path { animation: none !important; }
+      #tl-ring .band path { stroke-opacity: 0 !important; }
+    }
+
     /* ══════════ 세로 모드 (전체 화면 90도 회전) ══════════ */
     body.portrait-right, body.portrait-left {
       position: fixed;
@@ -844,6 +898,8 @@
         <path class="glow" d="" stroke-width="50" stroke-linecap="round"/>
         <circle class="cap0" cx="0" cy="-220" r="25"/>
         <path class="arc" d="" stroke-width="50" stroke-linecap="round"/>
+        <!-- 고리 위를 진행 방향으로 지나가는 옅은 빛 띠(2026-11-21 F1). d 는 tlDrawArc 가 .arc 와 같이 넣는다 -->
+        <g class="band"><path class="b1" d="" pathLength="100"/><path class="b2" d="" pathLength="100"/><path class="b3" d="" pathLength="100"/></g>
         <path class="flash" d="" stroke-width="54" stroke-linecap="round"/>
         <g class="marks"></g>
         <circle class="head" cx="0" cy="-220" r="25"/>
@@ -882,10 +938,11 @@
       </div>
     </div>
     <div id="cd-ends">
-      <div class="cd-chip in"><span class="cap">진입</span><span class="ok" id="tile-prog-ok" title="확정된 진입 시각" style="display:none">✓</span><span class="t" id="cd-marker-start-label">--:--:--</span></div>
+      <!-- 생방송 모드(가로)에선 '진입/종료' 글자 대신 ▶ 재생 · ■ 정지 아이콘(2026-11-21 G3). 다른 모드는 글자 그대로 -->
+      <div class="cd-chip in"><span class="cap">진입</span><svg class="pic" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28"/><path class="f" d="M25.5 19.5 L46 32 L25.5 44.5 Z"/></svg><span class="ok" id="tile-prog-ok" title="확정된 진입 시각" style="display:none">✓</span><span class="t" id="cd-marker-start-label">--:--:--</span></div>
       <div class="cd-chip rem" id="cd-rem"><span class="cap" id="cd-rem-cap">남음</span><span class="t" id="cd-rem-val">--:--</span></div>
-      <div class="cd-chip mid" id="tl-mid"><span class="cap" id="tl-mid-cap"></span><span class="t" id="tl-mid-val"></span></div>
-      <div class="cd-chip out"><span class="cap">종료</span><span class="t" id="cd-marker-end-label">--:--:--</span></div>
+      <div class="cd-chip mid" id="tl-mid"><span class="cap" id="tl-mid-cap"></span><svg class="pic" viewBox="0 0 46 44" aria-hidden="true"><path d="M3 12 V32 M43 12 V32 M3 22 H43"/><path d="M11 16 L4.5 22 L11 28 M35 16 L41.5 22 L35 28"/></svg><svg class="pic hg" viewBox="0 0 34 44" aria-hidden="true"><path d="M4 3 H30 M4 41 H30"/><path d="M7 3 V9 C7 16 14 18.5 14 22 C14 25.5 7 28 7 35 V41"/><path d="M27 3 V9 C27 16 20 18.5 20 22 C20 25.5 27 28 27 35 V41"/><path class="f" d="M11.5 12.5 H22.5 L17 18 Z"/><path class="f" d="M9.5 38.5 C10.5 33 13.5 31 17 31 C20.5 31 23.5 33 24.5 38.5 Z"/></svg><span class="t" id="tl-mid-val"></span></div>
+      <div class="cd-chip out"><span class="cap">종료</span><svg class="pic" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28"/><rect class="f" x="21.5" y="21.5" width="21" height="21" rx="3.5"/></svg><span class="t" id="cd-marker-end-label">--:--:--</span></div>
     </div>
   </section>
 
@@ -1056,14 +1113,16 @@
       chips.forEach(c => { c.style.width = ''; c.style.removeProperty('--fit'); });
       // 가운데 정렬 칩은 넘친 부분이 양쪽으로 빠져 scrollWidth로는 덜 잡힌다 — 내용 폭을 직접 더해 잰다
       const need = c => {
-        const cs = getComputedStyle(c), kids = [...c.children].filter(k => k.offsetWidth);
+        // SVG 아이콘(▶ ■ 화살표)은 offsetWidth 가 없다 — 실제 그려진 폭으로 잰다
+        const kw = k => k.offsetWidth != null ? k.offsetWidth : k.getBoundingClientRect().width;
+        const cs = getComputedStyle(c), kids = [...c.children].filter(k => kw(k));
         const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), gap = parseFloat(cs.columnGap) || 0;
         if (cs.display === 'grid') {   // 라벨은 윗줄, 숫자(+✓)는 아랫줄 — 두 줄 중 넓은 쪽
           const row = kids.filter(k => !k.classList.contains('cap'));
           const cap = kids.find(k => k.classList.contains('cap'));
-          return Math.max(cap ? cap.offsetWidth : 0, row.reduce((s, k) => s + k.offsetWidth, 0) + gap * Math.max(0, row.length - 1)) + pad;
+          return Math.max(cap ? kw(cap) : 0, row.reduce((s, k) => s + kw(k), 0) + gap * Math.max(0, row.length - 1)) + pad;
         }
-        return kids.reduce((s, k) => s + k.offsetWidth, 0) + gap * Math.max(0, kids.length - 1) + pad;
+        return kids.reduce((s, k) => s + kw(k), 0) + gap * Math.max(0, kids.length - 1) + pad;
       };
       const shrink = (group, start) => {
         let f = start;
@@ -1230,6 +1289,7 @@
   const tlMidCapEl = document.getElementById('tl-mid-cap'), tlMidValEl = document.getElementById('tl-mid-val');
   const TL_R = 220, TL_LAB = 220 + 25 + 44;
   const tlFlashEl = tlRingEl.querySelector('.flash');
+  const tlBandEls = [...tlRingEl.querySelectorAll('.band path')];
   const TL_NS = 'http://www.w3.org/2000/svg';
   let tlMarksKey = '', tlLastMarks = [], tlLastP = 0, tlLastArgs = null, tlTween = 0, tlAnimArmed = false;
   function tlPt(r, p) { const a = (p * 360 - 90) * Math.PI / 180; return [r * Math.cos(a), r * Math.sin(a)]; }
@@ -1243,6 +1303,10 @@
   function setTlMid(cap, val) {
     if (tlMidCapEl.textContent !== cap) tlMidCapEl.textContent = cap;
     if (tlMidValEl.textContent !== val) tlMidValEl.textContent = val;
+    const m = tlMidCapEl.parentNode;
+    m.classList.toggle('assign', cap === '배정');                      // 배정은 글자 대신 양끝 화살표
+    m.classList.toggle('remain', cap === '남음' || cap === '초과');    // 남은 시간·초과는 모래시계
+    m.classList.toggle('over', cap === '초과');
   }
   function tlOff() { tlRingEl.classList.add('off'); setTlMid('', ''); }
   // 시작 전(pre·imm)은 '남은 시간'을 밝게 — 머리(p)부터 진입(12시)까지가 밝고, 지나온 쪽은 어둡다. 줄어들어 진입 때 0.
@@ -1250,7 +1314,7 @@
   function tlRemainMode() { return tlRingEl.classList.contains('pre') || tlRingEl.classList.contains('imm'); }
   function tlDrawArc(p) {
     const d = tlRemainMode() ? tlSeg(p, 1) : tlArcD(p);
-    if (tlArcEl.getAttribute('d') !== d) { tlArcEl.setAttribute('d', d); tlGlowEl.setAttribute('d', d); }
+    if (tlArcEl.getAttribute('d') !== d) { tlArcEl.setAttribute('d', d); tlGlowEl.setAttribute('d', d); tlBandEls.forEach(b => b.setAttribute('d', d)); }
     const h = tlPt(TL_R, p);
     [tlHeadEl, tlHeadDotEl].forEach(el => { el.setAttribute('cx', h[0].toFixed(2)); el.setAttribute('cy', h[1].toFixed(2)); });
   }
@@ -1419,6 +1483,7 @@
   let broadcastProgramName = '';
   let broadcastVideoSource = '';
   let broadcastScheduledEndTime = '', broadcastScheduledEndTimeNextDay = false;
+  let cdEndKey = '', cdEndTxt = '', cdEndFlashTimer = 0;   // 같은 방송의 종료 시각이 바뀌었는지(반짝임용)
   let broadcastIsLive = false;
   let broadcastStartConfirmed = true;
   let lastCdSignature = '';
@@ -1959,7 +2024,8 @@
     checkTickContinuity(Math.round(rawDiffMs / 1000), fromPoll, start.getTime() + ':' + end.getTime());
 
     if (rawDiffMs > 0) {
-      cdTagMain.textContent = '-' + formatDuration(Math.floor(rawDiffMs / 1000));
+      // 남은 시간은 올림, 지난 시간은 버림 — 둘을 더하면 언제나 배정 시간과 같다(2026-11-21: 경과 33:00 + 남음 18:59 = 51:59 로 1초 모자랐다)
+      cdTagMain.textContent = '-' + formatDuration(Math.ceil(rawDiffMs / 1000));
       cdTagMain.classList.add('neg');
       cdTagMain.classList.remove('overrun');
       cdRunnerTagPill.classList.remove('two');
@@ -1974,7 +2040,7 @@
       cdRunnerTagPill.classList.remove('two');
       cdTrack.classList.remove('show');
       tlOff();
-      setRemChip(rawDiffMs > 0 ? '' : '경과', rawDiffMs > 0 ? '-' + fmtHMS(rawDiffMs / 1000) : cdTagMain.textContent.replace(/^[+-]/, ''), rawDiffMs > 0 ? 'pending' : 'elapsed');
+      setRemChip(rawDiffMs > 0 ? '' : '경과', rawDiffMs > 0 ? '-' + fmtHMS(Math.ceil(rawDiffMs / 1000)) : cdTagMain.textContent.replace(/^[+-]/, ''), rawDiffMs > 0 ? 'pending' : 'elapsed');
       renderTiles(rawDiffMs > 0 ? '다음 방송' : '현재 방송');
       return;
     }
@@ -2005,9 +2071,20 @@
     // 큰 글씨(주 라벨)는 항상 "예정" 종료를 고정해서 보여준다 — 실제값이 반영돼도
     // 자리에서 숫자가 바뀌지 않아야 기준점 역할을 한다. 진행률 바/러너/남은시간
     // 계산은 계속 최신값(end, 방송 중엔 예정=최신이라 같고 끝나면 실제)을 쓴다.
+    // ※ 2026-11-21: 생방송 종료 시각은 주조가 방송 중에도 계속 고친다(ISU 18:08:42→56→26→03). 서버가 방송 중엔
+    //   '예정 종료'를 최신 운행표로 따라가게 바꿨고, 화면은 같은 방송의 종료 시각이 바뀌면 종료 칸을 잠깐 반짝여 알린다.
     const scheduledEnd = broadcastScheduledEndTime
       ? timeToday(start, broadcastScheduledEndTime, broadcastScheduledEndTimeNextDay) : end;
-    cdMarkerEndLabel.textContent = (isLaterDay(scheduledEnd, now) ? 'N ' : '') + hhmm(scheduledEnd);
+    const endTxt = (isLaterDay(scheduledEnd, now) ? 'N ' : '') + hhmm(scheduledEnd);
+    const endKey = broadcastTime + '|' + broadcastProgramName;
+    if (endKey === cdEndKey && cdEndTxt && cdEndTxt !== endTxt && !(broadcastScheduledEndTime && !broadcastIsLive)) {
+      const chip = cdMarkerEndLabel.parentNode;
+      chip.classList.remove('end-changed'); void chip.offsetWidth; chip.classList.add('end-changed');
+      clearTimeout(cdEndFlashTimer);
+      cdEndFlashTimer = setTimeout(() => chip.classList.remove('end-changed'), 8000);
+    }
+    cdEndKey = endKey; cdEndTxt = endTxt;
+    if (cdMarkerEndLabel.textContent !== endTxt) cdMarkerEndLabel.textContent = endTxt;
 
     // 방송이 실제로 끝났으면(=LIVE가 꺼지고 예정과 실제 종료가 달라지면) 그
     // 사실을 우하단 텍스트가 아니라 말풍선 자체로 보여준다 — 끝난 뒤엔 말풍선의
@@ -2163,7 +2240,7 @@
           renderTiles('현재 방송');
           if (!cdWasOverrun) triggerOverrunHit();
         } else {
-          const remainSec = Math.max(0, Math.floor((end - now) / 1000));
+          const remainSec = Math.max(0, Math.ceil((end - now) / 1000));
           cdTagSub.textContent = '-' + formatDuration(remainSec);
           cdTagSub.classList.add('neg');
           cdTagSub.classList.remove('overrun');
@@ -2176,7 +2253,7 @@
         cdRunnerTagPill.classList.remove('two');
         cdTagSub.classList.remove('overrun', 'neg');
         cdWasOverrun = false;
-        const toStartSec = Math.max(0, Math.floor((start - now) / 1000));
+        const toStartSec = Math.max(0, Math.ceil((start - now) / 1000));
         setRemChip('', '-' + fmtHMS(toStartSec), cdImminent ? 'imminent' : 'pending');
         renderTiles('다음 방송');
       }
@@ -2244,9 +2321,17 @@
       p: (isBeforeStart ? parseFloat(t.dataset.pct) : parseFloat(t.style.left)) / 100, label: t.textContent,
     })).filter(m => m.p > 0 && m.p < 1);
     renderRing(tlState, now < end || isBeforeStart ? pct / 100 : 1, tlTicks);
+    // 2026-11-21 사용자: 방송 중엔 PD 가 누적 시간을 더 본다 — 큰 숫자 = +경과, 그 아래 작게 남은 시간(초과면 +초과, 빨강).
+    // 아래 가운데는 방송 중에도 배정 그대로. 가로 생방송 화면에서만(세로 모드는 큰 칩이 남은 시간 그대로).
+    // (같은 날 사용자 '막상 보니 이상하다' → 남은 시간은 원래대로 아래 가운데 칸. 방송 중엔 배정을 안 보여도 된다.)
+    const tlA2 = document.body.classList.contains('tl-main') && !isPortraitMode();
     if (isBeforeStart) setTlMid('배정', Math.round(durationSec / 60) + '분');
     else if (isFinalEnded) setTlMid('방송', fmtHMS((end - start) / 1000));
-    else setTlMid('경과', '+' + fmtHMS((now - start) / 1000));
+    else if (tlOver) setTlMid('초과', '+' + fmtHMS(Math.floor((now - scheduledEnd) / 1000)));
+    else setTlMid('남음', '-' + fmtHMS(Math.max(0, Math.ceil((end - now) / 1000))));
+    if (tlA2 && !isBeforeStart && !isFinalEnded) {
+      setRemChip('', '+' + fmtHMS(Math.floor((now - start) / 1000)), tlOver ? 'over' : 'running');
+    }
   }
 
   let cdTrackWidthPx = 0;

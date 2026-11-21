@@ -494,6 +494,20 @@ def sps_append_history(record):
         f.write(json.dumps(record, ensure_ascii=False) + '\n')
 
 
+SPS_CHANGES_FILE = os.path.join(SPS_DATA_DIR, 'sps_time_changes.jsonl')
+
+
+def sps_log_change(record):
+    """추적 중인 방송의 시작·종료 시각이 SPS 에서 바뀔 때마다 한 줄씩 남긴다(2026-11-21).
+    서비스 로그(journal)는 페이더 로그가 많아 이 줄이 묻히거나 빠져서, '몇 번 바뀌었나'를 나중에 알 수 없었다."""
+    try:
+        os.makedirs(SPS_DATA_DIR, exist_ok=True)
+        with open(SPS_CHANGES_FILE, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+    except Exception as e:
+        print(f"[SPS] 시각 변경 기록 실패: {e}", flush=True)
+
+
 def sps_read_history(date_str):
     """broadcast_history.jsonl에서 해당 날짜 기록을 eventId -> 레코드 딕셔너리로 읽어온다.
     같은 eventId가 여러 줄이면(이론상 없어야 하지만) 마지막 줄을 우선한다."""
@@ -934,6 +948,17 @@ def sps_listener():
                         changed = True
                         print(f"[SPS] 시간 갱신(실제반영/캐스케이드) → {result['programName']} "
                               f"{old_start}~{old_end} → {result['start_str']}~{result['end_str']}", flush=True)
+                        sps_log_change({
+                            'at': now.isoformat(), 'eventId': result['eventId'], 'programName': result['programName'],
+                            'videoSource': result['videoSource'], 'live': bool(is_live),
+                            'from': [old_start, old_end], 'to': [result['start_str'], result['end_str']],
+                        })
+                        # 방송 중에 주조가 종료 시각을 고치면 '예정 종료'도 최신 운행표를 따라간다(2026-11-21 사용자
+                        # '최신 운행표 기준'). 안 그러면 종료 칸·초과 판단은 시작 때 값, 남은 시간은 최신 값을 써서
+                        # 서로 몇십 초씩 어긋났다. 방송이 끝나는 순간의 '실제 반영'은 is_live 가 이미 False 라 따라가지 않는다.
+                        if is_live:
+                            s['broadcastScheduledEndTime'] = result['end_str']
+                            s['broadcastScheduledEndTimeNextDay'] = result['end_next_day']
                     if is_live and not last_was_live:
                         s['broadcastScheduledEndTime'] = s['broadcastEndTime']
                         s['broadcastScheduledEndTimeNextDay'] = s['broadcastEndTimeNextDay']
@@ -1144,6 +1169,15 @@ def control_login():
 @app.route('/health')
 def health():
     return jsonify(status='ok')
+
+
+@app.route('/leader')
+def leader_view():
+    """팀장님용 전체 편성 뷰어(2026-11-21). 읽기 전용 — /api/sps/schedule 만 읽고 아무것도 바꾸지 않는다.
+    파일은 static/schedule.html(예전 주소 /static/schedule.html 도 그대로 열림)."""
+    resp = app.send_static_file('schedule.html')
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
 
 
 TICK_ANOMALY_LOG = os.path.join(os.path.dirname(__file__), 'tick_anomaly.jsonl')
