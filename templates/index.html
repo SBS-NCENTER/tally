@@ -567,6 +567,13 @@
     #tl-cnt { display: block; margin-top: 2.2cqh; font-size: 16.5cqh; font-weight: 800; line-height: 1; letter-spacing: -0.03em; white-space: nowrap; color: #fff; text-shadow: 0 0 2.6cqh rgba(214,218,226,0.7); }
     #tl-cnt[hidden] { display: none; }
     #tl-cnt.over { color: #FF5A4F; text-shadow: 0 0 3cqh rgba(255,90,79,0.5); }
+    #tl-cnt.under { color: #9CF2B8; text-shadow: 0 0 3cqh rgba(156,242,184,0.45); }   /* 일찍 끝남 */
+    #tl-cnt.blink { animation: chip-blink 0.8s ease-in-out 12; }
+    #tl-ring.done { --ring-trk: rgba(255,255,255,0.08); --ring-lo: #4E5562; --ring-hi: #8E939C; }   /* 끝난 뒤 고리는 회색 — 결과 색(빨강·초록)은 고리 안 숫자만 */
+    /* 초과 중에도 큰 경과 숫자는 흰 글자(빨간 빛만) — 빨간 숫자는 고리 안 초과 하나 */
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.over .t { color: #fff; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.ended .t { color: #E8EAEE; }   /* 끝난 뒤 큰 숫자 = 실제 방송 길이(멈춤) */
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.blink { animation: none; }
     #tl-ring.live .trk { stroke: rgba(214,218,226,0.48); }   /* 고리의 남은 구간 = 실버 */
     #tl-ring.pre { --ring-hi: #D6DAE2; --ring-trk: rgba(214,218,226,0.10); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.running .t,
@@ -1463,7 +1470,7 @@
     // 고리 머리 점도 같은 박자로(SVG 는 offsetWidth 가 없어 getBoundingClientRect 로 다시 시작시킨다)
     [tlHeadEl, tlHeadDotEl].forEach(el => { el.classList.remove('beat'); el.getBoundingClientRect(); el.classList.add('beat'); });
   }
-  const REM_STATES = ['pending', 'imminent', 'running', 'over', 'final-over', 'final-under', 'elapsed'];
+  const REM_STATES = ['pending', 'imminent', 'running', 'over', 'final-over', 'final-under', 'elapsed', 'ended'];
   // 시작 전 카운트다운은 항상 HH:MM:SS (-00:00:00 형식) — formatDuration은 1시간 미만이면 MM:SS라 따로 둔다
   function fmtHMS(totalSec) {
     totalSec = Math.max(0, Math.round(totalSec));
@@ -2212,7 +2219,9 @@
     let isFinalEnded = false, finalDiffSec = 0;
     if (broadcastScheduledEndTime && !broadcastIsLive) {
       const diffSec = Math.round((end - scheduledEnd) / 1000);
-      if (Math.abs(diffSec) >= 1) {
+      // 2026-11-23: 예정과 딱 맞게(1초 안쪽) 끝나도 끝난 것으로 — 단 실제 종료 시각이 지났을 때만
+      // (방송 중 LIVE 가 잠깐 꺼져도 끝난 걸로 보지 않게). 전엔 정시 종료면 경과가 계속 올라갔다.
+      if (Math.abs(diffSec) >= 1 || now >= end) {
         isFinalEnded = true;
         finalDiffSec = diffSec;
       }
@@ -2448,10 +2457,19 @@
     // 2026-11-23 사용자: 가로 생방송 화면은 아래 가운데를 방송 전·중 모두 배정 시간으로 두고,
     // 역카운트(남은 시간)는 고리 안 ON AIR 밑에 분으로만(90분 남으면 -90:00). 초과면 빨간 +분:초. 세로는 예전대로.
     const fmtMS = sec => { sec = Math.max(0, Math.round(sec)); return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0'); };
-    let tlCnt = '';
+    // 끝난 뒤(안 1, 사용자 11-23): 자리 뜻은 방송 중과 같게 — 큰 숫자 = 실제 방송 길이(멈춤), 고리 안 = 예정보다 얼마나
+    // (+ 빨강 늦게 / - 초록 일찍 / 정시면 00:00, 글자 라벨 없음), ON AIR 자리는 '종료', 아래 가운데는 배정 그대로.
+    let tlCnt = '', tlCntCls = '';
+    const tlEnded = tlA2 && !isBeforeStart && isFinalEnded;
     if (tlA2) {
-      if (isFinalEnded) setTlMid('방송', fmtHMS((end - start) / 1000)); else setTlMid('배정', Math.round(durationSec / 60) + '분');
-      if (!isBeforeStart && !isFinalEnded) tlCnt = tlOver ? '+' + fmtMS(Math.floor((now - scheduledEnd) / 1000)) : '-' + fmtMS(Math.max(0, Math.ceil((end - now) / 1000)));
+      if (tlEnded) {
+        setTlMid('배정', Math.round((scheduledEnd - start) / 60000) + '분');
+        tlCnt = (finalDiffSec > 0 ? '+' : finalDiffSec < 0 ? '-' : '') + fmtMS(Math.abs(finalDiffSec));
+        tlCntCls = finalDiffSec > 0 ? 'over' : finalDiffSec < 0 ? 'under' : '';
+      } else {
+        setTlMid('배정', Math.round(durationSec / 60) + '분');
+        if (!isBeforeStart) { tlCnt = tlOver ? '+' + fmtMS(Math.floor((now - scheduledEnd) / 1000)) : '-' + fmtMS(Math.max(0, Math.ceil((end - now) / 1000))); tlCntCls = tlOver ? 'over' : ''; }
+      }
     }
     else if (isBeforeStart) setTlMid('배정', Math.round(durationSec / 60) + '분');
     else if (isFinalEnded) setTlMid('방송', fmtHMS((end - start) / 1000));
@@ -2459,9 +2477,15 @@
     else setTlMid('남음', '-' + fmtHMS(Math.max(0, Math.ceil((end - now) / 1000))));
     if (tlCntEl.textContent !== tlCnt) tlCntEl.textContent = tlCnt;
     tlCntEl.hidden = !tlCnt;
-    tlCntEl.classList.toggle('over', !!tlCnt && tlOver);
+    tlCntEl.classList.toggle('over', tlCntCls === 'over');
+    tlCntEl.classList.toggle('under', tlCntCls === 'under');
+    tlCntEl.classList.toggle('blink', tlEnded && cdRemEl.classList.contains('blink'));   // 끝난 순간 10초 반짝임은 결과(고리 안)에
+    const lampTxt = tlEnded ? '종료' : 'ON AIR', lampB = tlLampEl.querySelector('b');
+    if (lampB.textContent !== lampTxt) lampB.textContent = lampTxt;
     if (tlA2 && !isBeforeStart && !isFinalEnded) {
       setRemChip('', '+' + fmtHMS(Math.floor((now - start) / 1000)), tlOver ? 'over' : 'running');
+    } else if (tlEnded) {
+      setRemChip('', fmtHMS(Math.round((end - start) / 1000)), 'ended');
     }
     if (tlA2) fitEnds();   // 위에서 큰 숫자(경과)·가운데 칸을 바꿨다 — 최종 글자로 다시 맞춘다
   }
