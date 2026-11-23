@@ -572,7 +572,8 @@
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.running .t,
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.over .t { text-shadow: 0 0 calc(2.6 * var(--u)) rgba(255,90,79,0.55), 0 0 calc(0.6 * var(--u)) rgba(255,90,79,0.35); }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.running .t .sg { text-shadow: 0 0 calc(2.6 * var(--u)) rgba(255,90,79,0.75), 0 0 calc(0.6 * var(--u)) rgba(255,90,79,0.5); }
-    /* 시작 전 큰 숫자는 빛 없이 예전 흰 글자 그대로(사용자 11-23: 은빛이 너무 빛난다) */
+    /* 시작 전 큰 숫자 — 은빛을 아까(0.5)와 없음 사이 중간으로(사용자 11-23: 너무 빛남 ↔ 너무 밋밋) */
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.pending .t { text-shadow: 0 0 calc(2.3 * var(--u)) rgba(214,218,226,0.3); }
     /* 시간 숫자 세 조각(setTimeVal) — '시:'는 오른쪽(콜론)부터 드러나고 왼쪽부터 접힌다. 1시간 미만이면 접힘 */
     .t.hms > .hr { display: inline-flex; justify-content: flex-end; overflow: hidden; vertical-align: bottom; max-width: 2.05em; opacity: 1; }
     .t.hms > .hr > span { white-space: nowrap; }
