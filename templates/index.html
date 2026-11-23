@@ -560,6 +560,23 @@
     #tl-ring .head.beat, #tl-ring .head-dot.beat { transform-box: fill-box; transform-origin: center; animation: tl-head-beat 0.45s cubic-bezier(0.2, 0, 0, 1); }
     @keyframes tl-head-beat { 0% { transform: scale(1.4); } 100% { transform: scale(1); } }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { transition: color 0.6s ease; }
+    /* ── 2026-11-23 사용자 확정: 남은 시간 = 실버, 흐른 시간 = 빨강 기운 ──
+       ON AIR 는 크게(꺼짐도 회색으로 읽히게), 불빛 점은 O 안. 고리 안 역카운트는 흰 글자 + 은빛. + 기호는 빨강으로 칠하지 않고 빛만 */
+    #tl-lamp b { font-size: 10cqh; color: #55555E; letter-spacing: 0.05em; }
+    #tl-lamp.on b { color: #FF6A60; text-shadow: 0 0 4cqh rgba(255,90,79,0.7); }
+    #tl-lamp .lo { position: relative; display: inline-block; }
+    #tl-lamp .ld { position: absolute; left: 50%; top: 50%; width: 0.22em; height: 0.22em; transform: translate(-50%, -50%); border-radius: 50%; background: #6A6A74; }
+    #tl-lamp.on .ld { width: 0.25em; height: 0.25em; background: #FFEDEA; box-shadow: 0 0 0 0.09em rgba(255,90,79,0.22), 0 0 0.5em rgba(255,90,79,0.95); }   /* 빨간 O 안에선 같은 빨강이면 묻힌다 — 하얗게 달아오른 불빛 */
+    #tl-cnt { display: block; margin-top: 2.2cqh; font-size: 16.5cqh; font-weight: 800; line-height: 1; letter-spacing: -0.03em; white-space: nowrap; color: #fff; text-shadow: 0 0 2.6cqh rgba(214,218,226,0.7); }
+    #tl-cnt[hidden] { display: none; }
+    #tl-cnt.over { color: #FF5A4F; text-shadow: 0 0 3cqh rgba(255,90,79,0.5); }
+    #tl-ring.live .trk { stroke: rgba(214,218,226,0.48); }   /* 고리의 남은 구간 = 실버 */
+    #tl-ring.pre { --ring-hi: #D6DAE2; --ring-trk: rgba(214,218,226,0.10); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.running .t,
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.over .t { text-shadow: 0 0 calc(2.6 * var(--u)) rgba(255,90,79,0.55), 0 0 calc(0.6 * var(--u)) rgba(255,90,79,0.35); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.running .t .sg { text-shadow: 0 0 calc(2.6 * var(--u)) rgba(255,90,79,0.75), 0 0 calc(0.6 * var(--u)) rgba(255,90,79,0.5); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.pending .t { text-shadow: 0 0 calc(2.6 * var(--u)) rgba(214,218,226,0.5); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.pending .t .sg { color: #D6DAE2; }
     /* 시간 숫자 세 조각(setTimeVal) — '시:'는 오른쪽(콜론)부터 드러나고 왼쪽부터 접힌다. 1시간 미만이면 접힘 */
     .t.hms > .hr { display: inline-flex; justify-content: flex-end; overflow: hidden; vertical-align: bottom; max-width: 2.05em; opacity: 1; }
     .t.hms > .hr > span { white-space: nowrap; }
@@ -617,8 +634,12 @@
       display: block; align-self: center; flex: none; width: calc(2.3 * var(--u) * var(--fit, 1)); height: calc(2.2 * var(--u) * var(--fit, 1));
       fill: none; stroke: #8E8E93; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round;
     }
-    /* ON AIR 점 숨쉬기 — 3초, 번짐과 밝기만 조금(F1) */
-    #tl-lamp.on i { animation: tl-lamp-breathe 3s ease-in-out infinite; }
+    /* ON AIR 불빛 숨쉬기 — 3초, 번짐과 밝기만 조금(F1). 11-23 부터 불빛은 O 안(.ld) */
+    #tl-lamp.on .ld { animation: ld-breathe 3s ease-in-out infinite; }
+    @keyframes ld-breathe {
+      0%, 100% { box-shadow: 0 0 0 0.06em rgba(255,90,79,0.18), 0 0 0.3em rgba(255,90,79,0.5); filter: brightness(0.93); }
+      50%      { box-shadow: 0 0 0 0.12em rgba(255,90,79,0.3), 0 0 0.7em rgba(255,90,79,0.95); filter: brightness(1.15); }
+    }
     @keyframes tl-lamp-breathe {
       0%, 100% { box-shadow: 0 0 0 1.2cqh rgba(255,90,79,0.20), 0 0 2.4cqh rgba(255,90,79,0.30); filter: brightness(0.93); }
       50%      { box-shadow: 0 0 0 1.9cqh rgba(255,90,79,0.30), 0 0 6cqh rgba(255,90,79,0.60); filter: brightness(1.13); }
@@ -632,7 +653,7 @@
     #tl-ring.pre .band path, #tl-ring.imm .band path { stroke-opacity: 0.043; animation: tl-band 5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
     @keyframes tl-band { 0% { stroke-dashoffset: var(--f); } 78%, 100% { stroke-dashoffset: var(--t); } }
     @media (prefers-reduced-motion: reduce) {
-      #tl-lamp.on i, .cd-chip .pic, #tl-ring .band path { animation: none !important; }
+      #tl-lamp.on i, #tl-lamp.on .ld, .cd-chip .pic, #tl-ring .band path { animation: none !important; }
       #tl-ring .band path { stroke-opacity: 0 !important; }
     }
 
@@ -925,7 +946,7 @@
         <circle class="head" cx="0" cy="-220" r="25"/>
         <circle class="head-dot" cx="0" cy="-220" r="9" fill="#fff"/>
       </svg>
-      <div id="tl-lamp"><i></i><b>ON AIR</b></div>
+      <div id="tl-lamp"><b><span class="lo">O<span class="ld"></span></span>N AIR</b><span class="cnt" id="tl-cnt" hidden></span></div>
     </div>
     <div id="tl-dock"></div>
     <div id="cd-track">
@@ -1323,6 +1344,7 @@
   const tlHeadEl = tlRingEl.querySelector('.head'), tlHeadDotEl = tlRingEl.querySelector('.head-dot');
   const tlMarksEl = tlRingEl.querySelector('.marks');
   const tlLampEl = document.getElementById('tl-lamp');
+  const tlCntEl = document.getElementById('tl-cnt');   // 고리 안 역카운트(분 표기)
   const tlMidCapEl = document.getElementById('tl-mid-cap'), tlMidValEl = document.getElementById('tl-mid-val');
   const TL_R = 220, TL_LAB = 220 + 25 + 44;
   const tlFlashEl = tlRingEl.querySelector('.flash');
@@ -2426,10 +2448,21 @@
     // 아래 가운데는 방송 중에도 배정 그대로. 가로 생방송 화면에서만(세로 모드는 큰 칩이 남은 시간 그대로).
     // (같은 날 사용자 '막상 보니 이상하다' → 남은 시간은 원래대로 아래 가운데 칸. 방송 중엔 배정을 안 보여도 된다.)
     const tlA2 = document.body.classList.contains('tl-main') && !isPortraitMode();
-    if (isBeforeStart) setTlMid('배정', Math.round(durationSec / 60) + '분');
+    // 2026-11-23 사용자: 가로 생방송 화면은 아래 가운데를 방송 전·중 모두 배정 시간으로 두고,
+    // 역카운트(남은 시간)는 고리 안 ON AIR 밑에 분으로만(90분 남으면 -90:00). 초과면 빨간 +분:초. 세로는 예전대로.
+    const fmtMS = sec => { sec = Math.max(0, Math.round(sec)); return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0'); };
+    let tlCnt = '';
+    if (tlA2) {
+      if (isFinalEnded) setTlMid('방송', fmtHMS((end - start) / 1000)); else setTlMid('배정', Math.round(durationSec / 60) + '분');
+      if (!isBeforeStart && !isFinalEnded) tlCnt = tlOver ? '+' + fmtMS(Math.floor((now - scheduledEnd) / 1000)) : '-' + fmtMS(Math.max(0, Math.ceil((end - now) / 1000)));
+    }
+    else if (isBeforeStart) setTlMid('배정', Math.round(durationSec / 60) + '분');
     else if (isFinalEnded) setTlMid('방송', fmtHMS((end - start) / 1000));
     else if (tlOver) setTlMid('초과', '+' + fmtHMS(Math.floor((now - scheduledEnd) / 1000)));
     else setTlMid('남음', '-' + fmtHMS(Math.max(0, Math.ceil((end - now) / 1000))));
+    if (tlCntEl.textContent !== tlCnt) tlCntEl.textContent = tlCnt;
+    tlCntEl.hidden = !tlCnt;
+    tlCntEl.classList.toggle('over', !!tlCnt && tlOver);
     if (tlA2 && !isBeforeStart && !isFinalEnded) {
       setRemChip('', '+' + fmtHMS(Math.floor((now - start) / 1000)), tlOver ? 'over' : 'running');
     }
