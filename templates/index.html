@@ -560,6 +560,11 @@
     #tl-ring .head.beat, #tl-ring .head-dot.beat { transform-box: fill-box; transform-origin: center; animation: tl-head-beat 0.45s cubic-bezier(0.2, 0, 0, 1); }
     @keyframes tl-head-beat { 0% { transform: scale(1.4); } 100% { transform: scale(1); } }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { transition: color 0.6s ease; }
+    /* 시간 숫자 세 조각(setTimeVal) — '시:'는 오른쪽(콜론)부터 드러나고 왼쪽부터 접힌다. 1시간 미만이면 접힘 */
+    .t.hms > .hr { display: inline-flex; justify-content: flex-end; overflow: hidden; vertical-align: bottom; max-width: 2.05em; opacity: 1; }
+    .t.hms > .hr > span { white-space: nowrap; }
+    .t.hms.short > .hr { max-width: 0; opacity: 0; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) .t.hms.short > span { font-size: 1.25em; }   /* 분부터 나올 땐 1.25배 */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.in::after { background: linear-gradient(105deg, transparent 38%, rgba(127,227,211,0.55) 50%, transparent 62%); }
 
     /* ── 2026-11-21 사용자 확정(G3 + H1 + F1): 아래 판 ▶/■ 아이콘, 방송 중 큰 숫자 = +경과·그 아래 작게 남은 시간,
@@ -1139,7 +1144,13 @@
       // 진입·종료는 서로 같은 크기, 남음 글자의 90%를 넘지 않게(남음이 주인공).
       const chips = [...cdEndsEl.querySelectorAll('.cd-chip')];
       const rem = cdEndsEl.querySelector('.cd-chip.rem');
-      chips.forEach(c => { c.style.width = ''; c.style.removeProperty('--fit'); });
+      // 아래 판 세 칸(진입 | 경과·배정 | 종료)은 같이 — 가운데 칸이 빠지면 커진 숫자가 옆 칸으로 넘친다
+      const mid = cdEndsEl.querySelector('#tl-mid');
+      const trio = sides.concat(mid && mid.offsetWidth ? [mid] : []);
+      // 1시간 경계에서 흐르는 중인 칸은 다시 재지 않는다 — 시작할 때 최종 크기로 이미 맞춰 뒀다
+      const busy = c => { const t = c && c.querySelector('.t'); return !!(t && t._animUntil > performance.now()); };
+      const remBusy = busy(rem), trioBusy = trio.some(busy);
+      chips.forEach(c => { c.style.width = ''; if (c === rem ? !remBusy : !trioBusy) c.style.removeProperty('--fit'); });
       // 가운데 정렬 칩은 넘친 부분이 양쪽으로 빠져 scrollWidth로는 덜 잡힌다 — 내용 폭을 직접 더해 잰다
       const need = c => {
         // SVG 아이콘(▶ ■ 화살표)은 offsetWidth 가 없다 — 실제 그려진 폭으로 잰다
@@ -1166,11 +1177,8 @@
         return f;
       };
       const tSize = c => parseFloat(getComputedStyle(c.querySelector('.t')).fontSize) || 0;
-      if (rem) shrink([rem], 1);
-      // 아래 판 세 칸(진입 | 경과·배정 | 종료)은 같이 — 가운데 칸이 빠지면 커진 숫자가 옆 칸으로 넘친다
-      const mid = cdEndsEl.querySelector('#tl-mid');
-      const trio = sides.concat(mid && mid.offsetWidth ? [mid] : []);
-      if (trio.length) {
+      if (rem && !remBusy) shrink([rem], 1);
+      if (trio.length && !trioBusy) {
         trio.forEach(c => c.style.setProperty('--fit', '1'));
         const full = tSize(trio[0]), cap = rem && full ? Math.min(1, 0.9 * tSize(rem) / full) : 1;
         shrink(trio, cap);
@@ -1331,7 +1339,7 @@
   function tlArcD(p) { return tlSeg(0, p); }
   function setTlMid(cap, val) {
     if (tlMidCapEl.textContent !== cap) tlMidCapEl.textContent = cap;
-    if (tlMidValEl.textContent !== val) tlMidValEl.textContent = val;
+    setTimeVal(tlMidValEl, val);
     const m = tlMidCapEl.parentNode;
     m.classList.toggle('assign', cap === '배정');                      // 배정은 글자 대신 양끝 화살표
     m.classList.toggle('remain', cap === '남음' || cap === '초과');    // 남은 시간·초과는 모래시계
@@ -1443,10 +1451,74 @@
     const p = v => String(v).padStart(2, '0');
     return `${p(Math.floor(totalSec / 3600))}:${p(Math.floor((totalSec % 3600) / 60))}:${p(totalSec % 60)}`;
   }
+  // 시간 숫자(±HH:MM:SS)를 [부호][시:][분:초] 세 조각으로 그린다. 1시간 미만이면 앞의 '00:'을 접고(분부터),
+  // 생방송 가로 화면에선 숫자를 1.25배로 키운다(사용자 2026-11-23 C안). 시는 1시간 이상이면 두 자리(01:15:50).
+  // 형식이 아니면(--:-- 등) 그냥 글자로.
+  // 경계를 넘는 순간은 흐르듯이: 한 번의 갱신이 끝난 뒤(fitEnds 가 최종 크기를 정확히 잰 뒤) 직전 모습에서
+  // 최종 모습으로 Web Animations 로 옮긴다. 큰 숫자 칸은 한 갱신에 남은 시간→경과로 두 번 쓰이므로 마지막 모습만 본다.
+  // 움직이는 동안(_animUntil)은 fitEnds 가 그 칸을 다시 재지 않는다(애니메이션 중간값을 재면 크기가 틀어진다).
+  function hmsLook(el) {
+    const sg = el.querySelector(':scope > .sg'), hr = el.querySelector(':scope > .hr');
+    return { fs: parseFloat(getComputedStyle(sg).fontSize) || 0, w: hr.getBoundingClientRect().width, short: el.classList.contains('short') };
+  }
+  function setTimeVal(el, val) {
+    const m = /^([+-]?)(\d{2,}):(\d{2}:\d{2})$/.exec(val || '');
+    if (!m) {
+      if (el.classList.contains('hms') || el.textContent !== val) { el.classList.remove('hms', 'short'); el.textContent = val; }
+      return;
+    }
+    let sg = el.querySelector(':scope > .sg'), hr, rest;
+    const fresh = !el.classList.contains('hms') || !sg;
+    if (fresh) {
+      el.textContent = '';
+      sg = document.createElement('span'); sg.className = 'sg';
+      hr = document.createElement('span'); hr.className = 'hr'; hr.appendChild(document.createElement('span'));
+      rest = document.createElement('span'); rest.className = 'rest';
+      el.append(sg, hr, rest); el.classList.add('hms');
+    } else { hr = el.querySelector(':scope > .hr'); rest = el.querySelector(':scope > .rest'); }
+    const short = m[2] === '00';
+    // 이번 갱신에서 처음 바뀌려는 순간의 모습(= 화면에 보이던 모습)을 잡아 두고, 갱신이 끝나면 비교한다
+    if (!fresh && !el._flowPending && el.classList.contains('short') !== short && el.offsetWidth
+        && document.body.classList.contains('tl-main') && !isPortraitMode() && tlRingEl.classList.contains('tl-anim')) {   // 첫 화면은 흐르지 않게(고리 전환과 같은 기준)
+      el.getAnimations({ subtree: true }).forEach(a => a.cancel());
+      el._flowFrom = hmsLook(el); el._flowPending = true;
+      // 아래 판 세 칸은 같이 맞춰지므로 옆 칸(진입·종료) 글자 크기도 같이 흘려 보낸다
+      el._flowFrom.others = [...cdEndsEl.querySelectorAll('.cd-chip .t')].filter(t => t !== el && t.offsetWidth)
+        .map(t => [t, parseFloat(getComputedStyle(t).fontSize) || 0]);
+      queueMicrotask(() => flowTimeVal(el));
+    }
+    const hrTxt = (short ? '00' : m[2]) + ':';
+    if (sg.textContent !== m[1]) sg.textContent = m[1];
+    if (hr.firstChild.textContent !== hrTxt) hr.firstChild.textContent = hrTxt;
+    if (rest.textContent !== m[3]) rest.textContent = m[3];
+    el.classList.toggle('short', short);
+  }
+  function flowTimeVal(el) {
+    el._flowPending = false;
+    const a = el._flowFrom; el._flowFrom = null;
+    if (!a || !el.classList.contains('hms') || !el.offsetWidth) return;
+    const b = hmsLook(el);
+    if (a.short === b.short) return;   // 같은 갱신 안에서 되돌아왔다 — 보이는 건 그대로
+    const hr = el.querySelector(':scope > .hr'), ease = 'cubic-bezier(.4,0,.2,1)';
+    // 글자 크기와 '시:' 자리 폭은 같은 박자로 — 그래야 전체 폭이 처음과 끝 사이에서만 움직여 칸을 넘지 않는다
+    const dur = b.short ? 1200 : 700;   // 1시간 안으로는 천천히 접히고, 넘어갈 땐 조금 빨리 열린다
+    [...el.children].forEach(k => k.animate([{ fontSize: a.fs + 'px' }, { fontSize: b.fs + 'px' }], { duration: dur, easing: ease }));
+    hr.animate([{ maxWidth: a.w + 'px' }, { maxWidth: b.w + 'px' }], { duration: dur, easing: ease });
+    // '00:'은 먼저 흐려지고, '01:'은 콜론부터(오른쪽 정렬) 드러나며 짙어진다
+    hr.animate(b.short ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: 'ease' });
+    el._animUntil = performance.now() + dur + 50;
+    (a.others || []).forEach(([t, fs]) => {
+      const fs1 = parseFloat(getComputedStyle(t).fontSize) || 0;
+      if (Math.abs(fs1 - fs) < 0.5) return;
+      t.getAnimations().forEach(x => x.cancel());
+      t.animate([{ fontSize: fs + 'px' }, { fontSize: fs1 + 'px' }], { duration: dur, easing: ease });
+      t._animUntil = el._animUntil;
+    });
+  }
   // 하단 가운데 '남음' 칩 — 5006의 러너 알약(경과/남음)이 하던 역할을 고정 위치에서 한다.
   function setRemChip(cap, val, cls) {
     if (cdRemCap.textContent !== cap) cdRemCap.textContent = cap;
-    if (cdRemVal.textContent !== val) cdRemVal.textContent = val;
+    setTimeVal(cdRemVal, val);
     REM_STATES.forEach(c => cdRemEl.classList.toggle(c, c === cls));
   }
   // 우측 타일: 부조정실은 방송의 videoSource(없으면 선택된 부조), 방송명은
@@ -2361,6 +2433,7 @@
     if (tlA2 && !isBeforeStart && !isFinalEnded) {
       setRemChip('', '+' + fmtHMS(Math.floor((now - start) / 1000)), tlOver ? 'over' : 'running');
     }
+    if (tlA2) fitEnds();   // 위에서 큰 숫자(경과)·가운데 칸을 바꿨다 — 최종 글자로 다시 맞춘다
   }
 
   let cdTrackWidthPx = 0;
