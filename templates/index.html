@@ -2693,6 +2693,8 @@
       ]).then(([s, st]) => {
         leaderStudios = st.studios || [];
         delete st.studios;
+        // 사이드바 부조 칩도 같은 고정 목록(TS-1~7·RSW4)으로 — 그날 편성 목록(/sps/studios) 대신
+        if (leaderStudios.length && qpStudioList.join(',') !== leaderStudios.join(',')) { qpStudioList = leaderStudios.slice(); qpRenderStudios(); }
         applySettings(Object.assign({}, s, st, { testModeActive: false, portrait: false }));   // 팀장님 화면은 항상 가로
         renderLeaderPicker();
       }).catch(() => {});
@@ -3058,6 +3060,7 @@
 
   /* ── 오늘 운행표 ── */
   function qpPollStudios() {
+    if (LEADER && leaderStudios.length) { qpStudioList = leaderStudios.slice(); qpRenderStudios(); return; }   // 팀장님 화면은 고정 목록
     fetch('/sps/studios').then(r => r.json()).then(list => {
       qpStudioList = Array.isArray(list) ? list : [];
       qpRenderStudios();

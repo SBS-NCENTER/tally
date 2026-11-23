@@ -1189,6 +1189,10 @@ def _sps_cache_repos(date_str):
         return []
 
 
+# 팀장님 화면 부조 목록 — 그날 편성과 상관없이 늘 이 순서로(운행표 videoSource 표기 그대로)
+LEADER_STUDIOS = ['TS-1', 'TS-2', 'TS-3', 'TS-4', 'TS-5', 'TS-6', 'TS-7', 'RSW4']
+
+
 @app.route('/api/leader/state')
 def api_leader_state():
     """팀장님 화면용 — 고른 부조(studio)의 '지금/다음 생방송'을 키오스크 설정과 같은 모양의 필드로 돌려준다.
@@ -1197,7 +1201,7 @@ def api_leader_state():
     now = datetime.now(KST)
     today = sps_broadcast_date(now)
     repos = _sps_cache_repos(today.strftime('%Y-%m-%d'))
-    studios = sorted({e.get('videoSource', '') for e in repos if e.get('liveOrVcr') and e.get('videoSource')})
+    studios = list(LEADER_STUDIOS)   # 편성에 없는 부조도 고를 수 있게 고정 목록(사용자 2026-11-23, 팀장님 화면만)
     sps = get_sps_settings()
     # studio 를 안 주면 키오스크 설정을 따른다 — 설정도 비어 있으면 '' = 모든 부조 중 지금·다음 생방송(키오스크와 같은 동작)
     studio = (request.args.get('studio') if 'studio' in request.args else sps['studio']) or ''
