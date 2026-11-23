@@ -1173,10 +1173,76 @@ def health():
 
 @app.route('/leader')
 def leader_view():
-    """팀장님용 전체 편성 뷰어(2026-11-21). 읽기 전용 — /api/sps/schedule 만 읽고 아무것도 바꾸지 않는다.
-    파일은 static/schedule.html(예전 주소 /static/schedule.html 도 그대로 열림)."""
-    resp = app.send_static_file('schedule.html')
-    resp.headers['Cache-Control'] = 'no-cache'
+    """팀장님 화면(2026-11-22 사용자): 스태프 키오스크(/)와 똑같은 생방송 화면인데 부조만 따로 골라 본다.
+    화면은 같은 index.html — 주소가 /leader 이면 페이지가 스스로 '읽기 전용 + 부조 선택' 모드가 되어
+    /api/leader/state 로 고른 부조의 방송을 받아 그린다. 서버 설정(settings.json)은 읽기만 하고 절대 바꾸지 않는다.
+    (11-21 에 만들었던 편성표 목록 화면 static/schedule.html 은 11-22 사용자 요청으로 지웠다.)"""
+    session['control_authed'] = True   # 특보 알림용 /sps/live-schedule 조회. 저장은 페이지가 막는다(/ 와 같은 권한)
+    return render_template('index.html')
+
+
+def _sps_cache_repos(date_str):
+    try:
+        with open(os.path.join(SPS_DATA_DIR, f'sps_schedule_{date_str}.json'), encoding='utf-8') as f:
+            return json.load(f).get('repos', []) or []
+    except Exception:
+        return []
+
+
+@app.route('/api/leader/state')
+def api_leader_state():
+    """팀장님 화면용 — 고른 부조(studio)의 '지금/다음 생방송'을 키오스크 설정과 같은 모양의 필드로 돌려준다.
+    sps_listener 와 같은 규칙(sps_pick_from_live · onAirIndex 우선 · 진입 확정)으로 고르되 상태를 저장하지 않고,
+    SPS API 도 부르지 않는다(키오스크가 받아 둔 운행표 캐시만 읽는다). 키오스크 설정은 바뀌지 않는다."""
+    now = datetime.now(KST)
+    today = sps_broadcast_date(now)
+    repos = _sps_cache_repos(today.strftime('%Y-%m-%d'))
+    studios = sorted({e.get('videoSource', '') for e in repos if e.get('liveOrVcr') and e.get('videoSource')})
+    sps = get_sps_settings()
+    # studio 를 안 주면 키오스크 설정을 따른다 — 설정도 비어 있으면 '' = 모든 부조 중 지금·다음 생방송(키오스크와 같은 동작)
+    studio = (request.args.get('studio') if 'studio' in request.args else sps['studio']) or ''
+    studio = studio.strip()
+    out = {'studios': studios, 'spsStudio': studio, 'countdownMode': True, 'stopwatchMode': False,
+           'broadcastVideoSource': studio, 'broadcastEventId': '', 'broadcastProgramName': '',
+           'broadcastTime': '', 'broadcastTimeNextDay': False, 'broadcastEndTime': '', 'broadcastEndTimeNextDay': False,
+           'broadcastScheduledEndTime': '', 'broadcastScheduledEndTimeNextDay': False,
+           'broadcastIsLive': False, 'broadcastStartConfirmed': True}
+    air_idx = sps_air_index(repos)
+    on_air_event_id = repos[air_idx].get('eventId') if air_idx is not None else None
+    live = sps_parse_live(repos, studio)
+    picked = sps_pick_from_live(live, now, sps['gap_minutes'], on_air_event_id)
+    if picked is None:   # 오늘 남은 게 없으면 캐시에 있는 다음 날들에서(새로 조회하지 않음)
+        for d in range(1, SPS_LOOKAHEAD_DAYS + 1):
+            nxt = sps_parse_live(_sps_cache_repos((today + timedelta(days=d)).strftime('%Y-%m-%d')), studio)
+            if nxt:
+                picked = min(nxt, key=lambda e: e['start'])
+                break
+    if picked is None:
+        return jsonify(out)
+    r = sps_to_result(picked, now)
+    is_live = on_air_event_id is not None and on_air_event_id == r['eventId']
+    picked_idx = next((i for i, e in enumerate(repos) if e.get('eventId') == picked['eventId']), None)
+    if air_idx is None or picked_idx is None:
+        on_air_is_live = any(e['eventId'] == on_air_event_id for e in sps_parse_live(repos))
+        start_confirmed = (not on_air_is_live) or on_air_event_id == picked['eventId']
+    else:
+        start_confirmed = not any(repos[i].get('liveOrVcr') and repos[i].get('eventId') != picked['eventId']
+                                  for i in range(air_idx, picked_idx))
+    sched_end, sched_nd = '', False
+    if is_live:   # 방송 중엔 최신 운행표 종료(키오스크와 같은 규칙)
+        sched_end, sched_nd = r['end_str'], r['end_next_day']
+    elif picked['end'] <= now:   # 막 끝난 방송: 키오스크가 남긴 기록이 있으면 '예정 대비' 비교를 같이
+        rec = sps_read_history(today.strftime('%Y-%m-%d')).get(picked['eventId'])
+        if rec and rec.get('scheduledEnd'):
+            sched_end = rec['scheduledEnd']
+    out.update({'broadcastEventId': r['eventId'], 'broadcastProgramName': r['programName'],
+                'broadcastVideoSource': r['videoSource'] or studio,
+                'broadcastTime': r['start_str'], 'broadcastTimeNextDay': r['start_next_day'],
+                'broadcastEndTime': r['end_str'], 'broadcastEndTimeNextDay': r['end_next_day'],
+                'broadcastScheduledEndTime': sched_end, 'broadcastScheduledEndTimeNextDay': sched_nd,
+                'broadcastIsLive': is_live, 'broadcastStartConfirmed': start_confirmed})
+    resp = jsonify(out)
+    resp.headers['Cache-Control'] = 'no-store'
     return resp
 
 

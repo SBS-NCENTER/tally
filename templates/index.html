@@ -578,6 +578,21 @@
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-ring.live ~ #cd-ends .cd-chip.out .pic,
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-ring.over ~ #cd-ends .cd-chip.out .pic { color: #E0706A; animation: tl-pic-pulse 3s ease-in-out infinite; }
     @keyframes tl-pic-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+    /* 팀장님 화면(/leader): 퀵 설정 패널은 안 열리고, 부조 칸을 누르면 부조 목록 */
+    /* 사이드바(퀵 설정)는 팀장님 화면에선 '부조 선택 + 오늘 운행표'만 — 모드·자동 연동·시각 입력·타이머는 키오스크 설정이라 숨긴다 */
+    html.leader #quick-panel .qp-sec:has(#qp-modes), html.leader #qp-auto, html.leader #qp-auto-off, html.leader #qp-pane-timer { display: none !important; }
+    html.leader #qp-auto-on { display: block !important; }
+    html.leader #tile-studio { cursor: pointer; }
+    /* 누르는 곳이라는 걸 알 수 있게 — 방송명 칸의 '현재 방송'처럼 위에 작은 글자 '부조 선택 ▾'(2026-11-22 사용자 '부조 변경을 못 하겠다') */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tile-studio .cap.leader-cap { display: block; font-size: calc(1.3 * var(--u) * var(--sch-user, 1)); font-weight: 700; color: #98989F; line-height: 1.2; }
+    html.leader #tile-studio:hover .cap.leader-cap { color: #F5F5F7; }
+    #leader-pick { position: fixed; z-index: 50; left: calc(3.75 * var(--u)); top: calc(10.4 * var(--u)); display: flex; flex-wrap: wrap; gap: calc(0.6 * var(--u));
+      max-width: calc(60 * var(--u)); padding: calc(1 * var(--u)); border-radius: calc(1.6 * var(--u)); background: #1c1c1f; box-shadow: 0 calc(1 * var(--u)) calc(4 * var(--u)) rgba(0,0,0,0.6), inset 0 0 0 1.5px rgba(255,255,255,0.10); }
+    #leader-pick[hidden] { display: none; }
+    #leader-pick button { font: inherit; font-size: calc(2.2 * var(--u)); font-weight: 800; padding: calc(0.7 * var(--u)) calc(1.6 * var(--u)); border-radius: calc(1 * var(--u));
+      border: 0; background: rgba(255,255,255,0.08); color: #F5F5F7; cursor: pointer; }
+    #leader-pick button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+    #leader-pick span { color: #98989F; font-size: calc(1.8 * var(--u)); padding: calc(0.6 * var(--u)); }
     /* 종료 시각이 방송 중에 바뀌면(주조 수정) 종료 숫자를 앰버로 4번 반짝(약 8초) — 바뀐 걸 알 수 있게(2026-11-21 사용자) */
     .cd-chip.out.end-changed .t { animation: end-changed 2s ease-in-out 4; }
     .cd-chip.out.end-changed .pic { color: var(--amber) !important; }
@@ -1049,6 +1064,20 @@
 
 
 <script>
+  /* ══ 팀장님 화면(/leader, 2026-11-22): 스태프 키오스크와 같은 화면, 부조만 따로 골라 본다 ══
+     읽기 전용 — 이 페이지는 서버에 아무것도 저장하지 못한다(GET 이 아닌 요청은 보내지 않고 성공한 척만 한다).
+     방송 정보는 /api/leader/state?studio=… 로 받아 /settings 위에 덮어 그린다(키오스크 설정은 그대로). */
+  const LEADER = location.pathname === '/leader';
+  if (LEADER) {
+    document.documentElement.classList.add('leader');
+    const realFetch = window.fetch.bind(window);
+    window.fetch = (url, opt) => (opt && opt.method && String(opt.method).toUpperCase() !== 'GET')
+      ? Promise.resolve(new Response(null, { status: 204 }))
+      : realFetch(url, opt);
+  }
+  let leaderStudio = '';
+  try { leaderStudio = new URLSearchParams(location.search).get('studio') || localStorage.getItem('leader-studio') || ''; } catch (e) {}
+  let leaderStudios = [];
   const box         = document.getElementById('status-box');
   const statusText  = document.getElementById('status-text');
   const scheduleEl  = document.getElementById('schedule');
@@ -2584,10 +2613,65 @@
   }
 
   function pollSettings() {
+    if (LEADER) {   // 키오스크 설정(글자 크기·테마 등)은 그대로 쓰고, 방송 정보만 팀장님이 고른 부조 것으로 덮는다
+      Promise.all([
+        fetch('/settings').then(r => r.json()),
+        fetch('/api/leader/state?studio=' + encodeURIComponent(leaderStudio)).then(r => r.json()),
+      ]).then(([s, st]) => {
+        leaderStudios = st.studios || [];
+        delete st.studios;
+        applySettings(Object.assign({}, s, st, { testModeActive: false, portrait: false }));   // 팀장님 화면은 항상 가로
+        renderLeaderPicker();
+      }).catch(() => {});
+      return;
+    }
     fetch('/settings')
       .then(r => r.json())
       .then(applySettings)
       .catch(() => {});
+  }
+  // 팀장님 화면에서 부조 고르기(왼쪽 위 부조 칸·사이드바 공통) — 이 브라우저에만 기억, 서버·키오스크는 안 바뀐다
+  function leaderSelect(s) {
+    leaderStudio = s || '';
+    try { localStorage.setItem('leader-studio', leaderStudio); } catch (err) {}
+    try {
+      const u = new URL(location.href);
+      if (leaderStudio) u.searchParams.set('studio', leaderStudio); else u.searchParams.delete('studio');
+      history.replaceState(null, '', u);
+    } catch (err) {}
+    pollSettings();
+    setTimeout(() => { if (typeof qpPollSchedule === 'function') qpPollSchedule(); }, 400);
+  }
+  // 왼쪽 위 부조 칸을 누르면 부조 목록 — 고르면 이 브라우저에만 기억(서버·키오스크는 안 바뀐다)
+  const leaderPick = document.createElement('div');
+  leaderPick.id = 'leader-pick'; leaderPick.hidden = true;
+  document.body.appendChild(leaderPick);
+  function renderLeaderPicker() {
+    if (!LEADER) return;
+    // '전체' = 부조 구분 없이 지금·다음 생방송(스태프 키오스크 기본과 같음)
+    const html = `<button type="button" data-s="" aria-pressed="${leaderStudio === ''}">전체</button>`
+      + leaderStudios.map(s => `<button type="button" data-s="${s}" aria-pressed="${s === leaderStudio}">${s}</button>`).join('');
+    if (leaderPick.innerHTML !== html) leaderPick.innerHTML = html;
+  }
+  if (LEADER) {
+    const qpHeadTitle = document.querySelector('#quick-panel .qp-head span');
+    if (qpHeadTitle) qpHeadTitle.textContent = '부조 보기 (이 화면만)';
+    const studioCap = document.querySelector('#tile-studio .cap');
+    if (studioCap) { studioCap.textContent = '부조 선택 ▾'; studioCap.classList.add('leader-cap'); }
+    const studioTile = document.getElementById('tile-studio');
+    studioTile.setAttribute('role', 'button'); studioTile.tabIndex = 0;
+    studioTile.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); studioTile.click(); } });
+    document.getElementById('tile-studio').addEventListener('click', e => {
+      e.stopPropagation();
+      renderLeaderPicker();
+      leaderPick.hidden = !leaderPick.hidden;
+    });
+    leaderPick.addEventListener('click', e => {
+      const b = e.target.closest('button[data-s]'); if (!b) return;
+      leaderPick.hidden = true;
+      leaderSelect(b.dataset.s);
+    });
+    document.addEventListener('click', () => { leaderPick.hidden = true; });
   }
   pollSettings();
   setInterval(pollSettings, 3000);
@@ -2708,6 +2792,14 @@
       escapeHtml(v) + '">' + (v === '' ? '전체' : escapeHtml(v)) + '</button>'
     ).join('');
     qpStudios.querySelectorAll('.qp-chip').forEach(btn => {
+      if (LEADER) {   // 팀장님 화면: 꾹 누를 필요 없이 탭 — 이 화면에서만 바뀐다(서버 저장 없음)
+        btn.addEventListener('click', () => {
+          qpStudioSig = null;
+          leaderSelect(btn.dataset.studio);
+          qpToastMsg('부조정실: ' + (btn.dataset.studio || '전체') + ' (이 화면만)');
+        });
+        return;
+      }
       qpHold(btn, () => btn.dataset.studio !== cur, () => {
         qpSave({ spsStudio: btn.dataset.studio }).then(qpPollSchedule);
         qpToastMsg('부조정실: ' + (btn.dataset.studio || '전체'));
@@ -2903,7 +2995,10 @@
     if (!document.body.classList.contains('qp-open')) return;
     if (!qpSettings || !qpSettings.countdownMode) return;
     if (qpSettings.spsAutoDetect === false) return;
-    fetch('/sps/live-schedule').then(r => r.json()).then(items => {
+    // 팀장님 화면: 서버 설정 부조가 아니라 이 화면에서 고른 부조의 운행표
+    fetch(LEADER ? '/sps/live-schedule?all=1' : '/sps/live-schedule').then(r => r.json())
+      .then(items => (LEADER && leaderStudio && Array.isArray(items)) ? items.filter(it => it.videoSource === leaderStudio) : items)
+      .then(items => {
       if (!Array.isArray(items) || !items.length) {
         qpSchedCount.textContent = '';
         qpSchedList.innerHTML = '<div class="qp-empty">오늘 예정된 생방송이 없습니다.</div>';
