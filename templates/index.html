@@ -561,12 +561,9 @@
     @keyframes tl-head-beat { 0% { transform: scale(1.4); } 100% { transform: scale(1); } }
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem .t { transition: color 0.6s ease; }
     /* ── 2026-11-23 사용자 확정: 남은 시간 = 실버, 흐른 시간 = 빨강 기운 ──
-       ON AIR 는 크게(꺼짐도 회색으로 읽히게), 불빛 점은 O 안. 고리 안 역카운트는 흰 글자 + 은빛. + 기호는 빨강으로 칠하지 않고 빛만 */
-    #tl-lamp b { font-size: 10cqh; color: #55555E; letter-spacing: 0.05em; }
+       ON AIR 는 크게(꺼짐도 회색으로 읽히게), 점 없이 글자가 숨 쉰다. 고리 안 역카운트는 흰 글자 + 은빛. + 기호는 빨강으로 칠하지 않고 빛만 */
+    #tl-lamp b { font-size: 11cqh; color: #55555E; letter-spacing: 0.05em; }   /* 점은 뺐다(사용자) — 글자만, 꺼짐도 회색으로 읽히게 */
     #tl-lamp.on b { color: #FF6A60; text-shadow: 0 0 4cqh rgba(255,90,79,0.7); }
-    #tl-lamp .lo { position: relative; display: inline-block; }
-    #tl-lamp .ld { position: absolute; left: 50%; top: 50%; width: 0.22em; height: 0.22em; transform: translate(-50%, -50%); border-radius: 50%; background: #6A6A74; }
-    #tl-lamp.on .ld { width: 0.25em; height: 0.25em; background: #FFEDEA; box-shadow: 0 0 0 0.09em rgba(255,90,79,0.22), 0 0 0.5em rgba(255,90,79,0.95); }   /* 빨간 O 안에선 같은 빨강이면 묻힌다 — 하얗게 달아오른 불빛 */
     #tl-cnt { display: block; margin-top: 2.2cqh; font-size: 16.5cqh; font-weight: 800; line-height: 1; letter-spacing: -0.03em; white-space: nowrap; color: #fff; text-shadow: 0 0 2.6cqh rgba(214,218,226,0.7); }
     #tl-cnt[hidden] { display: none; }
     #tl-cnt.over { color: #FF5A4F; text-shadow: 0 0 3cqh rgba(255,90,79,0.5); }
@@ -634,11 +631,11 @@
       display: block; align-self: center; flex: none; width: calc(2.3 * var(--u) * var(--fit, 1)); height: calc(2.2 * var(--u) * var(--fit, 1));
       fill: none; stroke: #8E8E93; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round;
     }
-    /* ON AIR 불빛 숨쉬기 — 3초, 번짐과 밝기만 조금(F1). 11-23 부터 불빛은 O 안(.ld) */
-    #tl-lamp.on .ld { animation: ld-breathe 3s ease-in-out infinite; }
-    @keyframes ld-breathe {
-      0%, 100% { box-shadow: 0 0 0 0.06em rgba(255,90,79,0.18), 0 0 0.3em rgba(255,90,79,0.5); filter: brightness(0.93); }
-      50%      { box-shadow: 0 0 0 0.12em rgba(255,90,79,0.3), 0 0 0.7em rgba(255,90,79,0.95); filter: brightness(1.15); }
+    /* ON AIR 숨쉬기 — 3초, 번짐과 밝기만 조금(F1). 11-23 사용자: 점 없이 글자 자체가 숨 쉰다 */
+    #tl-lamp.on b { animation: tl-txt-breathe 3s ease-in-out infinite; }
+    @keyframes tl-txt-breathe {
+      0%, 100% { text-shadow: 0 0 2.5cqh rgba(255,90,79,0.45); filter: brightness(0.95); }
+      50%      { text-shadow: 0 0 6cqh rgba(255,90,79,0.95), 0 0 1.2cqh rgba(255,90,79,0.6); filter: brightness(1.18); }
     }
     @keyframes tl-lamp-breathe {
       0%, 100% { box-shadow: 0 0 0 1.2cqh rgba(255,90,79,0.20), 0 0 2.4cqh rgba(255,90,79,0.30); filter: brightness(0.93); }
@@ -653,7 +650,7 @@
     #tl-ring.pre .band path, #tl-ring.imm .band path { stroke-opacity: 0.043; animation: tl-band 5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
     @keyframes tl-band { 0% { stroke-dashoffset: var(--f); } 78%, 100% { stroke-dashoffset: var(--t); } }
     @media (prefers-reduced-motion: reduce) {
-      #tl-lamp.on i, #tl-lamp.on .ld, .cd-chip .pic, #tl-ring .band path { animation: none !important; }
+      #tl-lamp.on i, #tl-lamp.on b, .cd-chip .pic, #tl-ring .band path { animation: none !important; }
       #tl-ring .band path { stroke-opacity: 0 !important; }
     }
 
@@ -946,7 +943,7 @@
         <circle class="head" cx="0" cy="-220" r="25"/>
         <circle class="head-dot" cx="0" cy="-220" r="9" fill="#fff"/>
       </svg>
-      <div id="tl-lamp"><b><span class="lo">O<span class="ld"></span></span>N AIR</b><span class="cnt" id="tl-cnt" hidden></span></div>
+      <div id="tl-lamp"><b>ON AIR</b><span class="cnt" id="tl-cnt" hidden></span></div>
     </div>
     <div id="tl-dock"></div>
     <div id="cd-track">
