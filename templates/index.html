@@ -519,6 +519,7 @@
     @keyframes tl-beat { 0% { transform: scale(1.05); } 100% { transform: scale(1); } }
     /* ── 고리 ── */
     #tl-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    #tl-ring svg.ly { will-change: transform; }   /* 층마다 따로 합성 — 움직이는 층만 다시 그린다(파이 부하) */
     #tl-ring .trk { fill: none; stroke: var(--ring-trk); }
     #tl-ring .glow { fill: none; stroke: var(--ring-hi); opacity: 0.38; filter: url(#tl-glow); }
     #tl-ring.pre .glow { opacity: 0.18; }
@@ -639,11 +640,13 @@
       fill: none; stroke: #8E8E93; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round;
     }
     /* ON AIR 숨쉬기 — 3초, 번짐과 밝기만 조금(F1). 11-23 사용자: 점 없이 글자 자체가 숨 쉰다 */
-    #tl-lamp.on b { animation: tl-txt-breathe 3s ease-in-out infinite; }
-    @keyframes tl-txt-breathe {
-      0%, 100% { text-shadow: 0 0 2.5cqh rgba(255,90,79,0.45); filter: brightness(0.95); }
-      50%      { text-shadow: 0 0 6cqh rgba(255,90,79,0.95), 0 0 1.2cqh rgba(255,90,79,0.6); filter: brightness(1.18); }
-    }
+    /* 2026-11-24 파이 부하: 큰 그림자를 매 프레임 다시 그리던 것을, 미리 그린 빛 층(::after)의 투명도만 바꾸게 */
+    #tl-lamp b { position: relative; }
+    #tl-lamp.on b { text-shadow: 0 0 2.5cqh rgba(255,90,79,0.45); }
+    #tl-lamp.on b::after { content: attr(data-t); position: absolute; inset: 0; color: rgba(255,150,140,0.35); pointer-events: none;
+      text-shadow: 0 0 6cqh rgba(255,90,79,0.95), 0 0 1.2cqh rgba(255,90,79,0.6); opacity: 0; will-change: opacity;
+      animation: tl-glow-breathe 3s ease-in-out infinite; }
+    @keyframes tl-glow-breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
     @keyframes tl-lamp-breathe {
       0%, 100% { box-shadow: 0 0 0 1.2cqh rgba(255,90,79,0.20), 0 0 2.4cqh rgba(255,90,79,0.30); filter: brightness(0.93); }
       50%      { box-shadow: 0 0 0 1.9cqh rgba(255,90,79,0.30), 0 0 6cqh rgba(255,90,79,0.60); filter: brightness(1.13); }
@@ -657,7 +660,7 @@
     #tl-ring.pre .band path, #tl-ring.imm .band path { stroke-opacity: 0.043; animation: tl-band 5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
     @keyframes tl-band { 0% { stroke-dashoffset: var(--f); } 78%, 100% { stroke-dashoffset: var(--t); } }
     @media (prefers-reduced-motion: reduce) {
-      #tl-lamp.on i, #tl-lamp.on b, .cd-chip .pic, #tl-ring .band path { animation: none !important; }
+      #tl-lamp.on i, #tl-lamp.on b, #tl-lamp.on b::after, .cd-chip .pic, #tl-ring .band path { animation: none !important; }
       #tl-ring .band path { stroke-opacity: 0 !important; }
     }
 
@@ -937,20 +940,26 @@
     <div id="cd-nodata"></div>
     <!-- 생방송 모드(가로) A2: 진행 고리 + 안에 ON AIR 등. 위치·눈금은 아래 #cd-track 계산을 그대로 받아 그린다(renderRing) -->
     <div id="tl-ring" class="off">
-      <svg id="tl-ring-svg" viewBox="-275 -275 550 550" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <!-- 2026-11-24 파이 부하: 겹치는 순서는 그대로 두고 층(svg)을 나눴다. 빛 띠가 매 프레임 움직여도
+           흐림 필터가 걸린 고리 빛(.glow)은 다시 그리지 않게 — 한 svg 에 같이 있으면 띠 한 칸마다 흐림을 다시 계산했다 -->
+      <svg class="ly" viewBox="-275 -275 550 550" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><circle class="trk" cx="0" cy="0" r="220" stroke-width="50"/></svg>
+      <svg class="ly" viewBox="-275 -275 550 550" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <defs><filter id="tl-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter></defs>
-        <circle class="trk" cx="0" cy="0" r="220" stroke-width="50"/>
         <path class="glow" d="" stroke-width="50" stroke-linecap="round"/>
+      </svg>
+      <svg class="ly" id="tl-ring-svg" viewBox="-275 -275 550 550" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <circle class="cap0" cx="0" cy="-220" r="25"/>
         <path class="arc" d="" stroke-width="50" stroke-linecap="round"/>
-        <!-- 고리 위를 진행 방향으로 지나가는 옅은 빛 띠(2026-11-21 F1). d 는 tlDrawArc 가 .arc 와 같이 넣는다 -->
-        <g class="band"><path class="b1" d="" pathLength="100"/><path class="b2" d="" pathLength="100"/><path class="b3" d="" pathLength="100"/></g>
+      </svg>
+      <!-- 고리 위를 진행 방향으로 지나가는 옅은 빛 띠(2026-11-21 F1). d 는 tlDrawArc 가 .arc 와 같이 넣는다 -->
+      <svg class="ly" viewBox="-275 -275 550 550" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g class="band"><path class="b1" d="" pathLength="100"/><path class="b2" d="" pathLength="100"/><path class="b3" d="" pathLength="100"/></g></svg>
+      <svg class="ly" viewBox="-275 -275 550 550" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <path class="flash" d="" stroke-width="54" stroke-linecap="round"/>
         <g class="marks"></g>
         <circle class="head" cx="0" cy="-220" r="25"/>
         <circle class="head-dot" cx="0" cy="-220" r="9" fill="#fff"/>
       </svg>
-      <div id="tl-lamp"><b>ON AIR</b><span class="cnt" id="tl-cnt" hidden></span></div>
+      <div id="tl-lamp"><b data-t="ON AIR">ON AIR</b><span class="cnt" id="tl-cnt" hidden></span></div>
     </div>
     <div id="tl-dock"></div>
     <div id="cd-track">
@@ -2481,7 +2490,7 @@
     tlCntEl.classList.toggle('under', tlCntCls === 'under');
     tlCntEl.classList.toggle('blink', tlEnded && cdRemEl.classList.contains('blink'));   // 끝난 순간 10초 반짝임은 결과(고리 안)에
     const lampTxt = tlEnded ? '종료' : 'ON AIR', lampB = tlLampEl.querySelector('b');
-    if (lampB.textContent !== lampTxt) lampB.textContent = lampTxt;
+    if (lampB.textContent !== lampTxt) { lampB.textContent = lampTxt; lampB.dataset.t = lampTxt; }
     if (tlA2 && !isBeforeStart && !isFinalEnded) {
       setRemChip('', '+' + fmtHMS(Math.floor((now - start) / 1000)), tlOver ? 'over' : 'running');
     } else if (tlEnded) {

@@ -222,6 +222,9 @@ def dm7_request_reconnect():
             except Exception:
                 pass
 
+fader_log_flag = {}   # 채널별 마지막으로 로그에 남긴 ON/대기 — 바뀔 때만 찍는다
+
+
 def dm7_listener():
     global dm7_state, dm7_current_sock
     while True:
@@ -233,6 +236,7 @@ def dm7_listener():
                 with dm7_sock_lock:
                     dm7_current_sock = sock
                 print(f"[DM7] 연결 성공 → {host}:{DM7_PORT}", flush=True)
+                fader_log_flag.clear()   # 다시 붙으면 채널 상태를 한 번씩 다시 남긴다
 
                 buf = ""
                 while True:
@@ -262,7 +266,11 @@ def dm7_listener():
                         fader[ch] = val
                         db = val / 100
                         flag = "▲ ON AIR" if val > THRESHOLD else "▼ 대기"
-                        print(f"[Fader] ch{ch+1:02d}  {db:+7.2f} dB  {flag}", flush=True)
+                        # 2026-11-24: 매 폴링마다 8채널을 다 찍으면 초당 수십 줄이 쌓여 로그가 몇십 분 만에 밀려 지워졌다
+                        # (재부팅 원인 추적 불가·SD 카드 쓰기). ON/대기가 바뀔 때(처음 포함)만 남긴다.
+                        if fader_log_flag.get(ch) != flag:
+                            fader_log_flag[ch] = flag
+                            print(f"[Fader] ch{ch+1:02d}  {db:+7.2f} dB  {flag}", flush=True)
 
                     new = calc_on_air()
                     if new != dm7_state:
