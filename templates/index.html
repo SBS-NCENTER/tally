@@ -583,7 +583,8 @@
     /* 시작 전 큰 숫자 — 은빛을 아까(0.5)와 없음 사이 중간으로(사용자 11-23: 너무 빛남 ↔ 너무 밋밋) */
     body.tl-main:not(.portrait-right):not(.portrait-left) .cd-chip.rem.pending .t { text-shadow: 0 0 calc(2.3 * var(--u)) rgba(214,218,226,0.3); }
     /* 시간 숫자 세 조각(setTimeVal) — '시:'는 오른쪽(콜론)부터 드러나고 왼쪽부터 접힌다. 1시간 미만이면 접힘 */
-    .t.hms > .hr { display: inline-flex; justify-content: flex-end; overflow: hidden; vertical-align: bottom; max-width: 2.05em; opacity: 1; }
+    /* overflow: hidden 이면 큰 숫자의 빛(text-shadow)도 이 칸 경계에서 네모로 잘린다(11-24 파이 화면) — clip + 여유로 빛은 넘치게 */
+    .t.hms > .hr { display: inline-flex; justify-content: flex-end; overflow: clip; overflow-clip-margin: 0.3em; vertical-align: bottom; max-width: 2.05em; opacity: 1; }
     .t.hms > .hr > span { white-space: nowrap; }
     .t.hms.short > .hr { max-width: 0; opacity: 0; }
     body.tl-main:not(.portrait-right):not(.portrait-left) .t.hms.short > span { font-size: 1.25em; }   /* 분부터 나올 땐 1.25배 */
@@ -624,8 +625,9 @@
     .cd-chip.out.end-changed .t { animation: end-changed 2s ease-in-out 4; }
     .cd-chip.out.end-changed .pic { color: var(--amber) !important; }
     @keyframes end-changed { 0%, 100% { color: inherit; text-shadow: none; } 35%, 65% { color: var(--amber); text-shadow: 0 0 calc(2 * var(--u)) rgba(255,185,90,0.55); } }
-    /* 가운데 칸: 배정이면 '배정' 글자 대신 양끝 막힌 화살표 */
-    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.assign .cap, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.remain .cap { display: none; }
+    /* 가운데 칸: 배정은 '배정' 글자(11-24 사용자: 화살표 픽토그램 대신 문구) */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.remain .cap { display: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.assign .cap { align-self: center; font-size: calc(2.3 * var(--u) * var(--fit, 1)); color: #8E8E93; }   /* 양옆 아이콘과 같은 크기·높이 */
     /* 방송 중 가운데 칸 = 모래시계 + 남은 시간(초과면 +초과 빨강) — 사용자 2026-11-21 '남은 시간은 원래대로 하단 가운데' */
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.remain .pic.hg {
       display: block; align-self: center; flex: none; width: calc(1.9 * var(--u) * var(--fit, 1)); height: calc(2.5 * var(--u) * var(--fit, 1));
@@ -635,10 +637,6 @@
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.over .t { color: #E0706A; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.over .pic.hg { stroke: #E0706A; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.over .pic.hg .f { fill: #E0706A; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.assign .pic:not(.hg) {
-      display: block; align-self: center; flex: none; width: calc(2.3 * var(--u) * var(--fit, 1)); height: calc(2.2 * var(--u) * var(--fit, 1));
-      fill: none; stroke: #8E8E93; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round;
-    }
     /* ON AIR 숨쉬기 — 3초, 번짐과 밝기만 조금(F1). 11-23 사용자: 점 없이 글자 자체가 숨 쉰다 */
     /* 2026-11-24 파이 부하: 큰 그림자를 매 프레임 다시 그리던 것을, 미리 그린 빛 층(::after)의 투명도만 바꾸게 */
     #tl-lamp b { position: relative; }
