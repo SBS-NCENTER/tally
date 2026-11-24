@@ -651,17 +651,9 @@
       0%, 100% { box-shadow: 0 0 0 1.2cqh rgba(255,90,79,0.20), 0 0 2.4cqh rgba(255,90,79,0.30); filter: brightness(0.93); }
       50%      { box-shadow: 0 0 0 1.9cqh rgba(255,90,79,0.30), 0 0 6cqh rgba(255,90,79,0.60); filter: brightness(1.13); }
     }
-    /* 고리 빛 띠 — 길이가 다른 흰 조각 셋을 겹쳐 가장자리가 흐린 띠. 방송 중 12시→머리, 시작 전 머리→12시(진입). 흐림 필터는 안 씀(파이 부하) */
-    #tl-ring .band path { fill: none; stroke: #fff; stroke-width: 46; stroke-linecap: butt; stroke-dasharray: var(--l) 400; stroke-dashoffset: var(--f); stroke-opacity: 0; }
-    #tl-ring .band .b1 { --l: 28; --f: 28; --t: -100; }
-    #tl-ring .band .b2 { --l: 18; --f: 23; --t: -105; }
-    #tl-ring .band .b3 { --l: 10; --f: 19; --t: -109; }
-    #tl-ring.live .band path { stroke-opacity: 0.03; animation: tl-band 4.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
-    #tl-ring.pre .band path, #tl-ring.imm .band path { stroke-opacity: 0.043; animation: tl-band 5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }
-    @keyframes tl-band { 0% { stroke-dashoffset: var(--f); } 78%, 100% { stroke-dashoffset: var(--t); } }
+    /* 고리 빛 띠(11-21 F1)는 11-24 뺐다 — 밝기 3~4%라 거의 안 보이는데 파이 키오스크를 1초 60번 다시 그리게 했다 */
     @media (prefers-reduced-motion: reduce) {
-      #tl-lamp.on i, #tl-lamp.on b, #tl-lamp.on b::after, .cd-chip .pic, #tl-ring .band path { animation: none !important; }
-      #tl-ring .band path { stroke-opacity: 0 !important; }
+      #tl-lamp.on i, #tl-lamp.on b, #tl-lamp.on b::after, .cd-chip .pic { animation: none !important; }
     }
 
     /* ══════════ 세로 모드 (전체 화면 90도 회전) ══════════ */
@@ -951,8 +943,6 @@
         <circle class="cap0" cx="0" cy="-220" r="25"/>
         <path class="arc" d="" stroke-width="50" stroke-linecap="round"/>
       </svg>
-      <!-- 고리 위를 진행 방향으로 지나가는 옅은 빛 띠(2026-11-21 F1). d 는 tlDrawArc 가 .arc 와 같이 넣는다 -->
-      <svg class="ly" viewBox="-275 -275 550 550" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g class="band"><path class="b1" d="" pathLength="100"/><path class="b2" d="" pathLength="100"/><path class="b3" d="" pathLength="100"/></g></svg>
       <svg class="ly" viewBox="-275 -275 550 550" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <path class="flash" d="" stroke-width="54" stroke-linecap="round"/>
         <g class="marks"></g>
@@ -1361,7 +1351,6 @@
   const tlMidCapEl = document.getElementById('tl-mid-cap'), tlMidValEl = document.getElementById('tl-mid-val');
   const TL_R = 220, TL_LAB = 220 + 25 + 44;
   const tlFlashEl = tlRingEl.querySelector('.flash');
-  const tlBandEls = [...tlRingEl.querySelectorAll('.band path')];
   const TL_NS = 'http://www.w3.org/2000/svg';
   let tlMarksKey = '', tlLastMarks = [], tlLastP = 0, tlLastArgs = null, tlTween = 0, tlAnimArmed = false;
   function tlPt(r, p) { const a = (p * 360 - 90) * Math.PI / 180; return [r * Math.cos(a), r * Math.sin(a)]; }
@@ -1386,7 +1375,7 @@
   function tlRemainMode() { return tlRingEl.classList.contains('pre') || tlRingEl.classList.contains('imm'); }
   function tlDrawArc(p) {
     const d = tlRemainMode() ? tlSeg(p, 1) : tlArcD(p);
-    if (tlArcEl.getAttribute('d') !== d) { tlArcEl.setAttribute('d', d); tlGlowEl.setAttribute('d', d); tlBandEls.forEach(b => b.setAttribute('d', d)); }
+    if (tlArcEl.getAttribute('d') !== d) { tlArcEl.setAttribute('d', d); tlGlowEl.setAttribute('d', d); }
     const h = tlPt(TL_R, p);
     [tlHeadEl, tlHeadDotEl].forEach(el => { el.setAttribute('cx', h[0].toFixed(2)); el.setAttribute('cy', h[1].toFixed(2)); });
   }
