@@ -633,13 +633,12 @@
     .cd-chip.out.end-changed .t { animation: end-changed 2s ease-in-out 4; }
     .cd-chip.out.end-changed .pic { color: var(--amber) !important; }
     @keyframes end-changed { 0%, 100% { color: inherit; text-shadow: none; } 35%, 65% { color: var(--amber); text-shadow: 0 0 calc(2 * var(--u)) rgba(255,185,90,0.55); } }
-    /* 가운데 칸: 배정은 '배정' 글자(11-24 사용자: 화살표 픽토그램 대신 문구) */
-    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.remain .cap { display: none; }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.assign .cap { align-self: center; font-size: calc(2.3 * var(--u) * var(--fit, 1)); color: #8E8E93; }   /* 양옆 아이콘과 같은 크기·높이 */
+    /* 가운데 칸: 배정도 모래시계(11-25 사용자: '배정' 글자 대신 모래시계 픽토그램) */
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.remain .cap, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.assign .cap { display: none; }
     /* 방송 중 가운데 칸 = 모래시계 + 남은 시간(초과면 +초과 빨강) — 사용자 2026-11-21 '남은 시간은 원래대로 하단 가운데' */
-    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.remain .pic.hg {
-      display: block; align-self: center; flex: none; width: calc(1.9 * var(--u) * var(--fit, 1)); height: calc(2.5 * var(--u) * var(--fit, 1));
-      fill: none; stroke: #8E8E93; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round;
+    body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.remain .pic.hg, body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.assign .pic.hg {
+      display: block; align-self: center; flex: none; width: calc(2.8 * var(--u) * var(--fit, 1)); height: calc(3.6 * var(--u) * var(--fit, 1));   /* 그려진 모래시계 ≈3.1u = 양옆 원 지름 */
+      fill: none; stroke: #8E8E93; stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round;
     }
     #tl-mid .pic.hg .f { fill: #8E8E93; stroke: none; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #tl-mid.over .t { color: #E0706A; }
@@ -1371,7 +1370,7 @@
     if (tlMidCapEl.textContent !== cap) tlMidCapEl.textContent = cap;
     setTimeVal(tlMidValEl, val);
     const m = tlMidCapEl.parentNode;
-    m.classList.toggle('assign', cap === '배정');                      // 배정은 글자 대신 양끝 화살표
+    m.classList.toggle('assign', cap === '배정');                      // 배정도 글자 대신 모래시계
     m.classList.toggle('remain', cap === '남음' || cap === '초과');    // 남은 시간·초과는 모래시계
     m.classList.toggle('over', cap === '초과');
   }
