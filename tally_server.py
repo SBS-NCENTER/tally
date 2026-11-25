@@ -307,7 +307,9 @@ SPS_SLOW_INTERVAL = 10      # 초 — 평상시 폴링 간격
 SPS_FAST_INTERVAL = 1       # 초 — 임박한 생방송 핸드오프 전후 폴링 간격
 SPS_FAST_WINDOW = timedelta(minutes=5)      # 핸드오프 경계 앞뒤로 촘촘하게 볼 범위
 SPS_HANDOFF_GAP = timedelta(minutes=10)     # 두 생방송 사이 이 안이면 "핸드오프"로 간주
-SPS_FINAL_HOLD_SEC = 15    # 방송이 실제로 꺼진 직후, 바로 다음 방송(핸드오프)이 이미
+SPS_END_MATCH_SEC = 5      # 방송이 꺼진 순간 SPS 종료가 우리가 잡은 순간과 이만큼 안이면 SPS 가 이미 실제값 — 그걸 쓴다
+SPS_END_REVISE_MAX_SEC = 600   # 꺼진 뒤 SPS 가 종료를 고쳤을 때 믿는 범위(우리가 잡은 순간 ±10분 — 엉뚱한 재편성은 무시)
+SPS_FINAL_HOLD_SEC = 15   # 방송이 실제로 꺼진 직후, 바로 다음 방송(핸드오프)이 이미
                            # 시작했더라도 최소 이만큼은 방금 끝난 방송의 예정/실제
                            # 종료 비교 결과를 먼저 보여준다(안 그러면 뉴스헌터스→8뉴스처럼
                            # 붙어 있는 핸드오프에서는 결과 화면이 뜰 틈도 없이 넘어가버림).
@@ -606,6 +608,18 @@ def sps_parse_live(repos, studio=''):
     return out
 
 
+def sps_actual_end(cap, sps_end):
+    """끝난 방송의 실제 종료 시각. cap = {'at': onAirIndex 가 넘어간 걸 본 순간, 'sps_end': 그 순간 SPS 종료}.
+    SPS 종료가 이미 그 순간과 SPS_END_MATCH_SEC 안이거나, 꺼진 뒤 SPS 가 종료를 고쳤으면(±SPS_END_REVISE_MAX_SEC 안)
+    SPS 값 — 주조 기록이라 우리가 본 순간(1~3초 늦음)보다 정확하다. 아니면(아직 예정 그대로) 우리가 본 순간."""
+    gap = abs((sps_end - cap['at']).total_seconds())
+    if gap <= SPS_END_MATCH_SEC:
+        return sps_end
+    if cap['sps_end'] is not None and sps_end != cap['sps_end'] and gap <= SPS_END_REVISE_MAX_SEC:
+        return sps_end
+    return cap['at']
+
+
 def sps_pick_from_live(live, now, gap_minutes, on_air_event_id=None):
     """이미 골라둔(studio 필터링된) 오늘의 생방송 목록 안에서
     (0) onAirIndex가 실제로 이 목록의 한 항목을 가리키고 있으면 예정 시각과
@@ -741,7 +755,7 @@ def sps_listener():
     last_error = None
     startup = True   # 재시작 직후, 이미 추적 중이던 방송을 이어받을지 딱 한 번만 확인
     last_on_air_event_id = None   # onAirIndex가 실제로 가리키던 eventId(방송이 "진짜" 꺼지는 순간 감지용)
-    actual_end_by_event = {}      # eventId -> 실제 온에어가 꺼진 순간의 datetime (SPS 표기 종료시각 대신 씀)
+    actual_end_by_event = {}      # eventId -> {'at': 온에어가 꺼진 순간, 'sps_end': 그때 SPS 종료} — sps_actual_end 참고
     force_show_entry = None       # 방금 꺼진 방송을 최소 SPS_FINAL_HOLD_SEC 동안 강제로 계속 picked로 유지
     force_show_until = None
     while True:
@@ -829,14 +843,16 @@ def sps_listener():
                 # duration 기준 종료시각이 사후 갱신 안 되거나 늦게 갱신돼도, "예정
                 # 대비 얼마나 늦게/일찍 끝났는지"는 항상 실측값으로 정확히 계산하기 위함.
                 if last_on_air_event_id is not None and on_air_event_id != last_on_air_event_id:
-                    actual_end_by_event[last_on_air_event_id] = now
                     ended_entry = next((e for e in studio_live_today if e['eventId'] == last_on_air_event_id), None)
+                    # 그 순간 SPS 가 적어 둔 종료도 같이 남긴다 — 나중에 SPS 가 고쳤는지 알아보려고
+                    actual_end_by_event[last_on_air_event_id] = {
+                        'at': now, 'sps_end': ended_entry['end'] if ended_entry is not None else None}
                     if ended_entry is not None:
                         force_show_entry = ended_entry
                         force_show_until = now + timedelta(seconds=SPS_FINAL_HOLD_SEC)
                 last_on_air_event_id = on_air_event_id
                 for eid in list(actual_end_by_event):
-                    if now - actual_end_by_event[eid] > timedelta(hours=2):
+                    if now - actual_end_by_event[eid]['at'] > timedelta(hours=2):
                         del actual_end_by_event[eid]
 
                 picked = sps_pick_from_live(studio_live_today, now, cfg['gap_minutes'], on_air_event_id)
@@ -854,10 +870,15 @@ def sps_listener():
 
                 if picked:
                     result = sps_to_result(picked, now)
-                    if picked['eventId'] in actual_end_by_event:
-                        actual_end_dt = actual_end_by_event[picked['eventId']]
-                        result['end_str'] = actual_end_dt.strftime('%H:%M:%S')
-                        result['end_next_day'] = actual_end_dt.date() != picked['start'].date()
+                    cap = actual_end_by_event.get(picked['eventId'])
+                    if cap is not None:
+                        # 실제 종료 = SPS(주조 APC) 최종 기록이 기준(2026-11-25 사용자). 1주일 대조: 우리가 잡은 순간은
+                        # SPS 최종보다 늘 1~3초 늦었다(onAirIndex 반영 1~2초 + 폴링 1초). 그래서 SPS 값이 실제 종료로
+                        # 고쳐졌으면 그걸 쓰고, 아직 예정 그대로면 우리가 잡은 순간을 쓴다.
+                        fresh = next((e for e in studio_live_today if e['eventId'] == picked['eventId']), picked)
+                        end_dt = sps_actual_end(cap, fresh['end'])
+                        result['end_str'] = end_dt.strftime('%H:%M:%S')
+                        result['end_next_day'] = end_dt.date() != picked['start'].date()
                     is_live = on_air_event_id is not None and on_air_event_id == result['eventId']
 
                     # 지금 주조에서 내보내는 게(onAirIndex) 뭔가 있어도, 그게 생방송이
