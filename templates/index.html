@@ -468,12 +468,12 @@
       order: 2; margin-left: auto; flex: none; display: flex; align-items: center; justify-content: center;
       padding: 0 calc(2 * var(--u)); border-radius: calc(1.9 * var(--u));
       background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair);
-      font-weight: 600; font-size: calc(4 * var(--u));   /* 아래 판 숫자보다 작게 — 현재 시각은 덜 중요 */ line-height: 1; letter-spacing: -0.02em; color: #C7C7CC; white-space: nowrap;
+      font-weight: 800; font-size: calc(3.6 * var(--u));   /* 11-25 사용자: 왼쪽 부조·프로그램명과 같은 크기·굵기(덜 중요한 건 연회색으로만) */ line-height: 1; letter-spacing: -0.02em; color: #C7C7CC; white-space: nowrap;
     }
     /* S-CUE 로고 — 시계 상자 왼쪽(11-25 사용자 2안). SNAP 과 같은 규칙(획 20·높이 100), 하이픈 자리 점은 ON AIR 때만 빨강 */
     #top-clock .scue, #top-clock .sep { display: none; }
     body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock { gap: calc(1.6 * var(--u)); }
-    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock .scue { display: block; flex: none; height: calc(2.2 * var(--u)); width: auto; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock .scue { display: block; flex: none; height: calc(2.6 * var(--u)); width: auto; }   /* 부조 글자 키와 같게 */
     body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock .sep { display: block; flex: none; width: 1.5px; height: calc(3 * var(--u)); background: var(--hair); }
     #top-clock .scue .g { fill: none; stroke: #E3E3E3; stroke-width: 20; }
     #top-clock .scue .f { fill: #E3E3E3; }
