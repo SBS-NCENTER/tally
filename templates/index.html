@@ -470,6 +470,15 @@
       background: var(--mat); box-shadow: inset 0 0 0 1.5px var(--hair);
       font-weight: 600; font-size: calc(4 * var(--u));   /* 아래 판 숫자보다 작게 — 현재 시각은 덜 중요 */ line-height: 1; letter-spacing: -0.02em; color: #C7C7CC; white-space: nowrap;
     }
+    /* S-CUE 로고 — 시계 상자 왼쪽(11-25 사용자 2안). SNAP 과 같은 규칙(획 20·높이 100), 하이픈 자리 점은 ON AIR 때만 빨강 */
+    #top-clock .scue, #top-clock .sep { display: none; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock { gap: calc(1.6 * var(--u)); }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock .scue { display: block; flex: none; height: calc(2.2 * var(--u)); width: auto; }
+    body.tl-main:not(.portrait-right):not(.portrait-left) #top-clock .sep { display: block; flex: none; width: 1.5px; height: calc(3 * var(--u)); background: var(--hair); }
+    #top-clock .scue .g { fill: none; stroke: #E3E3E3; stroke-width: 20; }
+    #top-clock .scue .f { fill: #E3E3E3; }
+    #top-clock .scue .dot { fill: #55555E; transition: fill 0.3s ease; }
+    body:has(#status-box.on-air) #top-clock .scue .dot { fill: #FF5449; filter: drop-shadow(0 0 6px rgba(255,84,73,0.75)); }
     /* 특보·편성 알림 카드 — 가운데 남은 시간 바로 위(오른쪽 2/3 칸, 사용자 2026-11-20). 고리는 가리지 않으니 줄이지 않고,
        카드가 떠 있는 동안 남은 시간만 그만큼 아래로 내린다 */
     body.tl-main:not(.portrait-right):not(.portrait-left) #alert-slot {
@@ -885,7 +894,7 @@
     <!-- 상단 가운데: 특보·긴급 편성 알림 (JS가 채움) -->
     <div id="alert-slot"></div>
     <!-- 생방송 모드(가로)에선 큰 시계 대신 상단 가운데 작은 시계 — 화면 가운데는 타임라인 -->
-    <div id="top-clock"><span id="top-clock-meridiem"></span><span id="top-clock-time"></span></div>
+    <div id="top-clock"><svg class="scue" viewBox="0 0 370 100" role="img" aria-label="S-CUE"><path class="g" d="M68 10H30A20 20 0 0 0 30 50H42A20 20 0 0 1 42 90H4"/><circle class="dot" cx="98" cy="50" r="13"/><path class="g" d="M203.28 21.72A40 40 0 1 0 203.28 78.28"/><path class="g" d="M228 0V60A30 30 0 0 0 288 60V0"/><path class="f" d="M306 0H370V20H326V40H362V60H326V80H370V100H306Z"/></svg><span class="sep"></span><span id="top-clock-meridiem"></span><span id="top-clock-time"></span></div>
     <!-- 부조정실 + 현재/다음 방송: 한 박스로 상단 우측 -->
     <div id="side">
       <div class="tile" id="tile-studio">
