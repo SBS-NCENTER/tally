@@ -308,7 +308,8 @@ SPS_FAST_INTERVAL = 1       # 초 — 임박한 생방송 핸드오프 전후 �
 SPS_FAST_WINDOW = timedelta(minutes=5)      # 핸드오프 경계 앞뒤로 촘촘하게 볼 범위
 SPS_HANDOFF_GAP = timedelta(minutes=10)     # 두 생방송 사이 이 안이면 "핸드오프"로 간주
 SPS_END_MATCH_SEC = 5      # 방송이 꺼진 순간 SPS 종료가 우리가 잡은 순간과 이만큼 안이면 SPS 가 이미 실제값 — 그걸 쓴다
-SPS_END_REVISE_MAX_SEC = 600   # 꺼진 뒤 SPS 가 종료를 고쳤을 때 믿는 범위(우리가 잡은 순간 ±10분 — 엉뚱한 재편성은 무시)
+SPS_END_RECORD_SEC = 3    # 방송 중 SPS 종료가 바뀌었는데 새 종료가 지금+이만큼 안이면 '예정 변경'이 아니라 실제 종료 기록(먼저 옴)
+SPS_END_REVISE_MAX_SEC = 600  # 꺼진 뒤 SPS 가 종료를 고쳤을 때 믿는 범위(우리가 잡은 순간 ±10분 — 엉뚱한 재편성은 무시)
 SPS_FINAL_HOLD_SEC = 15   # 방송이 실제로 꺼진 직후, 바로 다음 방송(핸드오프)이 이미
                            # 시작했더라도 최소 이만큼은 방금 끝난 방송의 예정/실제
                            # 종료 비교 결과를 먼저 보여준다(안 그러면 뉴스헌터스→8뉴스처럼
@@ -985,7 +986,10 @@ def sps_listener():
                         # 방송 중에 주조가 종료 시각을 고치면 '예정 종료'도 최신 운행표를 따라간다(2026-11-21 사용자
                         # '최신 운행표 기준'). 안 그러면 종료 칸·초과 판단은 시작 때 값, 남은 시간은 최신 값을 써서
                         # 서로 몇십 초씩 어긋났다. 방송이 끝나는 순간의 '실제 반영'은 is_live 가 이미 False 라 따라가지 않는다.
-                        if is_live:
+                        # 단, 바뀐 종료가 이미 지났거나 지금이면(SPS_END_RECORD_SEC 안) 그건 예정 변경이 아니라 SPS 가 실제
+                        # 종료를 먼저 적은 것 — 온에어 표시는 1초쯤 뒤에 넘어간다. 따라가면 예정=실제가 돼 ±가 0으로
+                        # 사라진다(2026-11-25 생방송 투데이 예정 18:55:26·실제 18:55:35 → 둘 다 18:55:35, 나이트라인·모닝와이드3부도).
+                        if is_live and picked['end'] > now + timedelta(seconds=SPS_END_RECORD_SEC):
                             s['broadcastScheduledEndTime'] = result['end_str']
                             s['broadcastScheduledEndTimeNextDay'] = result['end_next_day']
                     if is_live and not last_was_live:
