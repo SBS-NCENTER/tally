@@ -308,7 +308,7 @@ SPS_FAST_INTERVAL = 1       # 초 — 임박한 생방송 핸드오프 전후 �
 SPS_FAST_WINDOW = timedelta(minutes=5)      # 핸드오프 경계 앞뒤로 촘촘하게 볼 범위
 SPS_HANDOFF_GAP = timedelta(minutes=10)     # 두 생방송 사이 이 안이면 "핸드오프"로 간주
 SPS_END_MATCH_SEC = 5      # 방송이 꺼진 순간 SPS 종료가 우리가 잡은 순간과 이만큼 안이면 SPS 가 이미 실제값 — 그걸 쓴다
-SPS_END_RECORD_SEC = 3    # 방송 중 SPS 종료가 바뀌었는데 새 종료가 지금+이만큼 안이면 '예정 변경'이 아니라 실제 종료 기록(먼저 옴)
+SPS_END_RECORD_SEC = 1    # 방송 중 SPS 종료가 바뀌었는데 새 종료가 지금+이만큼 안(=이미 지났거나 지금)이면 '예정 변경'이 아니라 실제 종료 기록(먼저 옴)
 SPS_END_REVISE_MAX_SEC = 600  # 꺼진 뒤 SPS 가 종료를 고쳤을 때 믿는 범위(우리가 잡은 순간 ±10분 — 엉뚱한 재편성은 무시)
 SPS_FINAL_HOLD_SEC = 15   # 방송이 실제로 꺼진 직후, 바로 다음 방송(핸드오프)이 이미
                            # 시작했더라도 최소 이만큼은 방금 끝난 방송의 예정/실제
